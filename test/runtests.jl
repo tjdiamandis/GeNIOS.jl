@@ -1,6 +1,9 @@
 using GeNIOS
 using Test
 
-@testset "GeNIOS.jl" begin
-    # Write your tests here.
+using LinearAlgebra, SparseArrays
+using Random
+
+@testset "ADMM" begin
+    include("admm.jl")
 end
