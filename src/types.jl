@@ -1,5 +1,20 @@
+abstract type Solver end
+abstract type ProblemData end
 
-struct ProblemData{T}
+struct MLProblemData{T} <: ProblemData
+    A
+    c
+    Adata::AbstractMatrix{T}
+    bdata::AbstractVector{T}
+    N::Int
+    m::Int
+    n::Int
+    d2f::Function
+    df::Function
+    f::Function
+end
+
+struct GenericProblemData{T} <: ProblemData
     A
     c::AbstractVector{T}
     m::Int
@@ -12,8 +27,8 @@ struct ProblemData{T}
 end
 
 # TODO: maybe make immutable?
-mutable struct Solver{T}
-    data::ProblemData{T}        # data
+mutable struct GenericSolver{T} <: Solver
+    data::GenericProblemData{T} # data
     lhs_op::LinearOperator{T}   # LinerOperator for LHS of x update system
     P                           # preconditioner; TODO: combine with lhs_op?
     xk::AbstractVector{T}       # var   : primal (loss)
@@ -32,10 +47,9 @@ mutable struct Solver{T}
     α::T                        # param : relaxation
     cache                       # cache : cache for intermediate results
 end
-function Solver(f, grad_f!, Hf, g, prox_g!, A, c::AbstractVector{T}; ρ=1.0, α=1.0) where {T}
-    @show A
+function GenericSolver(f, grad_f!, Hf, g, prox_g!, A, c::Vector{T}; ρ=1.0, α=1.0) where {T}
     m, n = A == I ? (length(c), length(c)) : size(A)
-    data = ProblemData(A, c, m, n, Hf, grad_f!, f, g, prox_g!)
+    data = GenericProblemData(A, c, m, n, Hf, grad_f!, f, g, prox_g!)
     xk = zeros(T, n)
     Axk = zeros(T, m)
     zk = zeros(T, m)
@@ -47,7 +61,7 @@ function Solver(f, grad_f!, Hf, g, prox_g!, A, c::AbstractVector{T}; ρ=1.0, α=
     rp_norm, rd_norm = zero(T), zero(T)
     cache = init_cache(data)
     
-    return Solver(
+    return GenericSolver(
         data, 
         LinearOperator(A, ρ, Hf, m, n), 
         I,
@@ -58,8 +72,8 @@ function Solver(f, grad_f!, Hf, g, prox_g!, A, c::AbstractVector{T}; ρ=1.0, α=
         cache)
 end
 
-function Solver(data::ProblemData; ρ=1.0, α=1.0)
-    return Solver(
+function GenericSolver(data::ProblemData; ρ=1.0, α=1.0)
+    return GenericSolver(
         data.f,
         data.grad_f!,
         data.Hf,
@@ -72,7 +86,62 @@ function Solver(data::ProblemData; ρ=1.0, α=1.0)
     )
 end
 
-function init_cache(data::ProblemData{T}) where {T <: Real}
+mutable struct MLSolver{T} <: Solver
+    data::MLProblemData{T}      # data
+    lhs_op::LinearOperator      # LinerOperator for LHS of x update system
+    P                           # preconditioner; TODO: combine with lhs_op?
+    xk::AbstractVector{T}       # var   : primal
+    Axk::AbstractVector{T}      # var   : primal
+    pred::AbstractVector{T}     # var   : primal (Adata*xk - bdata)
+    zk::AbstractVector{T}       # var   : primal (reg)
+    zk_old::AbstractVector{T}   # var   : dual (prev step)
+    uk::AbstractVector{T}       # var   : dual
+    rp::AbstractVector{T}       # resid : primal
+    rd::AbstractVector{T}       # resid : dual
+    rp_norm::T                  # resid_norm : primal
+    rd_norm::T                  # resid_norm : dual
+    obj_val::T                  # log   : 0.5*||Ax - b||² + γ|x|₁
+    loss::T                     # log   : 0.5*||Ax - b||² (uses zk)
+    dual_gap::T                 # log   : obj_val - g(ν)
+    ρ::T                        # param : ADMM penalty
+    α::T                        # param : relaxation
+    λ1::T                       # param : l1 regularization
+    λ2::T                       # param : l2 regularization
+    cache                       # cache : cache for intermediate results
+end
+
+function MLSolver(f, df, d2f, λ1, λ2, Adata::AbstractMatrix{T}, bdata::AbstractVector{T}; ρ=1.0, α=1.0) where {T}
+    N, n = size(Adata)
+    #TODO: may want to add offset?
+    m = n
+    data = MLProblemData(-I, zeros(T, n), Adata, bdata, N, m, n, d2f, df, f)
+    xk = zeros(T, n)
+    Axk = zeros(T, n)
+    pred = zeros(T, N)
+    zk = zeros(T, m)
+    zk_old = zeros(T, n)
+    uk = zeros(T, n)
+    rp = zeros(T, n)
+    rd = zeros(T, n)
+    obj_val, loss, dual_gap = zero(T), zero(T), zero(T)
+    rp_norm, rd_norm = zero(T), zero(T)
+    cache = init_cache(data)
+
+    Hf = MLHessianOperator(Adata, bdata, d2f, λ2) 
+
+    return MLSolver(
+        data, 
+        LinearOperator(-I, ρ, Hf, m, n),
+        I,
+        xk, Axk, pred, zk, zk_old, uk, rp, rd, 
+        rp_norm, rd_norm,
+        obj_val, loss, dual_gap,
+        ρ, α, λ1, λ2,
+        cache
+    )
+end
+
+function init_cache(data::GenericProblemData{T}) where {T <: Real}
     m, n = data.m, data.n
     return (
         vm=zeros(T, m),
@@ -82,61 +151,35 @@ function init_cache(data::ProblemData{T}) where {T <: Real}
     )
 end
 
-struct SolverOptions
-    relax::Bool
-    logging::Bool
-    indirect::Bool
-    precondition::Bool
-    tol::Real
-    max_iters::Int
-    max_time_sec::Real
-    print_iter::Int
-    rho_update_iter::Int
-    sketch_update_iter::Int
-    verbose::Bool
-    multithreaded::Bool
-    linsys_max_tol::Real
-    eps_abs::Real
-    eps_rel::Real
-    norm_type::Real
+function init_cache(data::MLProblemData{T}) where {T <: Real}
+    m, n, N = data.m, data.n, data.N
+    return (
+        vm=zeros(T, m),
+        vn=zeros(T, n),
+        vN=zeros(T, N),
+        vn2=zeros(T, n),
+        rhs=zeros(T, n),
+    )
 end
 
-function SolverOptions(;
-    relax=true,
-    logging=true,
-    indirect=false,
-    precondition=true,
-    tol=1e-4,
-    max_iters=100,
-    max_time_sec=1200.0,
-    print_iter=1,
-    rho_update_iter=50,
-    sketch_update_iter=20,
-    verbose=true,
-    multithreaded=false,
-    linsys_max_tol=1e-1,
-    eps_abs=1e-4,
-    eps_rel=1e-4,
-    norm_type=2,
-)
-    return SolverOptions(
-        relax,
-        logging,
-        indirect,
-        precondition,
-        tol,
-        max_iters,
-        max_time_sec,
-        print_iter,
-        rho_update_iter,
-        sketch_update_iter,
-        verbose,
-        multithreaded,
-        linsys_max_tol,
-        eps_abs,
-        eps_rel,
-        norm_type
-    )
+
+Base.@kwdef struct SolverOptions{T <: Real, S <: Real}
+    relax::Bool = true
+    logging::Bool = true
+    indirect::Bool = false
+    precondition::Bool = true
+    tol::T = 1e-4
+    max_iters::Int = 100
+    max_time_sec::T = 1200.0
+    print_iter::Int = 1
+    rho_update_iter::Int = 50
+    sketch_update_iter::Int = 20
+    verbose::Bool = true
+    multithreaded::Bool = false
+    linsys_max_tol::T = 1e-1
+    eps_abs::T = 1e-4
+    eps_rel::T = 1e-4
+    norm_type::S = 2
 end
 
 
@@ -158,7 +201,7 @@ function NysADMMLog(setup_time::T, precond_time::T, solve_time::T) where {T <: A
     )
 end
 
-function create_temp_log(::Solver{T}, max_iters::Int) where {T}
+function create_temp_log(::Union{GenericSolver{T}, MLSolver{T}}, max_iters::Int) where {T}
     return NysADMMLog(
         zeros(T, max_iters),
         zeros(T, max_iters),
