@@ -74,11 +74,11 @@ end
 
 function obj_val!(solver::MLSolver)
     # pred = Ax - b
-    mul!(solver.pred, solver.data.Adata, solver.zk)
+    mul!(solver.pred, solver.data.Adata, solver.xk)
     solver.pred .-= solver.data.bdata
     
     solver.obj_val = sum(x->solver.data.f(x), solver.pred) + 
-        solver.λ1*norm(solver.zk, 1) + solver.λ1*sum(abs2, solver.zk)
+        solver.λ1*norm(solver.zk, 1) + solver.λ2*sum(abs2, solver.zk)
 end
 
 function compute_rhs!(solver::Solver)
