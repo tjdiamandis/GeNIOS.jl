@@ -58,11 +58,23 @@ function converged(solver::Solver, options::SolverOptions)
 end
 
 function converged(solver::MLSolver, options::SolverOptions)
-    if !options.use_dual_gap
-        return converged(solver, options)
+    if options.use_dual_gap
+        return solver.dual_gap ≤ options.tol
     end
 
-    return solver.dual_gap ≤ options.tol
+    #TODO: remove repeat code
+    # TODO: maybe norm computation should be in its own thing?
+    mul!(solver.cache.vm, solver.data.A, solver.xk)
+    norm_Ax = norm(solver.cache.vm)
+    norm_z = norm(solver.zk)
+    norm_c = norm(solver.data.c)
+    eps_pri = sqrt(solver.data.m) * options.eps_abs + options.eps_rel * max(norm_Ax, norm_z, norm_c)
+
+    mul!(solver.cache.vn, solver.data.A', solver.uk)
+    norm_Aty = norm(solver.cache.vn)
+    eps_dual = sqrt(solver.data.n) * options.eps_abs + options.eps_rel * norm_Aty
+
+    return solver.rp_norm ≤ eps_pri && solver.rd_norm ≤ eps_dual
 end
 
 # Used to implement custom convergence criteria (e.g., via dual gap)
@@ -72,6 +84,7 @@ end
 
 # Comptues dual gap TODO:
 function convergence_criteria!(solver::MLSolver, options::SolverOptions)
+    # TODO: stuff dual gap logic into here
     return nothing
 end
 
@@ -286,15 +299,15 @@ function solve!(
 
     # --- Print Headers ---
     # TODO: allow for custom headers
-    format = print_format(solver)
-    headers = print_headers(solver)
+    format = print_format(solver, options)
+    headers = print_headers(solver, options)
     options.verbose && print_header(format, headers)
 
     # --- Print 0ᵗʰ iteration ---
     obj_val!(solver, options)
     dual_gap!(solver, options)
-    iter_fmt = iter_format(solver)
-    options.verbose && print_iter_func(iter_fmt, iter_data(solver, 0, 0.0))
+    iter_fmt = iter_format(solver, options)
+    options.verbose && print_iter_func(iter_fmt, iter_data(solver, options, 0, 0.0))
 
     # --------------------------------------------------------------------------
     # --------------------- ITERATIONS -----------------------------------------
@@ -365,7 +378,7 @@ function solve!(
             # TODO: functionize
             print_iter_func(
                 iter_fmt,
-                iter_data(solver, t, time_sec)
+                iter_data(solver, options, t, time_sec)
             )
         end
 
@@ -376,7 +389,7 @@ function solve!(
     if options.verbose && ((t-1) % options.print_iter != 0 && (t-1) != 1)
         print_iter_func(
             iter_fmt,
-            iter_data(solver, t, (time_ns() - solve_time_start) / 1e9)
+            iter_data(solver, options, t, (time_ns() - solve_time_start) / 1e9)
         )
     end
 
