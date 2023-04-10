@@ -43,7 +43,6 @@ function update_rho!(solver::Solver)
     return nothing
 end
 
-# TODO: extend for MLSolver
 function converged(solver::Solver, options::SolverOptions)
     mul!(solver.cache.vm, solver.data.A, solver.xk)
     norm_Ax = norm(solver.cache.vm)
@@ -87,12 +86,13 @@ function obj_val!(solver::MLSolver, options::SolverOptions)
     mul!(solver.pred, solver.data.Adata, solver.zk)
     solver.pred .-= solver.data.bdata
     
-    solver.obj_val = sum(x->solver.data.f(x), solver.pred) + 
+    solver.loss = sum(x->solver.data.f(x), solver.pred)
+    solver.obj_val = solver.loss + 
         solver.λ1*norm(solver.zk, 1) + solver.λ2*sum(abs2, solver.zk)
 end
 
 
-function dual_gap!(solver::Solver, options::SolverOptions)
+function dual_gap!(::Solver, ::SolverOptions)
     return nothing
 end
 
