@@ -12,6 +12,7 @@ struct MLProblemData{T} <: ProblemData
     d2f::Function
     df::Function
     f::Function
+    fconj::Function
 end
 
 struct GenericProblemData{T} <: ProblemData
@@ -92,7 +93,7 @@ mutable struct MLSolver{T} <: Solver
     P                           # preconditioner; TODO: combine with lhs_op?
     xk::AbstractVector{T}       # var   : primal
     Axk::AbstractVector{T}      # var   : primal
-    pred::AbstractVector{T}     # var   : primal (Adata*xk - bdata)
+    pred::AbstractVector{T}     # var   : primal (Adata*zk - bdata) TODO: zk vs xk?
     zk::AbstractVector{T}       # var   : primal (reg)
     zk_old::AbstractVector{T}   # var   : dual (prev step)
     uk::AbstractVector{T}       # var   : dual
@@ -110,11 +111,22 @@ mutable struct MLSolver{T} <: Solver
     cache                       # cache : cache for intermediate results
 end
 
-function MLSolver(f, df, d2f, λ1, λ2, Adata::AbstractMatrix{T}, bdata::AbstractVector{T}; ρ=1.0, α=1.0) where {T}
+function MLSolver(f,
+    df,
+    d2f,
+    λ1,
+    λ2,
+    Adata::AbstractMatrix{T},
+    bdata::AbstractVector{T}; 
+    fconj=x->error("fconj not defined"),
+    ρ=1.0,
+    α=1.0
+) where {T}
     N, n = size(Adata)
     #TODO: may want to add offset?
     m = n
-    data = MLProblemData(-I, zeros(T, n), Adata, bdata, N, m, n, d2f, df, f)
+
+    data = MLProblemData(-I, zeros(T, n), Adata, bdata, N, m, n, d2f, df, f, fconj)
     xk = zeros(T, n)
     Axk = zeros(T, n)
     pred = zeros(T, N)
@@ -180,6 +192,7 @@ Base.@kwdef struct SolverOptions{T <: Real, S <: Real}
     eps_abs::T = 1e-4
     eps_rel::T = 1e-4
     norm_type::S = 2
+    use_dual_gap::Bool = false
 end
 
 

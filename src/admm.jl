@@ -58,6 +58,14 @@ function converged(solver::Solver, options::SolverOptions)
     return solver.rp_norm ≤ eps_pri && solver.rd_norm ≤ eps_dual
 end
 
+function converged(solver::MLSolver, options::SolverOptions)
+    if !options.use_dual_gap
+        return converged(solver, options)
+    end
+
+    return solver.dual_gap ≤ options.tol
+end
+
 # Used to implement custom convergence criteria (e.g., via dual gap)
 function convergence_criteria!(solver::Solver, options::SolverOptions)
     return nothing
@@ -68,17 +76,43 @@ function convergence_criteria!(solver::MLSolver, options::SolverOptions)
     return nothing
 end
 
-function obj_val!(solver::Solver)
+# TODO: switch to zk for f?????
+function obj_val!(solver::Solver, options::SolverOptions)
     solver.obj_val = solver.data.f(solver.xk) + solver.data.g(solver.zk)
 end
 
-function obj_val!(solver::MLSolver)
+# TODO: switch to zk for f?????
+function obj_val!(solver::MLSolver, options::SolverOptions)
     # pred = Ax - b
-    mul!(solver.pred, solver.data.Adata, solver.xk)
+    mul!(solver.pred, solver.data.Adata, solver.zk)
     solver.pred .-= solver.data.bdata
     
     solver.obj_val = sum(x->solver.data.f(x), solver.pred) + 
         solver.λ1*norm(solver.zk, 1) + solver.λ2*sum(abs2, solver.zk)
+end
+
+
+function dual_gap!(solver::Solver, options::SolverOptions)
+    return nothing
+end
+
+# TODO: opportunities for optimization for logistic and lasso
+function dual_gap!(solver::MLSolver, options::SolverOptions)
+    !options.use_dual_gap && return nothing
+
+    ν = solver.cache.vN
+    ν .= solver.data.df.(solver.pred)
+    mul!(solver.cache.vn, solver.data.Adata', ν)
+    @. solver.cache.vn += solver.λ2 * solver.zk
+    normalization = solver.λ1 / norm(solver.cache.vn, Inf)
+    ν .*= normalization
+
+    # g(ν) = -∑f*(νᵢ) - bᵀνᵢ
+    dual_obj = -sum(x->solver.data.fconj(x), ν)
+    dual_obj -= dot(solver.data.bdata, ν)
+
+    solver.dual_gap = (solver.obj_val - dual_obj) / min(solver.obj_val, abs(dual_obj))
+    return nothing
 end
 
 function compute_rhs!(solver::Solver)
@@ -252,17 +286,15 @@ function solve!(
 
     # --- Print Headers ---
     # TODO: allow for custom headers
-    format = ["%13s", "%14s", "%14s", "%14s", "%14s", "%14s"]
-    headers = ["Iteration", "Obj Val", "r_primal", "r_dual", "ρ", "Time"]
+    format = print_format(solver)
+    headers = print_headers(solver)
     options.verbose && print_header(format, headers)
 
     # --- Print 0ᵗʰ iteration ---
-    obj_val!(solver)
-    # TODO: dual_gap!(solver)
-    iter_fmt = ["%13s", "%14.3e", "%14.3e", "%14.3e", "%14.3e", "%13.3f"]
-    options.verbose && print_iter_func(iter_fmt, (
-        string(0), solver.obj_val, Inf, Inf, solver.ρ, 0.0
-    ))
+    obj_val!(solver, options)
+    dual_gap!(solver, options)
+    iter_fmt = iter_format(solver)
+    options.verbose && print_iter_func(iter_fmt, iter_data(solver, 0, 0.0))
 
     # --------------------------------------------------------------------------
     # --------------------- ITERATIONS -----------------------------------------
@@ -308,7 +340,9 @@ function solve!(
 
         # --- Update objective & dual gap ---
         # Also updates pred = Adata*xk - bdata for MLSolver 
-        obj_val!(solver)
+        obj_val!(solver, options)
+        dual_gap!(solver, options)
+        #TODO: maybe get rid of below?? Or generalize with dual gap?
         convergence_criteria!(solver, options)
 
 
@@ -331,14 +365,8 @@ function solve!(
             # TODO: functionize
             print_iter_func(
                 iter_fmt,
-                (
-                string(t),
-                solver.obj_val,
-                solver.rp_norm,
-                solver.rd_norm,
-                solver.ρ,
-                time_sec
-                ))
+                iter_data(solver, t, time_sec)
+            )
         end
 
         t += 1
@@ -348,14 +376,8 @@ function solve!(
     if options.verbose && ((t-1) % options.print_iter != 0 && (t-1) != 1)
         print_iter_func(
             iter_fmt,
-            (
-            string(t),
-            solver.obj_val,
-            solver.rp_norm,
-            solver.rd_norm,
-            solver.ρ,
-            (time_ns() - solve_time_start) / 1e9
-        ))
+            iter_data(solver, t, (time_ns() - solve_time_start) / 1e9)
+        )
     end
 
     # --- Print Footer ---
