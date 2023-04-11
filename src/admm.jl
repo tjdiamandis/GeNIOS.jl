@@ -44,13 +44,13 @@ function update_rho!(solver::Solver)
 end
 
 function converged(solver::Solver, options::SolverOptions)
-    mul!(solver.cache.vm, solver.data.A, solver.xk)
+    mul!(solver.cache.vm, solver.data.M, solver.xk)
     norm_Ax = norm(solver.cache.vm)
     norm_z = norm(solver.zk)
     norm_c = norm(solver.data.c)
     eps_pri = sqrt(solver.data.m) * options.eps_abs + options.eps_rel * max(norm_Ax, norm_z, norm_c)
 
-    mul!(solver.cache.vn, solver.data.A', solver.uk)
+    mul!(solver.cache.vn, solver.data.M', solver.uk)
     norm_Aty = norm(solver.cache.vn)
     eps_dual = sqrt(solver.data.n) * options.eps_abs + options.eps_rel * norm_Aty
 
@@ -64,13 +64,13 @@ function converged(solver::MLSolver, options::SolverOptions)
 
     #TODO: remove repeat code
     # TODO: maybe norm computation should be in its own thing?
-    mul!(solver.cache.vm, solver.data.A, solver.xk)
+    mul!(solver.cache.vm, solver.data.M, solver.xk)
     norm_Ax = norm(solver.cache.vm)
     norm_z = norm(solver.zk)
     norm_c = norm(solver.data.c)
     eps_pri = sqrt(solver.data.m) * options.eps_abs + options.eps_rel * max(norm_Ax, norm_z, norm_c)
 
-    mul!(solver.cache.vn, solver.data.A', solver.uk)
+    mul!(solver.cache.vn, solver.data.M', solver.uk)
     norm_Aty = norm(solver.cache.vn)
     eps_dual = sqrt(solver.data.n) * options.eps_abs + options.eps_rel * norm_Aty
 
@@ -134,7 +134,7 @@ function compute_rhs!(solver::Solver)
     solver.data.grad_f!(solver.cache.vn2, solver.xk)
     
     @. solver.cache.vm = solver.zk - solver.data.c + solver.uk
-    mul!(solver.cache.rhs, solver.data.A', solver.cache.vm)
+    mul!(solver.cache.rhs, solver.data.M', solver.cache.vm)
     @. solver.cache.rhs = solver.cache.vn - solver.cache.vn2 - solver.ρ * solver.cache.rhs
     
     return nothing
@@ -155,7 +155,7 @@ function compute_rhs!(solver::MLSolver)
     
     # compute last term
     @. solver.cache.vm = solver.zk - solver.data.c + solver.uk
-    mul!(solver.cache.rhs, solver.data.A', solver.cache.vm)
+    mul!(solver.cache.rhs, solver.data.M', solver.cache.vm)
 
     # add them up
     @. solver.cache.rhs = solver.cache.vn - solver.cache.vn2 - solver.ρ * solver.cache.rhs
@@ -204,25 +204,25 @@ end
 function update_Ax!(solver::MLSolver{T}, options::SolverOptions) where {T}
     if options.relax
         @. solver.cache.vm = -solver.xk
-        @. solver.Axk = solver.α * solver.cache.vm + (one(T) - solver.α) * solver.zk
+        @. solver.Mxk = solver.α * solver.cache.vm + (one(T) - solver.α) * solver.zk
     else
-        @. solver.Axk = -solver.xk
+        @. solver.Mxk = -solver.xk
     end
     return nothing
 end
 
 function update_Ax!(solver::GenericSolver{T}, options::SolverOptions) where {T}
     if options.relax
-        mul!(solver.cache.vm, solver.data.A, solver.xk)
-        @. solver.Axk = solver.α * solver.cache.vm + (one(T) - solver.α) * solver.zk
+        mul!(solver.cache.vm, solver.data.M, solver.xk)
+        @. solver.Mxk = solver.α * solver.cache.vm + (one(T) - solver.α) * solver.zk
     else
-        mul!(solver.Axk, solver.data.A, solver.xk)
+        mul!(solver.Mxk, solver.data.M, solver.xk)
     end
     return nothing
 end
 
 function update_z!(solver::Solver, options::SolverOptions)
-    solver.cache.vm .= -solver.Axk
+    solver.cache.vm .= -solver.Mxk
     @. solver.cache.vm += -solver.uk + solver.data.c
     
     # prox_{g/ρ}(v) = prox_{g/ρ}( -(Axᵏ⁺¹ - c + uᵏ⁺¹) )
@@ -232,24 +232,24 @@ end
 function update_z!(solver::MLSolver, options::SolverOptions)
     @inline soft_threshold(x::T, κ::T) where {T <: Real} = sign(x) * max(zero(T), abs(x) - κ)
     
-    solver.cache.vm .= -solver.Axk
+    solver.cache.vm .= -solver.Mxk
     @. solver.cache.vm += -solver.uk + solver.data.c
     
     solver.zk .= soft_threshold.(solver.cache.vm, solver.λ1/solver.ρ)
 end
 
 function update_u!(solver::Solver, options::SolverOptions)
-    @. solver.uk = solver.uk + solver.Axk + solver.zk - solver.data.c
+    @. solver.uk = solver.uk + solver.Mxk + solver.zk - solver.data.c
 end
 
 function compute_residuals!(solver::Solver, options::SolverOptions)
     # primal residual
-    @. solver.rp = solver.Axk + solver.zk - solver.data.c
+    @. solver.rp = solver.Mxk + solver.zk - solver.data.c
     solver.rp_norm = norm(solver.rp, options.norm_type)
 
     # dual residual
     @. solver.cache.vm = solver.zk - solver.zk_old
-    mul!(solver.rd, solver.data.A', solver.cache.vm)
+    mul!(solver.rd, solver.data.M', solver.cache.vm)
     @. solver.rd *= solver.ρ
     solver.rd_norm = norm(solver.rd, options.norm_type)
 end
@@ -272,7 +272,7 @@ function solve!(
     solver.rp_norm = Inf
     solver.rd_norm = Inf
     solver.xk .= zeros(n)
-    solver.Axk .= zeros(m)
+    solver.Mxk .= zeros(m)
     solver.zk .= zeros(m)
     solver.uk .= zeros(m)
 

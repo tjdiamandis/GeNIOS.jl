@@ -2,7 +2,7 @@ abstract type Solver end
 abstract type ProblemData end
 
 struct MLProblemData{T} <: ProblemData
-    A
+    M
     c
     Adata::AbstractMatrix{T}
     bdata::AbstractVector{T}
@@ -16,7 +16,7 @@ struct MLProblemData{T} <: ProblemData
 end
 
 struct GenericProblemData{T} <: ProblemData
-    A
+    M
     c::AbstractVector{T}
     m::Int
     n::Int
@@ -33,7 +33,7 @@ mutable struct GenericSolver{T} <: Solver
     lhs_op::LinearOperator{T}   # LinerOperator for LHS of x update system
     P                           # preconditioner; TODO: combine with lhs_op?
     xk::AbstractVector{T}       # var   : primal (loss)
-    Axk::AbstractVector{T}      # var   : primal 
+    Mxk::AbstractVector{T}      # var   : primal 
     zk::AbstractVector{T}       # var   : primal (reg)
     zk_old::AbstractVector{T}   # var   : dual (prev step)
     uk::AbstractVector{T}       # var   : dual
@@ -41,18 +41,18 @@ mutable struct GenericSolver{T} <: Solver
     rd::AbstractVector{T}       # resid : dual
     rp_norm::T                  # resid_norm : primal
     rd_norm::T                  # resid_norm : dual
-    obj_val::T                  # log   : 0.5*||Ax - b||² + γ|x|₁
-    loss::T                     # log   : 0.5*||Ax - b||² (uses zk)
-    dual_gap::T                 # log   : obj_val - g(ν)
+    obj_val::T                  # log   : f(x) + g(z)
+    loss::T                     # log   : TODO: rem
+    dual_gap::T                 # log   : TODO: rem
     ρ::T                        # param : ADMM penalty
     α::T                        # param : relaxation
     cache                       # cache : cache for intermediate results
 end
-function GenericSolver(f, grad_f!, Hf, g, prox_g!, A, c::Vector{T}; ρ=1.0, α=1.0) where {T}
-    m, n = A == I ? (length(c), length(c)) : size(A)
-    data = GenericProblemData(A, c, m, n, Hf, grad_f!, f, g, prox_g!)
+function GenericSolver(f, grad_f!, Hf, g, prox_g!, M, c::Vector{T}; ρ=1.0, α=1.0) where {T}
+    m, n = M == I ? (length(c), length(c)) : size(M)
+    data = GenericProblemData(M, c, m, n, Hf, grad_f!, f, g, prox_g!)
     xk = zeros(T, n)
-    Axk = zeros(T, m)
+    Mxk = zeros(T, m)
     zk = zeros(T, m)
     zk_old = zeros(T, m)
     uk = zeros(T, m)
@@ -64,9 +64,9 @@ function GenericSolver(f, grad_f!, Hf, g, prox_g!, A, c::Vector{T}; ρ=1.0, α=1
     
     return GenericSolver(
         data, 
-        LinearOperator(A, ρ, Hf, m, n), 
+        LinearOperator(M, ρ, Hf, m, n), 
         I,
-        xk, Axk, zk, zk_old, uk, rp, rd, 
+        xk, Mxk, zk, zk_old, uk, rp, rd, 
         rp_norm, rd_norm,
         obj_val, loss, dual_gap,
         ρ, α,
@@ -80,7 +80,7 @@ function GenericSolver(data::ProblemData; ρ=1.0, α=1.0)
         data.Hf,
         data.g,
         data.prox_g!,
-        data.A,
+        data.M,
         data.c,
         ρ=ρ,
         α=α
@@ -92,7 +92,7 @@ mutable struct MLSolver{T} <: Solver
     lhs_op::LinearOperator      # LinerOperator for LHS of x update system
     P                           # preconditioner; TODO: combine with lhs_op?
     xk::AbstractVector{T}       # var   : primal
-    Axk::AbstractVector{T}      # var   : primal
+    Mxk::AbstractVector{T}      # var   : primal
     pred::AbstractVector{T}     # var   : primal (Adata*zk - bdata) TODO: zk vs xk?
     zk::AbstractVector{T}       # var   : primal (reg)
     zk_old::AbstractVector{T}   # var   : dual (prev step)
@@ -101,8 +101,8 @@ mutable struct MLSolver{T} <: Solver
     rd::AbstractVector{T}       # resid : dual
     rp_norm::T                  # resid_norm : primal
     rd_norm::T                  # resid_norm : dual
-    obj_val::T                  # log   : 0.5*||Ax - b||² + γ|x|₁
-    loss::T                     # log   : 0.5*||Ax - b||² (uses zk)
+    obj_val::T                  # log   : 0.5*∑f(aᵢᵀx - bᵢ) + λ₁|x|₁ + λ₂/2|x|₂²
+    loss::T                     # log   : 0.5*∑f(aᵢᵀx - bᵢ) (uses zk)
     dual_gap::T                 # log   : obj_val - g(ν)
     ρ::T                        # param : ADMM penalty
     α::T                        # param : relaxation
@@ -128,7 +128,7 @@ function MLSolver(f,
 
     data = MLProblemData(-I, zeros(T, n), Adata, bdata, N, m, n, d2f, df, f, fconj)
     xk = zeros(T, n)
-    Axk = zeros(T, n)
+    Mxk = zeros(T, n)
     pred = zeros(T, N)
     zk = zeros(T, m)
     zk_old = zeros(T, n)
@@ -145,7 +145,7 @@ function MLSolver(f,
         data, 
         LinearOperator(-I, ρ, Hf, m, n),
         I,
-        xk, Axk, pred, zk, zk_old, uk, rp, rd, 
+        xk, Mxk, pred, zk, zk_old, uk, rp, rd, 
         rp_norm, rd_norm,
         obj_val, loss, dual_gap,
         ρ, α, λ1, λ2,
@@ -230,7 +230,7 @@ end
 
 struct NysADMMResult{T}
     obj_val::T                 # primal objective
-    loss::T                # 0.5*||Ax - b||²
+    loss::T                    # TODO:
     x::AbstractVector{T}       # primal soln
     z::AbstractVector{T}       # primal soln
     dual_gap::T                # duality gap
