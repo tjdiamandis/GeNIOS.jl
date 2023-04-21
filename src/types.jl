@@ -46,6 +46,7 @@ mutable struct GenericSolver{T} <: Solver
     dual_gap::T                 # log   : TODO: rem
     ρ::T                        # param : ADMM penalty
     α::T                        # param : relaxation
+    r0::Int                     # param : preconditioner rank
     cache                       # cache : cache for intermediate results
 end
 function GenericSolver(f, grad_f!, Hf, g, prox_g!, M, c::Vector{T}; ρ=1.0, α=1.0) where {T}
@@ -60,6 +61,7 @@ function GenericSolver(f, grad_f!, Hf, g, prox_g!, M, c::Vector{T}; ρ=1.0, α=1
     rd = zeros(T, n)
     obj_val, loss, dual_gap = zero(T), zero(T), zero(T)
     rp_norm, rd_norm = zero(T), zero(T)
+    r0 = 0
     cache = init_cache(data)
     
     return GenericSolver(
@@ -69,7 +71,7 @@ function GenericSolver(f, grad_f!, Hf, g, prox_g!, M, c::Vector{T}; ρ=1.0, α=1
         xk, Mxk, zk, zk_old, uk, rp, rd, 
         rp_norm, rd_norm,
         obj_val, loss, dual_gap,
-        ρ, α,
+        ρ, α, r0,
         cache)
 end
 
@@ -108,6 +110,7 @@ mutable struct MLSolver{T} <: Solver
     α::T                        # param : relaxation
     λ1::T                       # param : l1 regularization
     λ2::T                       # param : l2 regularization
+    r0::Int                     # param : preconditioner rank
     cache                       # cache : cache for intermediate results
 end
 
@@ -137,6 +140,7 @@ function MLSolver(f,
     rd = zeros(T, n)
     obj_val, loss, dual_gap = zero(T), zero(T), zero(T)
     rp_norm, rd_norm = zero(T), zero(T)
+    r0 = 0
     cache = init_cache(data)
 
     Hf = MLHessianOperator(Adata, bdata, d2f, λ2) 
@@ -148,7 +152,7 @@ function MLSolver(f,
         xk, Mxk, pred, zk, zk_old, uk, rp, rd, 
         rp_norm, rd_norm,
         obj_val, loss, dual_gap,
-        ρ, α, λ1, λ2,
+        ρ, α, λ1, λ2, r0,
         cache
     )
 end
@@ -193,6 +197,7 @@ Base.@kwdef struct SolverOptions{T <: Real, S <: Real}
     eps_rel::T = 1e-4
     norm_type::S = 2
     use_dual_gap::Bool = false
+    update_preconditioner::Bool = true
 end
 
 

@@ -1,6 +1,39 @@
 function build_preconditioner!(solver::Solver, options::SolverOptions)
+    !options.precondition && return zero(T)
+    solver.r0 = solver.data.n ≥ 1_000 ? 50 : solver.data.n ÷ 20
     precond_time_start = time_ns()
+    build_preconditioner!(solver)
     return (time_ns() - precond_time_start) / 1e9
+end
+
+function build_preconditioner!(solver::GenericSolver)
+    update!(solver.lhs_op.Hf_xk, solver)
+    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, solver.r0; n=solver.lhs_op.n)
+    solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ)
+    return nothing
+end
+
+function build_preconditioner!(solver::MLSolver)
+    update!(solver.lhs_op.Hf_xk, solver)
+    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, solver.r0; n=solver.lhs_op.n)
+    solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ + solver.λ2)
+    return nothing
+end
+
+function update_preconditioner!(solver::GenericSolver, options::SolverOptions)
+    !options.update_preconditioner && return nothing
+    update!(solver.lhs_op.Hf_xk, solver)
+    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, solver.r0; n=solver.lhs_op.n)
+    solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ)
+    return nothing
+end
+
+function update_preconditioner!(solver::MLSolver, options::SolverOptions)
+    !options.update_preconditioner && return nothing
+    update!(solver.lhs_op.Hf_xk, solver)
+    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, solver.r0; n=solver.lhs_op.n)
+    solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ + solver.λ2)
+    return nothing
 end
 
 function compute_residuals(solver::Solver, options::SolverOptions)
@@ -40,7 +73,7 @@ function update_rho!(solver::Solver)
         return true
     end
 
-    return nothing
+    return false
 end
 
 function converged(solver::Solver, options::SolverOptions)
@@ -179,7 +212,7 @@ function update_x!(
     end
     
     # update linear operator, i.e., ∇²f(xᵏ)
-    update!(solver.lhs_op.Hf_xk, solver) 
+    update!(solver.lhs_op.Hf_xk, solver)
     linsys_tol = max(
         sqrt(eps()), min(
             sqrt(solver.rp_norm * solver.rd_norm), options.linsys_max_tol)
@@ -275,6 +308,9 @@ function solve!(
     solver.Mxk .= zeros(m)
     solver.zk .= zeros(m)
     solver.uk .= zeros(m)
+    # Computed variables
+    obj_val!(solver, options)
+    dual_gap!(solver, options)
 
 
     # --- enable multithreaded BLAS ---
@@ -304,8 +340,6 @@ function solve!(
     options.verbose && print_header(format, headers)
 
     # --- Print 0ᵗʰ iteration ---
-    obj_val!(solver, options)
-    dual_gap!(solver, options)
     iter_fmt = iter_format(solver, options)
     options.verbose && print_iter_func(iter_fmt, iter_data(solver, options, 0, 0.0))
 
@@ -324,32 +358,7 @@ function solve!(
         solver.zk_old .= solver.zk
         update_z!(solver, options)
         update_u!(solver, options)
-
-
-        # --- Update ρ ---
         compute_residuals!(solver, options)
-        if t % options.rho_update_iter == 0
-            ρ_old = solver.ρ
-            update_rho!(solver)
-            
-            # if updated_rho && !indirect && typeof(solver) <: LassoSolver
-            #     # NOTE: logistic solver recomputes fact at each iteration anyway
-            #     KKT_mat[diagind(KKT_mat)] .+= (solver.ρ .- ρ_old)
-            #     linsys_solver = cholesky(KKT_mat)
-            # elseif updated_rho && precondition && !(sketch_solve_x_update || gd_x_update)
-            #     reg_term = typeof(solver) <: LogisticSolver ? solver.ρ : solver.ρ + solver.μ
-            #     P = RP.NystromPreconditionerInverse(P.A_nys, reg_term)
-            # end
-        end
-
-
-
-         # --- Update preconditioner ---
-         if options.precondition && t % options.sketch_update_iter == 0
-            # TODO:
-            # update_preconditioner!(solver)
-        end
-
 
         # --- Update objective & dual gap ---
         # Also updates pred = Adata*xk - bdata for MLSolver 
@@ -357,6 +366,28 @@ function solve!(
         dual_gap!(solver, options)
         #TODO: maybe get rid of below?? Or generalize with dual gap?
         convergence_criteria!(solver, options)
+
+
+        # --- Update ρ ---
+        if t % options.rho_update_iter == 0
+            ρ_old = solver.ρ
+            updated_rho = update_rho!(solver)
+
+            if updated_rho
+                P = RP.NystromPreconditionerInverse(P.A_nys, solver.ρ + solver.λ2)
+            end
+            # if updated_rho && !indirect && typeof(solver) <: LassoSolver
+            #     # NOTE: logistic solver recomputes fact at each iteration anyway
+            #     KKT_mat[diagind(KKT_mat)] .+= (solver.ρ .- ρ_old)
+            #     linsys_solver = cholesky(KKT_mat)
+        end
+
+
+
+         # --- Update preconditioner ---
+         if options.precondition && t % options.sketch_update_iter == 0
+            update_preconditioner!(solver, options)
+        end
 
 
         # --- Logging ---
