@@ -37,6 +37,15 @@ function update!(H::MLHessianOperator, solver)
     return nothing
 end
 
+struct ConicHessianOperator{
+    T <: Real,
+    M <: AbstractMatrix{T}
+} <: HessianOperator
+    P::M
+end
+LinearAlgebra.mul!(y, H::ConicHessianOperator, x) = mul!(y, H.P, x)
+
+
 function update!(::HessianOperator, solver)
     return nothing
 end

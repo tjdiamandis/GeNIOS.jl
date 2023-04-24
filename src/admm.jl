@@ -6,7 +6,11 @@ function build_preconditioner!(solver::Solver, options::SolverOptions)
     return (time_ns() - precond_time_start) / 1e9
 end
 
-function build_preconditioner!(solver::GenericSolver)
+# Conic solver currently defaults here
+# TODO: possibly want to include ρMᵀM in the preconditioner??
+# - would need to estimate the smallest eigenvalue for the regularization, I think
+# - alternatively, could use the OSQP approach
+function build_preconditioner!(solver::Solver)
     update!(solver.lhs_op.Hf_xk, solver)
     ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, solver.r0; n=solver.lhs_op.n)
     solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ)
@@ -16,11 +20,13 @@ end
 function build_preconditioner!(solver::MLSolver)
     update!(solver.lhs_op.Hf_xk, solver)
     ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, solver.r0; n=solver.lhs_op.n)
+    
+    # Adds the ℓ2 regularization term to the preconditioner
     solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ + solver.λ2)
     return nothing
 end
 
-function update_preconditioner!(solver::GenericSolver, options::SolverOptions)
+function update_preconditioner!(solver::Solver, options::SolverOptions)
     !options.update_preconditioner && return nothing
     update!(solver.lhs_op.Hf_xk, solver)
     ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, solver.r0; n=solver.lhs_op.n)
@@ -32,7 +38,19 @@ function update_preconditioner!(solver::MLSolver, options::SolverOptions)
     !options.update_preconditioner && return nothing
     update!(solver.lhs_op.Hf_xk, solver)
     ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, solver.r0; n=solver.lhs_op.n)
+
+    # Adds the ℓ2 regularization term to the preconditioner
     solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ + solver.λ2)
+    return nothing
+end
+
+function update_preconditioner_rho!(solver::Solver, options::SolverOptions)
+    solver.P = RP.NystromPreconditionerInverse(solver.P.A_nys, solver.ρ)
+    return nothing
+end
+
+function update_preconditioner_rho!(solver::MLSolver, options::SolverOptions)
+    solver.P = RP.NystromPreconditionerInverse(solver.P.A_nys, solver.ρ + solver.λ2)
     return nothing
 end
 
@@ -137,6 +155,10 @@ function obj_val!(solver::MLSolver, options::SolverOptions)
         solver.λ1*norm(solver.zk, 1) + solver.λ2*sum(abs2, solver.zk)
 end
 
+function obj_val!(solver::ConicSolver, options::SolverOptions)
+    solver.obj_val = 0.5*dot(solver.xk, solver.data.P, solver.xk) + dot(solver.data.q, solver.xk)
+end
+
 
 function dual_gap!(::Solver, ::SolverOptions)
     return nothing
@@ -196,6 +218,17 @@ function compute_rhs!(solver::MLSolver)
     return nothing
 end
 
+function compute_rhs!(solver::ConicSolver)
+    # RHS = ∇²f(xᵏ)xᵏ - ∇f(xᵏ) - ρAᵀ(zᵏ - c + uᵏ) = -q - ρAᵀ(zᵏ - c + uᵏ)
+    @. solver.cache.vn = -solver.data.q
+    
+    @. solver.cache.vm = solver.zk - solver.data.c + solver.uk
+    mul!(solver.cache.rhs, solver.data.M', solver.cache.vm)
+    @. solver.cache.rhs = solver.cache.vn - solver.ρ * solver.cache.rhs
+    
+    return nothing
+end
+
 
 function update_x!(
     solver::Solver,
@@ -244,7 +277,8 @@ function update_Ax!(solver::MLSolver{T}, options::SolverOptions) where {T}
     return nothing
 end
 
-function update_Ax!(solver::GenericSolver{T}, options::SolverOptions) where {T}
+function update_Ax!(solver::Solver, options::SolverOptions)
+    T = eltype(solver.xk)
     if options.relax
         mul!(solver.cache.vm, solver.data.M, solver.xk)
         @. solver.Mxk = solver.α * solver.cache.vm + (one(T) - solver.α) * solver.zk
@@ -260,6 +294,7 @@ function update_z!(solver::Solver, options::SolverOptions)
     
     # prox_{g/ρ}(v) = prox_{g/ρ}( -(Axᵏ⁺¹ - c + uᵏ⁺¹) )
     solver.data.prox_g!(solver.zk, solver.cache.vm, solver.ρ)
+    return nothing
 end
 
 function update_z!(solver::MLSolver, options::SolverOptions)
@@ -269,6 +304,15 @@ function update_z!(solver::MLSolver, options::SolverOptions)
     @. solver.cache.vm += -solver.uk + solver.data.c
     
     solver.zk .= soft_threshold.(solver.cache.vm, solver.λ1/solver.ρ)
+    return nothing
+end
+
+function update_z!(solver::ConicSolver, options::SolverOptions)
+    solver.cache.vm .= -solver.Mxk
+    @. solver.cache.vm += -solver.uk + solver.data.c
+
+    project!(solver.zk, solver.data.K, solver.cache.vm)
+    return nothing
 end
 
 function update_u!(solver::Solver, options::SolverOptions)
@@ -374,7 +418,7 @@ function solve!(
             updated_rho = update_rho!(solver)
 
             if updated_rho
-                P = RP.NystromPreconditionerInverse(P.A_nys, solver.ρ + solver.λ2)
+                update_preconditioner_rho!(solver, options)
             end
             # if updated_rho && !indirect && typeof(solver) <: LassoSolver
             #     # NOTE: logistic solver recomputes fact at each iteration anyway

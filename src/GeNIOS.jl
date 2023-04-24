@@ -11,6 +11,7 @@ using LogExpFunctions: log1pexp, logistic
 const RP = RandomizedPreconditioners
 
 include("linsys.jl")
+include("cones.jl")
 include("types.jl")
 include("utils.jl")
 include("admm.jl")
