@@ -54,25 +54,6 @@ function update_preconditioner_rho!(solver::MLSolver, options::SolverOptions)
     return nothing
 end
 
-function compute_residuals(solver::Solver, options::SolverOptions)
-    A = solver.A
-    x, z, z_old, = solver.xk, solver.zk, solver.zk_old
-    rp, rd = solver.rp, solver.rd
-    rp_norm, rd_norm = solver.rp_norm, solver.rd_norm
-    
-    # primal residual
-    mul!(rp, A, x)
-    @. rp -= z
-    rp_norm = norm(rp, options.norm_type)
-
-    # dual residual
-    @. solver.cache.vm = z - z_old
-    mul!(rd, A', solver.cache.m)
-    rd_norm = norm(rd, options.norm_type)
-
-    return nothing
-end
-
 function update_rho!(solver::Solver)
     # TODO:
     # https://proceedings.mlr.press/v54/xu17a/xu17a.pdf
