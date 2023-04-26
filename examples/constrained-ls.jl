@@ -1,5 +1,5 @@
 #=
-# Constrained Least squares
+# Constrained Least Squares
 This example setsup a constrained least squares problem using the quadratic program interface
 of GeNIOS.jl. It is from the [OSQP docs](https://osqp.org/docs/examples/least-squares.html).
 
@@ -76,7 +76,7 @@ res = solve!(
         max_iters=1000, 
         eps_abs=1e-6, 
         eps_rel=1e-6, 
-        verbose=false)
+        verbose=true)
 );
 
 #=
