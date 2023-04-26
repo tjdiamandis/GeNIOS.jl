@@ -36,31 +36,31 @@ res = solve!(
         eps_rel=1e-6,
         verbose=true)
 );</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  1.491s
+Setup in  1.281s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      0.000e+00            Inf            Inf      1.000e+00         0.000
-            1      0.000e+00      5.069e+00      2.059e+01      1.000e+00         2.981
-           10      5.270e+00      3.279e-01      2.391e-02      1.000e+00         3.082
-           20      6.446e+00      1.525e-01      1.437e-02      1.000e+00         3.084
-           30      7.028e+00      8.361e-02      3.373e-03      1.000e+00         3.084
-           40      7.315e+00      5.092e-02      1.795e-03      1.000e+00         3.085
-           50      7.467e+00      3.296e-02      1.047e-03      2.000e+00         3.176
-           60      7.600e+00      1.560e-02      1.649e-03      2.000e+00         3.177
-           70      7.652e+00      8.002e-03      6.763e-04      2.000e+00         3.178
-           80      7.674e+00      4.288e-03      3.063e-04      2.000e+00         3.179
-           90      7.684e+00      2.348e-03      1.524e-04      2.000e+00         3.180
-          100      7.689e+00      1.297e-03      8.085e-05      4.000e+00         3.181
-          110      7.693e+00      4.137e-04      1.059e-04      4.000e+00         3.182
-          120      7.694e+00      1.320e-04      3.373e-05      4.000e+00         3.182
-          130      7.694e+00      4.213e-05      1.080e-05      4.000e+00         3.183
-          140      7.694e+00      1.345e-05      3.455e-06      4.000e+00         3.184
-          141      7.694e+00      1.200e-05      3.083e-06      4.000e+00         3.185
+            1      0.000e+00      5.069e+00      2.059e+01      1.000e+00         2.739
+           10      5.270e+00      3.279e-01      2.391e-02      1.000e+00         2.809
+           20      6.446e+00      1.525e-01      1.437e-02      1.000e+00         2.810
+           30      7.028e+00      8.361e-02      3.373e-03      1.000e+00         2.810
+           40      7.315e+00      5.092e-02      1.795e-03      1.000e+00         2.811
+           50      7.467e+00      3.296e-02      1.047e-03      2.000e+00         2.887
+           60      7.600e+00      1.560e-02      1.649e-03      2.000e+00         2.888
+           70      7.652e+00      8.002e-03      6.763e-04      2.000e+00         2.889
+           80      7.674e+00      4.288e-03      3.063e-04      2.000e+00         2.890
+           90      7.684e+00      2.348e-03      1.524e-04      2.000e+00         2.890
+          100      7.689e+00      1.297e-03      8.085e-05      4.000e+00         2.891
+          110      7.693e+00      4.137e-04      1.059e-04      4.000e+00         2.892
+          120      7.694e+00      1.320e-04      3.373e-05      4.000e+00         2.893
+          130      7.694e+00      4.213e-05      1.080e-05      4.000e+00         2.894
+          140      7.694e+00      1.345e-05      3.456e-06      4.000e+00         2.895
+          141      7.694e+00      1.200e-05      3.083e-06      4.000e+00         2.895
 
-Solved in  3.185s, 141 iterations
-Total time:  4.676s
+Solved in  2.895s, 141 iterations
+Total time:  4.176s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</code></pre><h2 id="Examining-the-solution"><a class="docs-heading-anchor" href="#Examining-the-solution">Examining the solution</a><a id="Examining-the-solution-1"></a><a class="docs-heading-anchor-permalink" href="#Examining-the-solution" title="Permalink"></a></h2><p>We can check the solution and its optimality</p><pre><code class="language-julia hljs">xstar = solver.zk[m+1:end]
 ls_residual =  1/√(m) * norm(Ad*xstar - b)
 feas = all(xstar .&gt;= 0) &amp;&amp; all(xstar .&lt;= 1)
@@ -70,4 +70,4 @@ println(&quot;Primal residual: $(round(solver.rp_norm, digits=8))&quot;)
 println(&quot;Dual residual: $(round(solver.rd_norm, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Is feasible? true
 Least Squres RMSE = 0.71620899
 Primal residual: 1.2e-5
-Dual residual: 3.08e-6</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../method/">« Solution method</a><a class="docs-footer-nextpage" href="../lasso/">Lasso »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Wednesday 26 April 2023 20:24">Wednesday 26 April 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Dual residual: 3.08e-6</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../method/">« Solution method</a><a class="docs-footer-nextpage" href="../lasso/">Lasso »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Wednesday 26 April 2023 20:36">Wednesday 26 April 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
