@@ -11,4 +11,5 @@ include("utils.jl")
 end
 @testset "Quadratic Programs" begin
     include("portfolio.jl")
+    include("randqp.jl")
 end

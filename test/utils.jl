@@ -38,3 +38,18 @@ function test_optimality_conditions(solver::GeNIOS.MLSolver, tol)
     
     return nothing
 end
+
+
+function generate_random_qp(n; rseed=1)
+    Random.seed!(rseed)
+    m = 10n
+    α = 1e-2
+    P = Diagonal(vcat(α*ones(n), ones(n)))
+    q = vcat(randn(n), zeros(n))
+    MM = sprandn(n, n, 0.15)
+    M = [sprandn(m, n, 0.15) zeros(m, n) ; MM I]
+    u = vcat(rand(m), zeros(n))
+    l = vcat(-rand(m), zeros(n))
+
+    return P, q, M, l, u
+end
