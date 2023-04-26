@@ -148,6 +148,11 @@ function ConicSolver(P, q, K, M, c::Vector{T}; ρ=1.0, α=1.0) where {T}
     )
 end
 
+function QPSolver(P, q, M, l, u; ρ=1.0, α=1.0)
+    m = size(M, 1)
+    return ConicSolver(P, q, IntervalCone(l, u), -M, zeros(m), ρ=ρ, α=α)
+end
+
 mutable struct MLSolver{T} <: Solver
     data::MLProblemData{T}      # data
     lhs_op::LinearOperator      # LinerOperator for LHS of x update system
