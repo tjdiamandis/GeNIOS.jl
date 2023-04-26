@@ -41,7 +41,7 @@ b = A*xstar + 1e-3*randn(n)
 γ = 0.05*γmax
 
 
-@testset "Generic" begin
+@testset "Lasso - Generic" begin
     # Lasso Hessian operator
     # 1/2||Ax - b|| + γ||x||₁
     # ∇²f(x) = AᵀA
@@ -92,7 +92,7 @@ b = A*xstar + 1e-3*randn(n)
     test_optimality_conditions_lasso(solver, 5e-3, A, b)
 end
 
-@testset "ML solver" begin
+@testset "Lasso - MLSolver" begin
     # # Lasso problem: min 1/2 ||Ax - b||² + γ||x||₁
     f2(x) = 0.5*x^2 
     df2(x) = x

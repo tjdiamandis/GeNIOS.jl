@@ -1,6 +1,7 @@
 function test_optimality_conditions(solver::GeNIOS.MLSolver, tol)
     xstar = solver.zk
     v = solver.cache.vn2
+    γ = solver.λ1
 
     # v = Aᵀ(∇f(Ax - b)) + λ₂x
     mul!(solver.cache.vN, solver.data.Adata, xstar)
@@ -28,7 +29,7 @@ function test_optimality_conditions(solver::GeNIOS.MLSolver, tol)
     v .+= solver.λ2 .* xstar
 
     # ∇f(x) + Aᵀu = 0
-    @test all(v - solver.uk .<= tol)
+    @test all(abs.(v - solver.uk) .<= tol)
 
     # ∂g(z) + u = 0
     @test all(abs.(@. γ + solver.uk[pos_inds]) .<= tol)

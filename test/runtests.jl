@@ -5,8 +5,9 @@ using LinearAlgebra, SparseArrays
 using Random
 
 include("utils.jl")
-@testset "Lasso" begin
+@testset "Machine Learning" begin
     include("lasso.jl")
+    include("logistic.jl")
 end
 @testset "Quadratic Programs" begin
     include("portfolio.jl")
