@@ -256,12 +256,11 @@ end
 Base.@kwdef struct SolverOptions{T <: Real, S <: Real}
     relax::Bool = true
     logging::Bool = true
-    indirect::Bool = false
     precondition::Bool = true
     tol::T = 1e-4
     max_iters::Int = 100
     max_time_sec::T = 1200.0
-    print_iter::Int = 1
+    print_iter::Int = 10
     rho_update_iter::Int = 50
     sketch_update_iter::Int = 20
     verbose::Bool = true

@@ -323,7 +323,7 @@ function solve!(
     m, n = solver.data.m, solver.data.n
 
     # --- setup ---
-    t = 1
+    t = 0
     solver.dual_gap = Inf
     solver.obj_val = Inf
     solver.loss = Inf
@@ -372,9 +372,10 @@ function solve!(
     # --------------------- ITERATIONS -----------------------------------------
     # --------------------------------------------------------------------------
     solve_time_start = time_ns()
-    while t <= options.max_iters && 
+    while t < options.max_iters && 
         (time_ns() - solve_time_start) / 1e9 < options.max_time_sec &&
         !converged(solver, options)
+        t += 1
 
 
         # --- ADMM iterations ---
@@ -438,11 +439,10 @@ function solve!(
             )
         end
 
-        t += 1
     end
 
     # --- Print Final Iteration ---
-    if options.verbose && ((t-1) % options.print_iter != 0 && (t-1) != 1)
+    if options.verbose && (t % options.print_iter != 0 && t != 1)
         print_iter_func(
             iter_fmt,
             iter_data(solver, options, t, (time_ns() - solve_time_start) / 1e9)
@@ -451,7 +451,7 @@ function solve!(
 
     # --- Print Footer ---
     solve_time = (time_ns() - solve_time_start) / 1e9
-    options.verbose && @printf("\nSolved in %6.3fs, %d iterations\n", solve_time, t-1)
+    options.verbose && @printf("\nSolved in %6.3fs, %d iterations\n", solve_time, t)
     options.verbose && @printf("Total time: %6.3fs\n", setup_time + solve_time)
     options.verbose && print_footer()
 
