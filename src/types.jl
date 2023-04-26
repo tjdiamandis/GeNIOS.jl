@@ -185,7 +185,7 @@ function MLSolver(f,
     λ2,
     Adata::AbstractMatrix{T},
     bdata::AbstractVector{T}; 
-    fconj=x->error("fconj not defined"),
+    fconj=x->error(ArgumentError("dual gap used but fconj not defined")),
     ρ=1.0,
     α=1.0
 ) where {T}

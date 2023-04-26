@@ -75,7 +75,7 @@ function update_rho!(solver::Solver)
     return false
 end
 
-function converged(solver::Solver, options::SolverOptions)
+function converged(solver::Solver, options::SolverOptions, backup=true)
     mul!(solver.cache.vm, solver.data.M, solver.xk)
     norm_Ax = norm(solver.cache.vm)
     norm_z = norm(solver.zk)
@@ -93,31 +93,8 @@ function converged(solver::MLSolver, options::SolverOptions)
     if options.use_dual_gap
         return solver.dual_gap ≤ options.tol
     end
-
-    #TODO: remove repeat code
-    # TODO: maybe norm computation should be in its own thing?
-    mul!(solver.cache.vm, solver.data.M, solver.xk)
-    norm_Ax = norm(solver.cache.vm)
-    norm_z = norm(solver.zk)
-    norm_c = norm(solver.data.c)
-    eps_pri = sqrt(solver.data.m) * options.eps_abs + options.eps_rel * max(norm_Ax, norm_z, norm_c)
-
-    mul!(solver.cache.vn, solver.data.M', solver.uk)
-    norm_Aty = norm(solver.cache.vn)
-    eps_dual = sqrt(solver.data.n) * options.eps_abs + options.eps_rel * norm_Aty
-
-    return solver.rp_norm ≤ eps_pri && solver.rd_norm ≤ eps_dual
-end
-
-# Used to implement custom convergence criteria (e.g., via dual gap)
-function convergence_criteria!(solver::Solver, options::SolverOptions)
-    return nothing
-end
-
-# Comptues dual gap TODO:
-function convergence_criteria!(solver::MLSolver, options::SolverOptions)
-    # TODO: stuff dual gap logic into here
-    return nothing
+    
+    return converged(solver, options, true)
 end
 
 # TODO: switch to zk for f?????
@@ -140,13 +117,13 @@ function obj_val!(solver::ConicSolver, options::SolverOptions)
     solver.obj_val = 0.5*dot(solver.xk, solver.data.P, solver.xk) + dot(solver.data.q, solver.xk)
 end
 
-
-function dual_gap!(::Solver, ::SolverOptions)
+# Used to implement custom convergence criteria (e.g., via dual gap)
+function convergence_criteria!(::Solver, ::SolverOptions)
     return nothing
 end
 
 # TODO: opportunities for optimization for logistic and lasso
-function dual_gap!(solver::MLSolver, options::SolverOptions)
+function convergence_criteria!(solver::MLSolver, options::SolverOptions)
     !options.use_dual_gap && return nothing
 
     ν = solver.cache.vN
@@ -335,7 +312,7 @@ function solve!(
     solver.uk .= zeros(m)
     # Computed variables
     obj_val!(solver, options)
-    dual_gap!(solver, options)
+    convergence_criteria!(solver, options)
 
 
     # --- enable multithreaded BLAS ---
@@ -389,8 +366,6 @@ function solve!(
         # --- Update objective & dual gap ---
         # Also updates pred = Adata*xk - bdata for MLSolver 
         obj_val!(solver, options)
-        dual_gap!(solver, options)
-        #TODO: maybe get rid of below?? Or generalize with dual gap?
         convergence_criteria!(solver, options)
 
 

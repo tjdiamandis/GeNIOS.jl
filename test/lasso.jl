@@ -27,7 +27,7 @@ end
 
 
 Random.seed!(1)
-n, p = 2_000, 4_000
+n, p = 200, 400
 r = 1000
 # A = randn(n, r) * Diagonal(.96 .^ (0:r-1)) * randn(r, p)
 A = randn(n, p)
@@ -56,7 +56,7 @@ b = A*xstar + 1e-3*randn(n)
         return nothing
     end
     
-    function update!(::HessianLasso, ::AbstractVector)
+    function update!(::HessianLasso, ::Solver)
         return nothing
     end
     
@@ -105,12 +105,14 @@ end
     bdata = copy(b)
     solver2 = GeNIOS.MLSolver(f2, df2, d2f2, λ1, λ2, Adata, bdata; fconj=f2conj)
     res = solve!(solver2; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, tol=1e-3, verbose=false))
-
     test_optimality_conditions(solver2, 5e-3)
 
     λ2 = λ1/10
     solver_en = GeNIOS.MLSolver(f2, df2, d2f2, λ1, λ2, Adata, bdata; fconj=f2conj)
     res = solve!(solver_en; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, tol=1e-3, verbose=false))
-    
     test_optimality_conditions(solver_en, 5e-3)
+
+    solver_dg = GeNIOS.MLSolver(f2, df2, d2f2, λ1, λ2, Adata, bdata)
+    res = solve!(solver_dg; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=false, verbose=false))
+    test_optimality_conditions(solver_dg, 5e-3)
 end
