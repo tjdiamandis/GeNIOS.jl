@@ -262,9 +262,9 @@ Base.@kwdef struct SolverOptions{T <: Real, S <: Real}
     logging::Bool = true
     precondition::Bool = true
     tol::T = 1e-4
-    max_iters::Int = 100
+    max_iters::Int = 1000
     max_time_sec::T = 1200.0
-    print_iter::Int = 10
+    print_iter::Int = 25
     rho_update_iter::Int = 50
     sketch_update_iter::Int = 20
     verbose::Bool = true

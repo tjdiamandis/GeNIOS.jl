@@ -429,7 +429,7 @@ function solve!(
     if !converged(solver, options)
         options.verbose && @printf("\nWARNING: did not converge after %d iterations, %6.3fs:", t, solve_time)
         if t >= options.max_iters
-            options.verbose && @printf(" (max iterations reached)∇")
+            options.verbose && @printf(" (max iterations reached)\n")
         elseif (time_ns() - solve_time_start) / 1e9 >= options.max_time_sec
             options.verbose && @printf(" (max time reached)\n")
         end
