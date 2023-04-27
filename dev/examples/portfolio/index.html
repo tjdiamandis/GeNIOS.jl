@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Markowitz Portfolio Optimization · GeNIOS.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://tjdiamandis.github.io/GeNIOS.jl/examples/portfolio/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">GeNIOS.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../method/">Solution method</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../constrained-ls/">Constrained Least Squares</a></li><li><a class="tocitem" href="../lasso/">Lasso</a></li><li class="is-active"><a class="tocitem" href>Markowitz Portfolio Optimization</a><ul class="internal"><li><a class="tocitem" href="#Generating-the-problem-data"><span>Generating the problem data</span></a></li><li><a class="tocitem" href="#QPSolver-interface"><span>QPSolver interface</span></a></li><li><a class="tocitem" href="#GenericSolver-interface"><span>GenericSolver interface</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../../api/">API reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Markowitz Portfolio Optimization</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Markowitz Portfolio Optimization</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/tjdiamandis/GeNIOS.jl/blob/main/examples/portfolio.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><p>The source files for all examples can be found in <a href="https://github.com/tjdiamandis/GeNIOS.jl/tree/main/examples">/examples</a>.</p><h1 id="Markowitz-Portfolio-Optimization"><a class="docs-heading-anchor" href="#Markowitz-Portfolio-Optimization">Markowitz Portfolio Optimization</a><a id="Markowitz-Portfolio-Optimization-1"></a><a class="docs-heading-anchor-permalink" href="#Markowitz-Portfolio-Optimization" title="Permalink"></a></h1><p>This example shows how to solve a Markowitz portfolio optimization problem using both the generic and the QP interface of GeNIOS.</p><p>Specifically, we want to solve the problem</p><p class="math-container">\[\begin{array}{ll}
+\text{minimize}     &amp; (1/2)\gamma x^T\Sigma x - \mu^Tx \\
+\text{subject to}   &amp; \mathbf{1}^Tx = 1 \\
+                    &amp; x \geq 0,
+\end{array}\]</p><p>where <span>$\Sigma$</span> is the covariance matrix of the returns of the assets, <span>$\mu$</span> is the expected return of each asset, and <span>$\gamma$</span> is a risk adversion parameter. The variable <span>$x$</span> represents the fraction of the total wealth invested in each asset.</p><pre><code class="language-julia hljs">using GeNIOS
+using Random, LinearAlgebra, SparseArrays</code></pre><h2 id="Generating-the-problem-data"><a class="docs-heading-anchor" href="#Generating-the-problem-data">Generating the problem data</a><a id="Generating-the-problem-data-1"></a><a class="docs-heading-anchor-permalink" href="#Generating-the-problem-data" title="Permalink"></a></h2><p>Note that we generate the covariance matrix <span>$\Sigma$</span> as a diagonal plus low-rank matrix, which is a common model for financial data and referred to as a &#39;factor model&#39;</p><pre><code class="language-julia hljs">Random.seed!(1)
+k = 5
+n = 50k
+# Σ = F*F&#39; + diag(d)
+F = sprandn(n, k, 0.5)
+d = rand(n) * sqrt(k)
+μ = randn(n)
+γ = 1;</code></pre><h2 id="QPSolver-interface"><a class="docs-heading-anchor" href="#QPSolver-interface">QPSolver interface</a><a id="QPSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#QPSolver-interface" title="Permalink"></a></h2><p>The easiest interface for this problem is the <code>QPSolver</code>, where we just need to specify <span>$P$</span>, <span>$q$</span>, <span>$M$</span>, <span>$l$</span>, and <span>$u$</span>. The Markowitz portfolio optimization problem is equivalent to the following &#39;standard form&#39; QP:</p><p class="math-container">\[\begin{array}{ll}
+\text{minimize}     &amp; (1/2)x^T(\gamma \Sigma) x + (-\mu)Tx \\
+\text{subject to}   &amp;
+\begin{bmatrix}1 \\ 0\end{bmatrix}
+\leq \begin{bmatrix} I \\ \mathbf{1}^T \end{bmatrix} x
+\leq \begin{bmatrix}\infty \\ 1\end{bmatrix}
+\end{array}\]</p><pre><code class="language-julia hljs">P = γ*(F*F&#39; + Diagonal(d))
+q = -μ
+M = vcat(I, ones(1, n))
+l = vcat(zeros(n), ones(1))
+u = vcat(Inf*ones(n), ones(1))
+solver = GeNIOS.QPSolver(P, q, M, l, u)
+res = solve!(solver)
+println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
+Setup in  0.001s
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    Iteration        Obj Val       r_primal         r_dual              ρ           Time
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+            0      0.000e+00            Inf            Inf      1.000e+00         0.000
+            1     -1.102e+02      6.829e+00      1.984e+01      1.000e+00         0.045
+           25     -6.138e+00      1.577e-01      4.322e-02      1.000e+00         0.062
+           50     -3.890e+00      6.653e-02      7.218e-03      1.000e+00         0.079
+           75     -3.122e+00      3.859e-02      3.957e-03      1.000e+00         0.096
+          100     -2.707e+00      2.420e-02      2.171e-03      2.000e+00         0.118
+          125     -2.356e+00      1.276e-02      3.284e-03      2.000e+00         0.136
+          150     -2.228e+00      7.800e-03      1.588e-03      2.000e+00         0.157
+          175     -2.164e+00      4.947e-03      8.881e-04      2.000e+00         0.179
+          200     -2.128e+00      3.181e-03      5.252e-04      2.000e+00         0.201
+          225     -2.107e+00      2.060e-03      3.210e-04      2.000e+00         0.224
+          237     -2.101e+00      1.675e-03      2.555e-04      2.000e+00         0.235
+
+SOLVED in  0.235s, 237 iterations
+Total time:  0.236s
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Optimal value: -2.1006</code></pre><h2 id="GenericSolver-interface"><a class="docs-heading-anchor" href="#GenericSolver-interface">GenericSolver interface</a><a id="GenericSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#GenericSolver-interface" title="Permalink"></a></h2><p>The <code>GenericSolver</code> interface is more flexible and allows for some speedups via an alternative problem splitting. We will solve the problem</p><p class="math-container">\[\begin{array}{ll}
+\text{minimize}     &amp; (1/2)\gamma x^T\Sigma x - \mu^Tx + I(z) \\
+\text{subject to}   &amp; -x + z = 0
+\end{array}\]</p><p>where <span>$I(z)$</span> is the indicator function for the set <span>$\{z \mid z \ge 0 \text{ and } \mathbf{1}^Tz = 1\}$</span>. The gradient and Hessian of <span>$f(x) = (1/2)\gamma x^T\Sigma x$</span> are easy to compute. The proximal operator of <span>$g(z) = I(z)$</span> is simply the projection on this set, which can be solved via a one-dimensional root-finding problem (see appendix ?? of [our paper]).</p><pre><code class="language-julia hljs"># f(x) = γ/2 xᵀ(FFᵀ + D)x - μᵀx
+function f(x, F, d, μ, γ, tmp)
+    mul!(tmp, F&#39;, x)
+    qf = sum(w-&gt;w^2, tmp)
+    qf += sum(i-&gt;d[i]*x[i]^2, 1:n)
+
+    return γ/2 * qf - dot(μ, x)
+end
+f(x) = f(x, F, d, μ, γ, zeros(k))
+
+#  ∇f(x) = γ(FFᵀ + D)x - μ
+function grad_f!(g, x, F, d, μ, γ, tmp)
+    mul!(tmp, F&#39;, x)
+    mul!(g, F, tmp)
+    @. g += d*x
+    @. g *= γ
+    @. g -= μ
+    return nothing
+end
+grad_f!(g, x) = grad_f!(g, x, F, d, μ, γ, zeros(k))
+
+# ∇²f(x) = γ(FFᵀ + D)
+struct HessianMarkowitz{T, S &lt;: AbstractMatrix{T}} &lt;: HessianOperator
+    F::S
+    d::Vector{T}
+    vk::Vector{T}
+end
+function LinearAlgebra.mul!(y, H::HessianMarkowitz, x)
+    mul!(H.vk, H.F&#39;, x)
+    mul!(y, H.F, H.vk)
+    @. y += d*x
+    return nothing
+end
+Hf = HessianMarkowitz(F, d, zeros(k))
+
+# g(z) = I(z)
+function g(z)
+    T = eltype(z)
+    return all(z .&gt;= zero(T)) &amp;&amp; abs(sum(z) - one(T)) &lt; 1e-6 ? 0 : Inf
+end
+function prox_g!(v, z, ρ)
+    z_max = maximum(w-&gt;abs(w), z)
+    l = -z_max - 1
+    u = z_max
+
+    # bisection search to find zero of F
+    while u - l &gt; 1e-8
+        m = (l + u) / 2
+        if sum(w-&gt;max(w - m, zero(eltype(z))), z) - 1 &gt; 0
+            l = m
+        else
+            u = m
+        end
+    end
+    ν = (l + u) / 2
+    @. v = max(z - ν, zero(eltype(z)))
+    return nothing
+end
+
+solver = GeNIOS.GenericSolver(
+    f, grad_f!, Hf,         # f(x)
+    g, prox_g!,             # g(z)
+    -I, zeros(n);           # M, c: Mx + z = c
+)
+res = solve!(solver)
+println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
+Setup in  0.854s
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    Iteration        Obj Val       r_primal         r_dual              ρ           Time
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+            0            Inf            Inf            Inf      1.000e+00         0.000
+            1     -1.146e+02      9.063e+00      5.329e-01      1.000e+00         0.646
+           25     -2.103e+00      3.149e-02      5.332e-03      1.000e+00         0.649
+           50     -2.087e+00      8.506e-03      8.846e-04      1.000e+00         0.651
+           75     -2.081e+00      6.340e-03      2.313e-04      1.000e+00         0.654
+          100     -2.080e+00      4.912e-03      1.660e-04      2.000e+00         0.657
+          125     -2.078e+00      3.008e-03      3.731e-04      2.000e+00         0.660
+          150     -2.077e+00      1.851e-03      2.187e-04      2.000e+00         0.663
+          157     -2.076e+00      1.617e-03      1.898e-04      2.000e+00         0.664
+
+SOLVED in  0.664s, 157 iterations
+Total time:  1.519s
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Optimal value: -2.0764</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../lasso/">« Lasso</a><a class="docs-footer-nextpage" href="../../api/">API reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 27 April 2023 11:35">Thursday 27 April 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
