@@ -12,7 +12,7 @@ Depth = 1
 ```
 ##### Examples:
 ```@contents
-Pages = ["examples/constrained-ls.md", "examples/lasso.md"]
+Pages = ["examples/constrained-ls.md", "examples/lasso.md", "examples/portfolio.md"]
 Depth = 1
 ```
 
