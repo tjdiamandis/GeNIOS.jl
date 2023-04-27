@@ -150,6 +150,10 @@ end
 
 function QPSolver(P, q, M, l, u; ρ=1.0, α=1.0)
     m = size(M, 1)
+    # Optimal QP step size: https://www.merl.com/publications/docs/TR2014-050.pdf
+    # - perhaps estimate with randomized method??
+    # - strictly convex case
+    # ρ = sqrt(λmin(P)*λmax(P))
     return ConicSolver(P, q, IntervalCone(l, u), -M, zeros(m), ρ=ρ, α=α)
 end
 

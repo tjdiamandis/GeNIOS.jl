@@ -93,7 +93,7 @@ function converged(solver::MLSolver, options::SolverOptions)
     if options.use_dual_gap
         return solver.dual_gap ≤ options.tol
     end
-    
+
     return converged(solver, options, true)
 end
 
@@ -426,8 +426,17 @@ function solve!(
 
     # --- Print Footer ---
     solve_time = (time_ns() - solve_time_start) / 1e9
-    options.verbose && @printf("\nSolved in %6.3fs, %d iterations\n", solve_time, t)
-    options.verbose && @printf("Total time: %6.3fs\n", setup_time + solve_time)
+    if !converged(solver, options)
+        options.verbose && @printf("\nWARNING: did not converge after %d iterations, %6.3fs:", t, solve_time)
+        if t >= options.max_iters
+            options.verbose && @printf(" (max iterations reached)∇")
+        elseif (time_ns() - solve_time_start) / 1e9 >= options.max_time_sec
+            options.verbose && @printf(" (max time reached)\n")
+        end
+    else
+        options.verbose && @printf("\nSOLVED in %6.3fs, %d iterations\n", solve_time, t)
+        options.verbose && @printf("Total time: %6.3fs\n", setup_time + solve_time)
+    end 
     options.verbose && print_footer()
 
 
