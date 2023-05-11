@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Markowitz Portfolio Optimization · GeNIOS.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://tjdiamandis.github.io/GeNIOS.jl/examples/portfolio/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">GeNIOS.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../method/">Solution method</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../constrained-ls/">Constrained Least Squares</a></li><li><a class="tocitem" href="../lasso/">Lasso</a></li><li><a class="tocitem" href="../logistic/">Logistic Regression</a></li><li class="is-active"><a class="tocitem" href>Markowitz Portfolio Optimization</a><ul class="internal"><li><a class="tocitem" href="#Generating-the-problem-data"><span>Generating the problem data</span></a></li><li><a class="tocitem" href="#QPSolver-interface"><span>QPSolver interface</span></a></li><li><a class="tocitem" href="#GenericSolver-interface"><span>GenericSolver interface</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../../api/">API reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Markowitz Portfolio Optimization</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Markowitz Portfolio Optimization</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/tjdiamandis/GeNIOS.jl/blob/main/examples/portfolio.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><p>The source files for all examples can be found in <a href="https://github.com/tjdiamandis/GeNIOS.jl/tree/main/examples">/examples</a>.</p><h1 id="Markowitz-Portfolio-Optimization"><a class="docs-heading-anchor" href="#Markowitz-Portfolio-Optimization">Markowitz Portfolio Optimization</a><a id="Markowitz-Portfolio-Optimization-1"></a><a class="docs-heading-anchor-permalink" href="#Markowitz-Portfolio-Optimization" title="Permalink"></a></h1><p>This example shows how to solve a Markowitz portfolio optimization problem using both the generic and the QP interface of GeNIOS.</p><p>Specifically, we want to solve the problem</p><p class="math-container">\[\begin{array}{ll}
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Markowitz Portfolio Optimization · GeNIOS.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://tjdiamandis.github.io/GeNIOS.jl/examples/portfolio/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">GeNIOS.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../method/">Solution method</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../constrained-ls/">Constrained Least Squares</a></li><li><a class="tocitem" href="../huber/">Huber Fitting</a></li><li><a class="tocitem" href="../lasso/">Lasso</a></li><li><a class="tocitem" href="../logistic/">Logistic Regression</a></li><li class="is-active"><a class="tocitem" href>Markowitz Portfolio Optimization</a><ul class="internal"><li><a class="tocitem" href="#Generating-the-problem-data"><span>Generating the problem data</span></a></li><li><a class="tocitem" href="#QPSolver-interface"><span>QPSolver interface</span></a></li><li><a class="tocitem" href="#GenericSolver-interface"><span>GenericSolver interface</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../../api/">API reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Markowitz Portfolio Optimization</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Markowitz Portfolio Optimization</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/tjdiamandis/GeNIOS.jl/blob/main/examples/portfolio.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><p>The source files for all examples can be found in <a href="https://github.com/tjdiamandis/GeNIOS.jl/tree/main/examples">/examples</a>.</p><h1 id="Markowitz-Portfolio-Optimization"><a class="docs-heading-anchor" href="#Markowitz-Portfolio-Optimization">Markowitz Portfolio Optimization</a><a id="Markowitz-Portfolio-Optimization-1"></a><a class="docs-heading-anchor-permalink" href="#Markowitz-Portfolio-Optimization" title="Permalink"></a></h1><p>This example shows how to solve a Markowitz portfolio optimization problem using both the generic and the QP interface of GeNIOS.</p><p>Specifically, we want to solve the problem</p><p class="math-container">\[\begin{array}{ll}
 \text{minimize}     &amp; (1/2)\gamma x^T\Sigma x - \mu^Tx \\
 \text{subject to}   &amp; \mathbf{1}^Tx = 1 \\
                     &amp; x \geq 0,
@@ -25,40 +25,40 @@ u = vcat(Inf*ones(n), ones(1))
 solver = GeNIOS.QPSolver(P, q, M, l, u)
 res = solve!(solver; options=GeNIOS.SolverOptions(eps_abs=1e-6))
 println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.019s
+Setup in  0.006s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      0.000e+00            Inf            Inf      1.000e+00         0.000
-            1     -2.008e+02      8.830e+00      2.772e+01      1.000e+00         0.036
-           25     -1.705e+01      3.712e-01      1.035e-01      1.000e+00         0.087
-           50     -8.409e+00      1.332e-01      2.840e-02      1.000e+00         0.140
-           75     -5.704e+00      7.383e-02      1.070e-02      1.000e+00         0.200
-          100     -4.622e+00      4.939e-02      5.115e-03      1.000e+00         0.264
-          125     -4.005e+00      3.478e-02      3.513e-03      1.000e+00         0.323
-          150     -3.560e+00      2.461e-02      2.475e-03      1.000e+00         0.383
-          175     -3.238e+00      1.745e-02      1.750e-03      1.000e+00         0.443
-          200     -3.008e+00      1.239e-02      1.239e-03      2.000e+00         0.515
-          225     -2.763e+00      7.484e-03      2.125e-03      2.000e+00         0.575
-          250     -2.645e+00      5.203e-03      1.247e-03      2.000e+00         0.638
-          275     -2.579e+00      3.779e-03      8.182e-04      2.000e+00         0.705
-          300     -2.536e+00      2.799e-03      5.785e-04      2.000e+00         0.777
-          325     -2.506e+00      2.095e-03      4.162e-04      2.000e+00         0.845
-          350     -2.485e+00      1.581e-03      3.038e-04      2.000e+00         0.912
-          375     -2.470e+00      1.199e-03      2.244e-04      2.000e+00         0.985
-          400     -2.459e+00      9.132e-04      1.674e-04      2.000e+00         1.065
-          425     -2.451e+00      6.977e-04      1.258e-04      2.000e+00         1.141
-          450     -2.445e+00      5.342e-04      9.509e-05      2.000e+00         1.216
-          475     -2.440e+00      4.099e-04      7.225e-05      2.000e+00         1.299
-          500     -2.437e+00      3.150e-04      5.511e-05      2.000e+00         1.381
-          525     -2.434e+00      2.425e-04      4.217e-05      2.000e+00         1.456
-          550     -2.432e+00      1.869e-04      3.236e-05      2.000e+00         1.532
-          575     -2.431e+00      1.442e-04      2.488e-05      2.000e+00         1.607
-          581     -2.431e+00      1.356e-04      2.337e-05      2.000e+00         1.628
+            1     -2.008e+02      8.830e+00      2.772e+01      1.000e+00         0.042
+           25     -1.705e+01      3.712e-01      1.035e-01      1.000e+00         0.104
+           50     -8.409e+00      1.332e-01      2.840e-02      1.000e+00         0.168
+           75     -5.704e+00      7.383e-02      1.070e-02      1.000e+00         0.240
+          100     -4.622e+00      4.939e-02      5.115e-03      1.000e+00         0.318
+          125     -4.005e+00      3.478e-02      3.513e-03      1.000e+00         0.389
+          150     -3.560e+00      2.461e-02      2.475e-03      1.000e+00         0.461
+          175     -3.238e+00      1.745e-02      1.750e-03      1.000e+00         0.534
+          200     -3.008e+00      1.239e-02      1.239e-03      2.000e+00         0.620
+          225     -2.763e+00      7.484e-03      2.125e-03      2.000e+00         0.692
+          250     -2.645e+00      5.203e-03      1.247e-03      2.000e+00         0.768
+          275     -2.579e+00      3.779e-03      8.182e-04      2.000e+00         0.849
+          300     -2.536e+00      2.799e-03      5.785e-04      2.000e+00         0.936
+          325     -2.506e+00      2.095e-03      4.162e-04      2.000e+00         1.018
+          350     -2.485e+00      1.581e-03      3.038e-04      2.000e+00         1.099
+          375     -2.470e+00      1.199e-03      2.244e-04      2.000e+00         1.187
+          400     -2.459e+00      9.132e-04      1.674e-04      2.000e+00         1.283
+          425     -2.451e+00      6.977e-04      1.258e-04      2.000e+00         1.374
+          450     -2.445e+00      5.342e-04      9.509e-05      2.000e+00         1.465
+          475     -2.440e+00      4.099e-04      7.225e-05      2.000e+00         1.565
+          500     -2.437e+00      3.150e-04      5.511e-05      2.000e+00         1.664
+          525     -2.434e+00      2.425e-04      4.217e-05      2.000e+00         1.756
+          550     -2.432e+00      1.869e-04      3.236e-05      2.000e+00         1.848
+          575     -2.431e+00      1.442e-04      2.488e-05      2.000e+00         1.940
+          581     -2.431e+00      1.356e-04      2.337e-05      2.000e+00         1.967
 
-SOLVED in  1.629s, 581 iterations
-Total time:  1.648s
+SOLVED in  1.967s, 581 iterations
+Total time:  1.973s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 Optimal value: -2.4306</code></pre><h3 id="Performance-improvements"><a class="docs-heading-anchor" href="#Performance-improvements">Performance improvements</a><a id="Performance-improvements-1"></a><a class="docs-heading-anchor-permalink" href="#Performance-improvements" title="Permalink"></a></h3><p>We can also define custom operators for <span>$P$</span> and <span>$M$</span> to speed up the computation.</p><pre><code class="language-julia hljs"># P = γ*(F*F&#39; + Diagonal(d))
@@ -101,40 +101,40 @@ M = FastM(n)
 solver = GeNIOS.QPSolver(P, q, M, l, u);
 res = solve!(solver; options=GeNIOS.SolverOptions(eps_abs=1e-6));
 println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.830s
+Setup in  0.953s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      0.000e+00            Inf            Inf      1.000e+00         0.000
-            1     -2.008e+02      8.833e+00      2.772e+01      1.000e+00         0.204
-           25     -1.706e+01      3.709e-01      1.051e-01      1.000e+00         0.207
-           50     -8.403e+00      1.331e-01      2.840e-02      1.000e+00         0.210
-           75     -5.703e+00      7.380e-02      1.069e-02      1.000e+00         0.214
-          100     -4.622e+00      4.938e-02      5.114e-03      1.000e+00         0.218
-          125     -4.005e+00      3.477e-02      3.513e-03      1.000e+00         0.221
-          150     -3.560e+00      2.460e-02      2.475e-03      1.000e+00         0.224
-          175     -3.238e+00      1.744e-02      1.749e-03      1.000e+00         0.228
-          200     -3.008e+00      1.239e-02      1.238e-03      2.000e+00         0.232
-          225     -2.763e+00      7.483e-03      2.124e-03      2.000e+00         0.235
-          250     -2.645e+00      5.203e-03      1.246e-03      2.000e+00         0.239
-          275     -2.579e+00      3.779e-03      8.180e-04      2.000e+00         0.242
-          300     -2.536e+00      2.799e-03      5.785e-04      2.000e+00         0.247
-          325     -2.506e+00      2.096e-03      4.162e-04      2.000e+00         0.250
-          350     -2.485e+00      1.581e-03      3.038e-04      2.000e+00         0.254
-          375     -2.470e+00      1.199e-03      2.244e-04      2.000e+00         0.257
-          400     -2.459e+00      9.134e-04      1.674e-04      2.000e+00         0.262
-          425     -2.451e+00      6.978e-04      1.258e-04      2.000e+00         0.266
-          450     -2.445e+00      5.344e-04      9.511e-05      2.000e+00         0.270
-          475     -2.440e+00      4.100e-04      7.226e-05      2.000e+00         0.274
-          500     -2.437e+00      3.151e-04      5.512e-05      2.000e+00         0.279
-          525     -2.434e+00      2.425e-04      4.218e-05      2.000e+00         0.283
-          550     -2.432e+00      1.869e-04      3.237e-05      2.000e+00         0.286
-          575     -2.431e+00      1.443e-04      2.489e-05      2.000e+00         0.290
-          581     -2.431e+00      1.356e-04      2.338e-05      2.000e+00         0.292
+            1     -2.008e+02      8.833e+00      2.772e+01      1.000e+00         0.238
+           25     -1.706e+01      3.709e-01      1.051e-01      1.000e+00         0.242
+           50     -8.403e+00      1.331e-01      2.840e-02      1.000e+00         0.245
+           75     -5.703e+00      7.380e-02      1.069e-02      1.000e+00         0.249
+          100     -4.622e+00      4.938e-02      5.114e-03      1.000e+00         0.254
+          125     -4.005e+00      3.477e-02      3.513e-03      1.000e+00         0.258
+          150     -3.560e+00      2.460e-02      2.475e-03      1.000e+00         0.261
+          175     -3.238e+00      1.744e-02      1.749e-03      1.000e+00         0.266
+          200     -3.008e+00      1.239e-02      1.238e-03      2.000e+00         0.271
+          225     -2.763e+00      7.483e-03      2.124e-03      2.000e+00         0.274
+          250     -2.645e+00      5.203e-03      1.246e-03      2.000e+00         0.278
+          275     -2.579e+00      3.779e-03      8.180e-04      2.000e+00         0.282
+          300     -2.536e+00      2.799e-03      5.785e-04      2.000e+00         0.288
+          325     -2.506e+00      2.096e-03      4.162e-04      2.000e+00         0.292
+          350     -2.485e+00      1.581e-03      3.038e-04      2.000e+00         0.296
+          375     -2.470e+00      1.199e-03      2.244e-04      2.000e+00         0.301
+          400     -2.459e+00      9.134e-04      1.674e-04      2.000e+00         0.306
+          425     -2.451e+00      6.978e-04      1.258e-04      2.000e+00         0.311
+          450     -2.445e+00      5.344e-04      9.511e-05      2.000e+00         0.315
+          475     -2.440e+00      4.100e-04      7.226e-05      2.000e+00         0.320
+          500     -2.437e+00      3.151e-04      5.512e-05      2.000e+00         0.341
+          525     -2.434e+00      2.425e-04      4.218e-05      2.000e+00         0.346
+          550     -2.432e+00      1.869e-04      3.237e-05      2.000e+00         0.350
+          575     -2.431e+00      1.443e-04      2.489e-05      2.000e+00         0.355
+          581     -2.431e+00      1.356e-04      2.338e-05      2.000e+00         0.356
 
-SOLVED in  0.292s, 581 iterations
-Total time:  1.122s
+SOLVED in  0.356s, 581 iterations
+Total time:  1.309s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 Optimal value: -2.4306</code></pre><h2 id="GenericSolver-interface"><a class="docs-heading-anchor" href="#GenericSolver-interface">GenericSolver interface</a><a id="GenericSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#GenericSolver-interface" title="Permalink"></a></h2><p>The <code>GenericSolver</code> interface is more flexible and allows for some speedups via an alternative problem splitting. We will solve the problem</p><p class="math-container">\[\begin{array}{ll}
@@ -206,23 +206,23 @@ solver = GeNIOS.GenericSolver(
 )
 res = solve!(solver)
 println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.416s
+Setup in  0.464s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0            Inf            Inf            Inf      1.000e+00         0.000
-            1     -2.005e+02      1.175e+01      4.850e-01      1.000e+00         0.379
-           25     -2.468e+00      2.671e-02      2.779e-03      1.000e+00         0.382
-           50     -2.454e+00      1.617e-02      1.620e-03      1.000e+00         0.386
-           75     -2.446e+00      1.022e-02      9.586e-04      1.000e+00         0.389
-          100     -2.440e+00      6.884e-03      5.762e-04      2.000e+00         0.393
-          125     -2.433e+00      3.917e-03      9.534e-04      2.000e+00         0.396
-          150     -2.430e+00      2.692e-03      4.456e-04      2.000e+00         0.400
-          164     -2.430e+00      2.267e-03      3.216e-04      2.000e+00         0.402
+            1     -2.005e+02      1.175e+01      4.850e-01      1.000e+00         0.435
+           25     -2.468e+00      2.671e-02      2.779e-03      1.000e+00         0.438
+           50     -2.454e+00      1.617e-02      1.620e-03      1.000e+00         0.442
+           75     -2.446e+00      1.022e-02      9.586e-04      1.000e+00         0.446
+          100     -2.440e+00      6.884e-03      5.762e-04      2.000e+00         0.451
+          125     -2.433e+00      3.917e-03      9.534e-04      2.000e+00         0.455
+          150     -2.430e+00      2.692e-03      4.456e-04      2.000e+00         0.459
+          164     -2.430e+00      2.267e-03      3.216e-04      2.000e+00         0.461
 
-SOLVED in  0.402s, 164 iterations
-Total time:  0.818s
+SOLVED in  0.462s, 164 iterations
+Total time:  0.925s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Optimal value: -2.4296</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../logistic/">« Logistic Regression</a><a class="docs-footer-nextpage" href="../../api/">API reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 11 May 2023 01:43">Thursday 11 May 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Optimal value: -2.4296</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../logistic/">« Logistic Regression</a><a class="docs-footer-nextpage" href="../../api/">API reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 11 May 2023 03:56">Thursday 11 May 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
