@@ -28,7 +28,7 @@ model'
 =#
 Random.seed!(1)
 k = 5
-n = 50k
+n = 100k
 ## Σ = F*F' + diag(d)
 F = sprandn(n, k, 0.5)
 d = rand(n) * sqrt(k)
@@ -56,7 +56,52 @@ M = vcat(I, ones(1, n))
 l = vcat(zeros(n), ones(1))
 u = vcat(Inf*ones(n), ones(1))
 solver = GeNIOS.QPSolver(P, q, M, l, u)
-res = solve!(solver)
+res = solve!(solver; options=GeNIOS.SolverOptions(eps_abs=1e-6))
+println("Optimal value: $(round(solver.obj_val, digits=4))")
+
+#=
+### Performance improvements
+We can also define custom operators for $P$ and $M$ to speed up the computation.
+=#
+## P = γ*(F*F' + Diagonal(d))
+struct FastP
+    F
+    d
+    γ
+    vk
+end
+function LinearAlgebra.mul!(y::AbstractVector, P::FastP, x::AbstractVector)
+    mul!(P.vk, P.F', x)
+    mul!(y, P.F, P.vk)
+    @. y += P.d*x
+    @. y *= P.γ
+    return nothing
+end
+P = FastP(F, d, γ, zeros(k))
+
+## M = vcat(I, ones(1, n))
+struct FastM 
+    n::Int
+end
+Base.size(M::FastM) = (M.n+1, M.n)
+Base.size(M::FastM, d::Int) = d <= 2 ? size(M)[d] : 1
+function LinearAlgebra.mul!(y::AbstractVector, M::FastM, x::AbstractVector)
+    y[1:M.n] .= x
+    y[end] = sum(x)
+    return nothing
+end
+LinearAlgebra.adjoint(M::FastM) = Adjoint{Float64, FastM}(M)
+function LinearAlgebra.mul!(x::AbstractVector{T}, M::Adjoint{T, FastM}, y::AbstractVector{T}) where T <: Number
+    @. x = y[1:M.parent.n] + y[end]
+    return nothing
+end
+function LinearAlgebra.mul!(x::AbstractVector{T}, M::Adjoint{T, FastM}, y::AbstractVector{T}, α::T, β::T) where T <: Number
+    @. x = α * ( y[1:M.parent.n] + y[end] ) + β * x
+    return nothing
+end
+M = FastM(n)
+solver = GeNIOS.QPSolver(P, q, M, l, u);
+res = solve!(solver; options=GeNIOS.SolverOptions(eps_abs=1e-6));
 println("Optimal value: $(round(solver.obj_val, digits=4))")
 
 #=
@@ -138,7 +183,7 @@ end
 solver = GeNIOS.GenericSolver(
     f, grad_f!, Hf,         # f(x)
     g, prox_g!,             # g(z)
-    -I, zeros(n);           # M, c: Mx + z = c
+    I, zeros(n);           # M, c: Mx + z = c
 )
 res = solve!(solver)
 println("Optimal value: $(round(solver.obj_val, digits=4))")
