@@ -19,18 +19,18 @@ solver = GeNIOS.MLSolver(f, df, d2f, λ1, λ2, A, b; fconj=fconj)
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, tol=1e-3, verbose=true))
 rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
 println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.681s
+Setup in  0.602s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration      Objective           RMSE       Dual Gap       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      1.682e+01      2.900e-01      9.256e+00            Inf            Inf      1.000e+00         0.000
-            1      9.621e+00      2.078e-01      4.492e+00      1.565e+00      1.293e+00      1.000e+00         0.535
-           25      2.963e+00      3.617e-02      2.757e-02      2.163e-02      6.218e-03      1.000e+00         0.542
-           50      2.963e+00      3.602e-02      9.739e-04      1.413e-03      2.079e-04      1.000e+00         0.550
+            1      9.621e+00      2.078e-01      4.492e+00      1.565e+00      1.293e+00      1.000e+00         0.698
+           25      2.963e+00      3.617e-02      2.757e-02      2.163e-02      6.218e-03      1.000e+00         0.705
+           50      2.963e+00      3.602e-02      9.739e-04      1.413e-03      2.079e-04      1.000e+00         0.714
 
-SOLVED in  0.550s, 50 iterations
-Total time:  1.231s
+SOLVED in  0.714s, 50 iterations
+Total time:  1.316s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 Final RMSE: 0.05094217</code></pre><p>Note that we also defined the conjugate function of <span>$f$</span>, defined as</p><p class="math-container">\[f^*(y) = \sup_x \{yx - f(x)\},\]</p><p>which allows us to use the dual gap as a stopping criterion (see appendix C of our paper for a derivation). Specifying the conjugate function is optional, and the solver will fall back to using the primal and dual residuals if it is not specified.</p><h2 id="QPSolver-interface"><a class="docs-heading-anchor" href="#QPSolver-interface">QPSolver interface</a><a id="QPSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#QPSolver-interface" title="Permalink"></a></h2><p>The <code>QPSolver</code> interface requires us to specify the problem in the form</p><p class="math-container">\[\begin{array}{ll}
@@ -67,14 +67,14 @@ Setup in  0.008s
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      0.000e+00            Inf            Inf      1.000e+00         0.000
-            1     -1.484e+01      2.681e+00      2.066e+00      1.000e+00         0.220
-           25     -1.356e+01      3.046e-02      2.419e-01      1.000e+00         0.247
-           50     -1.384e+01      1.112e-02      6.095e-02      1.000e+00         0.277
-           75     -1.385e+01      2.001e-03      9.816e-03      1.000e+00         0.313
-           89     -1.385e+01      6.522e-04      2.892e-03      1.000e+00         0.339
+            1     -1.484e+01      2.681e+00      2.066e+00      1.000e+00         0.277
+           25     -1.356e+01      3.046e-02      2.419e-01      1.000e+00         0.302
+           50     -1.384e+01      1.112e-02      6.095e-02      1.000e+00         0.329
+           75     -1.385e+01      2.001e-03      9.816e-03      1.000e+00         0.363
+           89     -1.385e+01      6.522e-04      2.892e-03      1.000e+00         0.388
 
-SOLVED in  0.339s, 89 iterations
-Total time:  0.347s
+SOLVED in  0.388s, 89 iterations
+Total time:  0.396s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 Final RMSE: 0.05122629</code></pre><h2 id="Generic-interface"><a class="docs-heading-anchor" href="#Generic-interface">Generic interface</a><a id="Generic-interface-1"></a><a class="docs-heading-anchor-permalink" href="#Generic-interface" title="Permalink"></a></h2><p>Finally, we use the generic interface, which provides a large amount of control but is more complicated to use than the specialized interfaces demonstrated above.</p><p>First, we define the custom <code>HessianOperator</code>, which is used to solve the linear system in the <span>$x$</span>-subproblem. Since the Hessian of the objective is simply <span>$A^TA$</span>, this operator is simple for the Lasso problem. However, note that, since this is a custom type, we can speed up the multiplication to be more efficient than if we were to use <span>$A^TA$</span> directly.</p><p>The <code>update!</code> function is called before the solution of the <span>$x$</span>-subproblem to update the Hessian, if necessary.</p><pre><code class="language-julia hljs">struct HessianLasso{T, S &lt;: AbstractMatrix{T}} &lt;: HessianOperator
@@ -111,24 +111,24 @@ function prox_g!(v, z, ρ)
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">prox_g! (generic function with 1 method)</code></pre><p>Finally, we can solve the problem.</p><pre><code class="language-julia hljs">solver = GeNIOS.GenericSolver(
     f, grad_f!, Hf,         # f(x)
     g, prox_g!,             # g(z)
-    -I, zeros(n);           # M, c: Mx + z = c
+    I, zeros(n);           # M, c: Mx + z = c
     ρ=1.0, α=1.0
 )
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, verbose=true))
 rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
 println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.250s
+Setup in  0.252s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      1.682e+01            Inf            Inf      1.000e+00         0.000
-            1      3.315e+00      1.564e+00      1.292e+00      1.000e+00         0.289
-           25      2.964e+00      3.759e-03      2.101e-03      1.000e+00         0.295
-           27      2.963e+00      2.105e-03      1.626e-03      1.000e+00         0.296
+            1      3.315e+00      1.564e+00      1.292e+00      1.000e+00         0.286
+           25      2.964e+00      3.759e-03      2.101e-03      1.000e+00         0.292
+           27      2.963e+00      2.105e-03      1.626e-03      1.000e+00         0.293
 
-SOLVED in  0.296s, 27 iterations
+SOLVED in  0.293s, 27 iterations
 Total time:  0.545s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Final RMSE: 0.05085719</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../constrained-ls/">« Constrained Least Squares</a><a class="docs-footer-nextpage" href="../logistic/">Logistic Regression »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Tuesday 9 May 2023 18:23">Tuesday 9 May 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Final RMSE: 0.05085719</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../constrained-ls/">« Constrained Least Squares</a><a class="docs-footer-nextpage" href="../logistic/">Logistic Regression »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 11 May 2023 01:43">Thursday 11 May 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
