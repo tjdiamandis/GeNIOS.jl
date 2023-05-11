@@ -52,7 +52,16 @@ which allows us to use the dual gap as a stopping criterion (see appendix C of
 our paper for a derivation). Specifying the conjugate function is optional, and
 the solver will fall back to using the primal and dual residuals if it is not
 specified.
+
+### Automatic differentiation
+Note that we can also let the solver use forward-mode automatic differentiation
+to compute the first and second derivatives of $f$. The interface is the same,
+but we drop these arguments:
 =#
+solver = GeNIOS.MLSolver(f, λ1, λ2, A, b; fconj=fconj)
+res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, dual_gap_tol=1e-3, verbose=true))
+rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
+println("Final RMSE: $(round(rmse, digits=8))")
 
 
 #=

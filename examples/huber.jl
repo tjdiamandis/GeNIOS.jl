@@ -56,3 +56,15 @@ solver = GeNIOS.MLSolver(f, df, d2f, λ1, λ2, A, b)
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=false, verbose=true))
 rmse = sqrt(1/N*norm(A*solver.zk - b, 2)^2)
 println("Final RMSE: $(round(rmse, digits=8))")
+
+#=
+### Automatic differentiation
+We could have let the solver figure out the derivatives for us as well:
+=#
+f(x) = abs(x) <= 1 ? 0.5*x^2 : abs(x) - 0.5
+λ1 = γ
+λ2 = 0.0
+solver = GeNIOS.MLSolver(f, λ1, λ2, A, b)
+res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=false, verbose=true))
+rmse = sqrt(1/N*norm(A*solver.zk - b, 2)^2)
+println("Final RMSE: $(round(rmse, digits=8))")
