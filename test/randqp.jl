@@ -5,7 +5,7 @@
     K = GeNIOS.IntervalCone(l, u)
     c = zeros(length(l))
     solver = GeNIOS.ConicSolver(
-        P, q, K, -M, c
+        P, q, K, M, c
     )
     solver_qp = GeNIOS.QPSolver(P, q, M, l, u)
 
@@ -25,7 +25,7 @@
     
     tol = 1e-3
     # Check feasibility
-    @test norm(-M*xk + zk - c, Inf) <= tol
+    @test norm(M*xk - zk - c, Inf) <= tol
     @test all(l .<= zk) && all(zk .<= u)
     
     # Check optimality

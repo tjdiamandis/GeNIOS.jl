@@ -20,7 +20,7 @@ struct ConicProgramData{T} <: ProblemData
     c
     m::Int
     n::Int
-    P::AbstractMatrix{T}    #TODO: I think you just need to be able to multiply
+    P
     q::AbstractVector{T}
     K::Cone
 end
@@ -154,7 +154,7 @@ function QPSolver(P, q, M, l, u; ρ=1.0, α=1.0)
     # - perhaps estimate with randomized method??
     # - strictly convex case
     # ρ = sqrt(λmin(P)*λmax(P))
-    return ConicSolver(P, q, IntervalCone(l, u), -M, zeros(m), ρ=ρ, α=α)
+    return ConicSolver(P, q, IntervalCone(l, u), M, zeros(m), ρ=ρ, α=α)
 end
 
 mutable struct MLSolver{T} <: Solver
@@ -197,7 +197,7 @@ function MLSolver(f,
     #TODO: may want to add offset?
     m = n
 
-    data = MLProblemData(-I, zeros(T, n), Adata, bdata, N, m, n, d2f, df, f, fconj)
+    data = MLProblemData(I, zeros(T, n), Adata, bdata, N, m, n, d2f, df, f, fconj)
     xk = zeros(T, n)
     Mxk = zeros(T, n)
     pred = zeros(T, N)
@@ -215,7 +215,7 @@ function MLSolver(f,
 
     return MLSolver(
         data, 
-        LinearOperator(-I, ρ, Hf, m, n),
+        LinearOperator(I, ρ, Hf, m, n),
         I,
         xk, Mxk, pred, zk, zk_old, uk, rp, rd, 
         rp_norm, rd_norm,

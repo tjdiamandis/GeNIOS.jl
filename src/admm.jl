@@ -114,7 +114,8 @@ function obj_val!(solver::MLSolver, options::SolverOptions)
 end
 
 function obj_val!(solver::ConicSolver, options::SolverOptions)
-    solver.obj_val = 0.5*dot(solver.xk, solver.data.P, solver.xk) + dot(solver.data.q, solver.xk)
+    mul!(solver.cache.vn, solver.data.P, solver.xk)
+    solver.obj_val = 0.5*dot(solver.xk, solver.cache.vn) + dot(solver.data.q, solver.xk)
 end
 
 # Used to implement custom convergence criteria (e.g., via dual gap)
@@ -142,20 +143,20 @@ function convergence_criteria!(solver::MLSolver, options::SolverOptions)
 end
 
 function compute_rhs!(solver::Solver)
-    # RHS = ∇²f(xᵏ)xᵏ - ∇f(xᵏ) - ρAᵀ(zᵏ - c + uᵏ)
+    # RHS = ∇²f(xᵏ)xᵏ - ∇f(xᵏ) + ρAᵀ(zᵏ + c - uᵏ)
     mul!(solver.cache.vn, solver.data.Hf, solver.xk)
     solver.data.grad_f!(solver.cache.vn2, solver.xk)
     
-    @. solver.cache.vm = solver.zk - solver.data.c + solver.uk
+    @. solver.cache.vm = solver.zk + solver.data.c - solver.uk
     mul!(solver.cache.rhs, solver.data.M', solver.cache.vm)
-    @. solver.cache.rhs = solver.cache.vn - solver.cache.vn2 - solver.ρ * solver.cache.rhs
+    @. solver.cache.rhs = solver.cache.vn - solver.cache.vn2 + solver.ρ * solver.cache.rhs
     
     return nothing
 end
 
 # NOTE: Assumes that pred has been computed
 function compute_rhs!(solver::MLSolver)
-    # RHS = ∇²f(xᵏ)xᵏ - ∇f(xᵏ) - ρAᵀ(zᵏ - c + uᵏ)
+    # RHS = ∇²f(xᵏ)xᵏ - ∇f(xᵏ) + ρAᵀ(zᵏ + c - uᵏ)
 
     # compute first term (hessian)
     mul!(solver.cache.vN, solver.data.Adata, solver.xk)
@@ -167,22 +168,22 @@ function compute_rhs!(solver::MLSolver)
     mul!(solver.cache.vn2, solver.data.Adata', solver.cache.vN)
     
     # compute last term
-    @. solver.cache.vm = solver.zk - solver.data.c + solver.uk
+    @. solver.cache.vm = solver.zk + solver.data.c - solver.uk
     mul!(solver.cache.rhs, solver.data.M', solver.cache.vm)
 
     # add them up
-    @. solver.cache.rhs = solver.cache.vn - solver.cache.vn2 - solver.ρ * solver.cache.rhs
+    @. solver.cache.rhs = solver.cache.vn - solver.cache.vn2 + solver.ρ * solver.cache.rhs
     
     return nothing
 end
 
 function compute_rhs!(solver::ConicSolver)
-    # RHS = ∇²f(xᵏ)xᵏ - ∇f(xᵏ) - ρAᵀ(zᵏ - c + uᵏ) = -q - ρAᵀ(zᵏ - c + uᵏ)
+    # RHS = ∇²f(xᵏ)xᵏ - ∇f(xᵏ) + ρAᵀ(zᵏ + c - uᵏ) = -q + ρAᵀ(zᵏ + c - uᵏ)
     @. solver.cache.vn = -solver.data.q
     
-    @. solver.cache.vm = solver.zk - solver.data.c + solver.uk
+    @. solver.cache.vm = solver.zk + solver.data.c - solver.uk
     mul!(solver.cache.rhs, solver.data.M', solver.cache.vm)
-    @. solver.cache.rhs = solver.cache.vn - solver.ρ * solver.cache.rhs
+    @. solver.cache.rhs = solver.cache.vn + solver.ρ * solver.cache.rhs
     
     return nothing
 end
@@ -227,8 +228,8 @@ end
 
 function update_Ax!(solver::MLSolver{T}, options::SolverOptions) where {T}
     if options.relax
-        @. solver.cache.vm = -solver.xk
-        @. solver.Mxk = solver.α * solver.cache.vm + (one(T) - solver.α) * solver.zk
+        @. solver.cache.vm = solver.xk
+        @. solver.Mxk = solver.α * solver.cache.vm - (one(T) - solver.α) * solver.zk
     else
         @. solver.Mxk = -solver.xk
     end
@@ -239,7 +240,7 @@ function update_Ax!(solver::Solver, options::SolverOptions)
     T = eltype(solver.xk)
     if options.relax
         mul!(solver.cache.vm, solver.data.M, solver.xk)
-        @. solver.Mxk = solver.α * solver.cache.vm + (one(T) - solver.α) * solver.zk
+        @. solver.Mxk = solver.α * solver.cache.vm - (one(T) - solver.α) * (solver.zk - solver.data.c)
     else
         mul!(solver.Mxk, solver.data.M, solver.xk)
     end
@@ -247,10 +248,10 @@ function update_Ax!(solver::Solver, options::SolverOptions)
 end
 
 function update_z!(solver::Solver, options::SolverOptions)
-    solver.cache.vm .= -solver.Mxk
-    @. solver.cache.vm += -solver.uk + solver.data.c
+    solver.cache.vm .= solver.Mxk
+    @. solver.cache.vm += solver.uk - solver.data.c
     
-    # prox_{g/ρ}(v) = prox_{g/ρ}( -(Axᵏ⁺¹ - c + uᵏ⁺¹) )
+    # prox_{g/ρ}(v) = prox_{g/ρ}( Axᵏ⁺¹ - c + uᵏ⁺¹ )
     solver.data.prox_g!(solver.zk, solver.cache.vm, solver.ρ)
     return nothing
 end
@@ -258,32 +259,32 @@ end
 function update_z!(solver::MLSolver, options::SolverOptions)
     @inline soft_threshold(x::T, κ::T) where {T <: Real} = sign(x) * max(zero(T), abs(x) - κ)
     
-    solver.cache.vm .= -solver.Mxk
-    @. solver.cache.vm += -solver.uk + solver.data.c
+    solver.cache.vm .= solver.Mxk
+    @. solver.cache.vm += solver.uk - solver.data.c
     
     solver.zk .= soft_threshold.(solver.cache.vm, solver.λ1/solver.ρ)
     return nothing
 end
 
 function update_z!(solver::ConicSolver, options::SolverOptions)
-    solver.cache.vm .= -solver.Mxk
-    @. solver.cache.vm += -solver.uk + solver.data.c
+    solver.cache.vm .= solver.Mxk
+    @. solver.cache.vm += solver.uk - solver.data.c
 
     project!(solver.zk, solver.data.K, solver.cache.vm)
     return nothing
 end
 
 function update_u!(solver::Solver, options::SolverOptions)
-    @. solver.uk = solver.uk + solver.Mxk + solver.zk - solver.data.c
+    @. solver.uk += solver.Mxk - solver.zk - solver.data.c
 end
 
 function compute_residuals!(solver::Solver, options::SolverOptions)
     # primal residual
-    @. solver.rp = solver.Mxk + solver.zk - solver.data.c
+    @. solver.rp = solver.Mxk - solver.zk - solver.data.c
     solver.rp_norm = norm(solver.rp, options.norm_type)
 
     # dual residual
-    @. solver.cache.vm = solver.zk - solver.zk_old
+    @. solver.cache.vm = solver.zk_old - solver.zk
     mul!(solver.rd, solver.data.M', solver.cache.vm)
     @. solver.rd *= solver.ρ
     solver.rd_norm = norm(solver.rd, options.norm_type)

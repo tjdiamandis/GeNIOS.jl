@@ -15,11 +15,11 @@ function test_optimality_conditions_lasso(solver, tol, A, b; λ2 = 0.0)
 
     # Test generic optimality conditions
     # ∇f(x) + Aᵀu = 0
-    @test all(abs.(A'*(A*solver.xk - b) + λ2*solver.xk - solver.uk) .<= tol)
+    @test all(abs.(A'*(A*solver.xk - b) + λ2*solver.xk + solver.uk) .<= tol)
 
-    # ∂g(z) + u = 0
-    @test all(abs.(@. γ + solver.uk[pos_inds]) .<= tol)
-    @test all(abs.(@. -γ + solver.uk[neg_inds]) .<= tol)
+    # ∂g(z) - u = 0
+    @test all(abs.(@. γ - solver.uk[pos_inds]) .<= tol)
+    @test all(abs.(@. -γ - solver.uk[neg_inds]) .<= tol)
     @test all(abs.(solver.uk[zero_inds]) .<= γ)    
     
     return nothing
@@ -84,10 +84,10 @@ b = A*xstar + 1e-3*randn(n)
     solver = GeNIOS.GenericSolver(
         f, grad_f!, Hf,         # f(x)
         g, prox_g!,             # g(z)
-        -I, zeros(p);            # A, c: Ax + z = c
+        I, zeros(p);            # A, c: Ax - z = c
         ρ=1.0, α=1.0
     )
-    res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, verbose=false))
+    res = solve!(solver; options=GeNIOS.SolverOptions(relax=false, verbose=false))
 
     test_optimality_conditions_lasso(solver, 5e-3, A, b)
 end

@@ -29,11 +29,11 @@ function test_optimality_conditions(solver::GeNIOS.MLSolver, tol)
     v .+= solver.λ2 .* xstar
 
     # ∇f(x) + Aᵀu = 0
-    @test all(abs.(v - solver.uk) .<= tol)
+    @test all(abs.(v + solver.uk) .<= tol)
 
-    # ∂g(z) + u = 0
-    @test all(abs.(@. γ + solver.uk[pos_inds]) .<= tol)
-    @test all(abs.(@. -γ + solver.uk[neg_inds]) .<= tol)
+    # ∂g(z) - u = 0
+    @test all(abs.(@. γ - solver.uk[pos_inds]) .<= tol)
+    @test all(abs.(@. -γ - solver.uk[neg_inds]) .<= tol)
     @test all(abs.(solver.uk[zero_inds]) .<= γ)    
     
     return nothing

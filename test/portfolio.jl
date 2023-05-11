@@ -78,7 +78,7 @@ q = -μ
     solver = GeNIOS.GenericSolver(
         f, grad_f!, Hf,         # f(x)
         g, prox_g!,             # g(z)
-        -I, zeros(n);           # A, c: Ax + z = c
+        I, zeros(n);           # A, c: Ax + z = c
         ρ=1.0, α=1.0
     )
     res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, max_iters=1000, eps_abs=1e-6, eps_rel=1e-6, verbose=false))
@@ -98,7 +98,7 @@ end
 
 @testset "Portfolio -- Conic" begin
     K = GeNIOS.IntervalCone(zeros(n+1), vcat(Inf*ones(n), zeros(1)))
-    M = vcat(-I, ones(1, n))
+    M = vcat(I, ones(1, n))
     c = vcat(zeros(n), ones(1))
     solver = GeNIOS.ConicSolver(
         P, q, K, M, c
@@ -110,7 +110,7 @@ end
     zk = zk[1:n]
     @test all(zk .>= 0)                             # pfeas
     @test abs(sum(zk) - 1) < 1e-3                   # pfeas
-    @test norm(M*solver.xk + solver.zk - c) < 1e-3        # pfeas
+    @test norm(M*solver.xk - solver.zk - c) < 1e-3        # pfeas
 
     # Checks with zk but could use xk instead
     ind = findall(x->x > 1e-4, zk)
