@@ -14,6 +14,7 @@ Depth = 1
 ```@contents
 Pages = [
     "examples/constrained-ls.md",
+    "examples/huber.md",
     "examples/lasso.md",
     "examples/logistic.md",
     "examples/portfolio.md"
