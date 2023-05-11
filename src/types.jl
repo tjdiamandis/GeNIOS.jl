@@ -261,7 +261,7 @@ Base.@kwdef struct SolverOptions{T <: Real, S <: Real}
     relax::Bool = true
     logging::Bool = true
     precondition::Bool = true
-    tol::T = 1e-4
+    dual_gap_tol::T = 1e-4
     max_iters::Int = 1000
     max_time_sec::T = 1200.0
     print_iter::Int = 25

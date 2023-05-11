@@ -104,12 +104,12 @@ end
     Adata = copy(A)
     bdata = copy(b)
     solver2 = GeNIOS.MLSolver(f2, df2, d2f2, λ1, λ2, Adata, bdata; fconj=f2conj)
-    res = solve!(solver2; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, tol=1e-3, verbose=false))
+    res = solve!(solver2; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, dual_gap_tol=1e-3, verbose=false))
     test_optimality_conditions(solver2, 5e-3)
 
     λ2 = λ1/10
     solver_en = GeNIOS.MLSolver(f2, df2, d2f2, λ1, λ2, Adata, bdata; fconj=f2conj)
-    res = solve!(solver_en; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, tol=1e-3, verbose=false))
+    res = solve!(solver_en; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, dual_gap_tol=1e-3, verbose=false))
     test_optimality_conditions(solver_en, 5e-3)
 
     solver_dg = GeNIOS.MLSolver(f2, df2, d2f2, λ1, λ2, Adata, bdata)

@@ -51,7 +51,7 @@ f2conj(x::T) where {T} = (one(T) - x) * log(one(T) - x) + x * log(x)
 λ1 = γ
 λ2 = 0.0
 solver = GeNIOS.MLSolver(f2, df2, d2f2, λ1, λ2, A, b; fconj=f2conj)
-res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, tol=1e-4, verbose=true))
+res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, dual_gap_tol=1e-4, verbose=true))
 
 #=
 ## Results

@@ -91,7 +91,7 @@ end
 
 function converged(solver::MLSolver, options::SolverOptions)
     if options.use_dual_gap
-        return solver.dual_gap ≤ options.tol
+        return solver.dual_gap ≤ options.dual_gap_tol
     end
 
     return converged(solver, options, true)
