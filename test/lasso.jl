@@ -115,4 +115,12 @@ end
     solver_dg = GeNIOS.MLSolver(f2, df2, d2f2, λ1, λ2, Adata, bdata)
     res = solve!(solver_dg; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=false, verbose=false))
     test_optimality_conditions(solver_dg, 5e-3)
+
+    solver_dg = GeNIOS.MLSolver(f2, λ1, λ2, Adata, bdata)
+    res = solve!(solver_dg; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=false, verbose=false))
+    test_optimality_conditions(solver_dg, 5e-3)
+
+    solver_dg = GeNIOS.MLSolver(f2, λ1, λ2, Adata, bdata; fconj=f2conj)
+    res = solve!(solver_dg; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, verbose=false))
+    test_optimality_conditions(solver_dg, 5e-3)
 end

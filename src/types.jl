@@ -225,6 +225,24 @@ function MLSolver(f,
     )
 end
 
+# Fills in first and second derivative if not defined
+function MLSolver(
+    f,
+    λ1::S,
+    λ2::S,
+    Adata::AbstractMatrix{T},
+    bdata::AbstractVector{T}; 
+    fconj=x->error(ArgumentError("dual gap used but fconj not defined")),
+    ρ=1.0,
+    α=1.0
+) where {T <: Real, S <: Number}
+    λ1 = convert(T, λ1)
+    λ2 = convert(T, λ2)
+    df = x->derivative(f, x)
+    d2f = x->derivative(y->derivative(f, y), x)
+    return MLSolver(f, df, d2f, λ1, λ2, Adata, bdata, fconj=fconj, ρ=ρ, α=α)
+end
+
 function init_cache(data::GenericProblemData{T}) where {T <: Real}
     m, n = data.m, data.n
     return (

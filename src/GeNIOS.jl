@@ -7,6 +7,7 @@ using Krylov: CgSolver, cg!, issolved, warm_start!
 using RandomizedPreconditioners
 using StaticArrays
 using LogExpFunctions: log1pexp, logistic
+using ForwardDiff:derivative
 
 const RP = RandomizedPreconditioners
 
