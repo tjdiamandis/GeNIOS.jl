@@ -24,10 +24,14 @@
     λ2 = 0.0
     solver = GeNIOS.MLSolver(f2, df2, d2f2, λ1, λ2, A, b; fconj=f2conj)
     res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, dual_gap_tol=1e-4, verbose=false))
-    
     tol = 5e-3
     test_optimality_conditions(solver, tol)
 
+    solver = GeNIOS.MLSolver(f2, df2, d2f2, λ1, λ2, A, b; fconj=f2conj)
+    res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=false, eps_abs=1e-5, eps_rel=1e-5, verbose=false))
+    test_optimality_conditions(solver, tol)
+
+    solver = GeNIOS.LogisticSolver(λ1, λ2, A, b)
     res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=false, eps_abs=1e-5, eps_rel=1e-5, verbose=false))
     test_optimality_conditions(solver, tol)
 end

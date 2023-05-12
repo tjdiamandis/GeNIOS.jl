@@ -243,6 +243,56 @@ function MLSolver(
     return MLSolver(f, df, d2f, λ1, λ2, Adata, bdata, fconj=fconj, ρ=ρ, α=α)
 end
 
+function LassoSolver(
+    λ1::S,
+    Adata::AbstractMatrix{T},
+    bdata::AbstractVector{T}; 
+    ρ=1.0,
+    α=1.0
+) where {T <: Real, S <: Number}
+    λ1 = convert(T, λ1)
+    λ2 = zero(T)
+    f(x) = 0.5*x^2 
+    df(x) = x
+    d2f(x) = 1.0
+    fconj(x) = 0.5*x^2
+    return MLSolver(f, df, d2f, λ1, λ2, Adata, bdata, fconj=fconj, ρ=ρ, α=α)
+end
+
+function ElasticNetSolver(
+    λ1::S,
+    λ2::S,
+    Adata::AbstractMatrix{T},
+    bdata::AbstractVector{T}; 
+    ρ=1.0,
+    α=1.0
+) where {T <: Real, S <: Number}
+    λ1 = convert(T, λ1)
+    λ2 = convert(T, λ2)
+    f(x) = 0.5*x^2 
+    df(x) = x
+    d2f(x) = 1.0
+    fconj(x) = 0.5*x^2
+    return MLSolver(f, df, d2f, λ1, λ2, Adata, bdata, fconj=fconj, ρ=ρ, α=α)
+end
+
+function LogisticSolver(
+    λ1::S,
+    λ2::S,
+    Adata::AbstractMatrix{T},
+    bdata::AbstractVector{T}; 
+    ρ=1.0,
+    α=1.0
+) where {T <: Real, S <: Number}
+    λ1 = convert(T, λ1)
+    λ2 = convert(T, λ2)
+    f(x) = GeNIOS.log1pexp(x)
+    df(x) = GeNIOS.logistic(x)
+    d2f(x) = GeNIOS.logistic(x) / GeNIOS.log1pexp(x)
+    fconj(x::T) where {T} = (one(T) - x) * log(one(T) - x) + x * log(x)
+    return MLSolver(f, df, d2f, λ1, λ2, Adata, bdata, fconj=fconj, ρ=ρ, α=α)
+end
+
 function init_cache(data::GenericProblemData{T}) where {T <: Real}
     m, n = data.m, data.n
     return (

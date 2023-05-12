@@ -27,9 +27,20 @@ b = A*xstar + 1e-3*randn(m)
 γ = 0.05*norm(A'*b, Inf)
 
 #=
+## LassoSolver interface
+The easiest interface for this problem is the `LassoSolver`, where we just need to
+specify the regularization parameter (in addition to the problem data).
+=#
+λ1 = γ
+solver = GeNIOS.LassoSolver(λ1, A, b)
+res = solve!(solver; options=GeNIOS.SolverOptions(use_dual_gap=true, dual_gap_tol=1e-4, verbose=true))
+rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
+println("Final RMSE: $(round(rmse, digits=8))")
+
+#=
 ## MLSolver interface
-The easiest interface for this problem is the `MLSolver`, where we just need to
-specify $f$ and the regularization parameters
+Under the hood, this is just a wrapper around the `MLSolver` interface.
+This interface is more general, and allows us to specify the objective function.
 =#
 f(x) = 0.5*x^2 
 df(x) = x
