@@ -28,24 +28,24 @@ solver = GeNIOS.MLSolver(f, df, d2f, λ1, λ2, A, b)
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=false, verbose=true))
 rmse = sqrt(1/N*norm(A*solver.zk - b, 2)^2)
 println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.579s
+Setup in  0.670s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration      Objective           RMSE       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      5.505e+01      5.246e-01            Inf            Inf      1.000e+00         0.000
-            1      4.648e+01      4.661e-01      2.658e+00      1.906e+00      1.000e+00         0.735
-           25      3.747e+01      3.255e-01      4.821e-02      1.231e-01      1.000e+00         0.741
-           50      3.732e+01      3.133e-01      1.191e-02      5.102e-02      1.000e+00         0.747
-           75      3.729e+01      3.082e-01      4.534e-03      2.398e-02      1.000e+00         0.753
-          100      3.728e+01      3.059e-01      2.236e-03      1.307e-02      1.000e+00         0.761
-          125      3.728e+01      3.046e-01      1.200e-03      8.043e-03      1.000e+00         0.768
-          150      3.728e+01      3.038e-01      6.760e-04      5.317e-03      1.000e+00         0.776
-          175      3.728e+01      3.034e-01      4.619e-04      3.404e-03      1.000e+00         0.784
-          200      3.728e+01      3.031e-01      3.027e-04      2.247e-03      1.000e+00         0.793
+            1      4.648e+01      4.661e-01      2.658e+00      1.906e+00      1.000e+00         0.852
+           25      3.747e+01      3.255e-01      4.821e-02      1.231e-01      1.000e+00         0.859
+           50      3.732e+01      3.133e-01      1.191e-02      5.102e-02      1.000e+00         0.867
+           75      3.729e+01      3.082e-01      4.534e-03      2.398e-02      1.000e+00         0.876
+          100      3.728e+01      3.059e-01      2.236e-03      1.307e-02      1.000e+00         0.886
+          125      3.728e+01      3.046e-01      1.200e-03      8.043e-03      1.000e+00         0.895
+          150      3.728e+01      3.038e-01      6.760e-04      5.317e-03      1.000e+00         0.905
+          175      3.728e+01      3.034e-01      4.619e-04      3.404e-03      1.000e+00         0.915
+          200      3.728e+01      3.031e-01      3.027e-04      2.247e-03      1.000e+00         0.926
 
-SOLVED in  0.793s, 200 iterations
-Total time:  1.372s
+SOLVED in  0.926s, 200 iterations
+Total time:  1.597s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 Final RMSE: 0.62402228</code></pre><h3 id="Automatic-differentiation"><a class="docs-heading-anchor" href="#Automatic-differentiation">Automatic differentiation</a><a id="Automatic-differentiation-1"></a><a class="docs-heading-anchor-permalink" href="#Automatic-differentiation" title="Permalink"></a></h3><p>We could have let the solver figure out the derivatives for us as well:</p><pre><code class="language-julia hljs">f(x) = abs(x) &lt;= 1 ? 0.5*x^2 : abs(x) - 0.5
@@ -55,24 +55,24 @@ solver = GeNIOS.MLSolver(f, λ1, λ2, A, b)
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=false, verbose=true))
 rmse = sqrt(1/N*norm(A*solver.zk - b, 2)^2)
 println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.555s
+Setup in  0.665s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration      Objective           RMSE       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      5.505e+01      5.246e-01            Inf            Inf      1.000e+00         0.000
-            1      4.647e+01      4.661e-01      2.654e+00      1.907e+00      1.000e+00         0.202
-           25      3.747e+01      3.255e-01      4.654e-02      1.227e-01      1.000e+00         0.208
-           50      3.732e+01      3.133e-01      1.184e-02      5.104e-02      1.000e+00         0.214
-           75      3.729e+01      3.082e-01      4.527e-03      2.395e-02      1.000e+00         0.221
-          100      3.728e+01      3.059e-01      2.235e-03      1.305e-02      1.000e+00         0.229
-          125      3.728e+01      3.046e-01      1.188e-03      8.033e-03      1.000e+00         0.236
-          150      3.728e+01      3.038e-01      6.753e-04      5.311e-03      1.000e+00         0.243
-          175      3.728e+01      3.034e-01      4.612e-04      3.400e-03      1.000e+00         0.251
-          200      3.728e+01      3.031e-01      3.024e-04      2.244e-03      1.000e+00         0.260
+            1      4.647e+01      4.661e-01      2.654e+00      1.907e+00      1.000e+00         0.253
+           25      3.747e+01      3.255e-01      4.654e-02      1.227e-01      1.000e+00         0.262
+           50      3.732e+01      3.133e-01      1.184e-02      5.104e-02      1.000e+00         0.271
+           75      3.729e+01      3.082e-01      4.527e-03      2.395e-02      1.000e+00         0.280
+          100      3.728e+01      3.059e-01      2.235e-03      1.305e-02      1.000e+00         0.289
+          125      3.728e+01      3.046e-01      1.188e-03      8.033e-03      1.000e+00         0.299
+          150      3.728e+01      3.038e-01      6.753e-04      5.311e-03      1.000e+00         0.309
+          175      3.728e+01      3.034e-01      4.612e-04      3.400e-03      1.000e+00         0.319
+          200      3.728e+01      3.031e-01      3.024e-04      2.244e-03      1.000e+00         0.330
 
-SOLVED in  0.260s, 200 iterations
-Total time:  0.815s
+SOLVED in  0.330s, 200 iterations
+Total time:  0.996s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Final RMSE: 0.62401986</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../constrained-ls/">« Constrained Least Squares</a><a class="docs-footer-nextpage" href="../lasso/">Lasso »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Saturday 13 May 2023 19:03">Saturday 13 May 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Final RMSE: 0.62401986</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../constrained-ls/">« Constrained Least Squares</a><a class="docs-footer-nextpage" href="../lasso/">Lasso »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Saturday 13 May 2023 19:30">Saturday 13 May 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
