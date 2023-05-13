@@ -17,7 +17,8 @@ Pages = [
     "examples/huber.md",
     "examples/lasso.md",
     "examples/logistic.md",
-    "examples/portfolio.md"
+    "examples/portfolio.md",
+    "examples/signal.md",
 ]
 Depth = 1
 ```

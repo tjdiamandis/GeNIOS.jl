@@ -4,7 +4,7 @@ using Literate
 
 # For Plots.jl
 # https://discourse.julialang.org/t/plotting-errors-when-building-documentation-using-plots-jl-and-documenter-jl/67849
-# ENV["GKSwstype"]="100"
+ENV["GKSwstype"]="100"
 
 EXCLUDED_EXAMPLES = []
 
