@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Lasso · GeNIOS.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://tjdiamandis.github.io/GeNIOS.jl/examples/lasso/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">GeNIOS.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../method/">Solution method</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../constrained-ls/">Constrained Least Squares</a></li><li><a class="tocitem" href="../huber/">Huber Fitting</a></li><li class="is-active"><a class="tocitem" href>Lasso</a><ul class="internal"><li><a class="tocitem" href="#Generating-the-problem-data"><span>Generating the problem data</span></a></li><li><a class="tocitem" href="#MLSolver-interface"><span>MLSolver interface</span></a></li><li><a class="tocitem" href="#QPSolver-interface"><span>QPSolver interface</span></a></li><li><a class="tocitem" href="#Generic-interface"><span>Generic interface</span></a></li></ul></li><li><a class="tocitem" href="../logistic/">Logistic Regression</a></li><li><a class="tocitem" href="../portfolio/">Markowitz Portfolio Optimization</a></li></ul></li><li><a class="tocitem" href="../../api/">API reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Lasso</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Lasso</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/tjdiamandis/GeNIOS.jl/blob/main/examples/lasso.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><p>The source files for all examples can be found in <a href="https://github.com/tjdiamandis/GeNIOS.jl/tree/main/examples">/examples</a>.</p><h1 id="Lasso"><a class="docs-heading-anchor" href="#Lasso">Lasso</a><a id="Lasso-1"></a><a class="docs-heading-anchor-permalink" href="#Lasso" title="Permalink"></a></h1><p>This example sets up a lasso regression problem with three different interfaces provided by GeNIOS.</p><p>Specifically, we want to solve the problem</p><p class="math-container">\[\begin{array}{ll}
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Lasso · GeNIOS.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://tjdiamandis.github.io/GeNIOS.jl/examples/lasso/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">GeNIOS.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../method/">Solution method</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../constrained-ls/">Constrained Least Squares</a></li><li><a class="tocitem" href="../huber/">Huber Fitting</a></li><li class="is-active"><a class="tocitem" href>Lasso</a><ul class="internal"><li><a class="tocitem" href="#Generating-the-problem-data"><span>Generating the problem data</span></a></li><li><a class="tocitem" href="#LassoSolver-interface"><span>LassoSolver interface</span></a></li><li><a class="tocitem" href="#MLSolver-interface"><span>MLSolver interface</span></a></li><li><a class="tocitem" href="#QPSolver-interface"><span>QPSolver interface</span></a></li><li><a class="tocitem" href="#Generic-interface"><span>Generic interface</span></a></li></ul></li><li><a class="tocitem" href="../logistic/">Logistic Regression</a></li><li><a class="tocitem" href="../portfolio/">Markowitz Portfolio Optimization</a></li><li><a class="tocitem" href="../signal/">Signal Decomposition</a></li></ul></li><li><a class="tocitem" href="../../api/">API reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Lasso</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Lasso</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/tjdiamandis/GeNIOS.jl/blob/main/examples/lasso.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><p>The source files for all examples can be found in <a href="https://github.com/tjdiamandis/GeNIOS.jl/tree/main/examples">/examples</a>.</p><h1 id="Lasso"><a class="docs-heading-anchor" href="#Lasso">Lasso</a><a id="Lasso-1"></a><a class="docs-heading-anchor-permalink" href="#Lasso" title="Permalink"></a></h1><p>This example sets up a lasso regression problem with three different interfaces provided by GeNIOS.</p><p>Specifically, we want to solve the problem</p><p class="math-container">\[\begin{array}{ll}
 \text{minimize}     &amp; (1/2)\|Ax - b\|_2^2 + \gamma \|x\|_1
 \end{array}\]</p><pre><code class="language-julia hljs">using GeNIOS
 using Random, LinearAlgebra, SparseArrays</code></pre><h2 id="Generating-the-problem-data"><a class="docs-heading-anchor" href="#Generating-the-problem-data">Generating the problem data</a><a id="Generating-the-problem-data-1"></a><a class="docs-heading-anchor-permalink" href="#Generating-the-problem-data" title="Permalink"></a></h2><pre><code class="language-julia hljs">Random.seed!(1)
@@ -9,7 +9,27 @@ A .-= sum(A, dims=1) ./ m
 normalize!.(eachcol(A))
 xstar = sprandn(n, 0.1)
 b = A*xstar + 1e-3*randn(m)
-γ = 0.05*norm(A&#39;*b, Inf)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.10902103801870822</code></pre><h2 id="MLSolver-interface"><a class="docs-heading-anchor" href="#MLSolver-interface">MLSolver interface</a><a id="MLSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#MLSolver-interface" title="Permalink"></a></h2><p>The easiest interface for this problem is the <code>MLSolver</code>, where we just need to specify <span>$f$</span> and the regularization parameters</p><pre><code class="language-julia hljs">f(x) = 0.5*x^2
+γ = 0.05*norm(A&#39;*b, Inf)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.10902103801870822</code></pre><h2 id="LassoSolver-interface"><a class="docs-heading-anchor" href="#LassoSolver-interface">LassoSolver interface</a><a id="LassoSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#LassoSolver-interface" title="Permalink"></a></h2><p>The easiest interface for this problem is the <code>LassoSolver</code>, where we just need to specify the regularization parameter (in addition to the problem data).</p><pre><code class="language-julia hljs">λ1 = γ
+solver = GeNIOS.LassoSolver(λ1, A, b)
+res = solve!(solver; options=GeNIOS.SolverOptions(use_dual_gap=true, dual_gap_tol=1e-4, verbose=true))
+rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
+println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
+Setup in  0.272s
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    Iteration      Objective           RMSE       Dual Gap       r_primal         r_dual              ρ           Time
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+            0      1.682e+01      2.900e-01      9.256e+00            Inf            Inf      1.000e+00         0.000
+            1      9.621e+00      2.078e-01      4.492e+00      1.565e+00      1.293e+00      1.000e+00         0.097
+           25      2.963e+00      3.617e-02      2.757e-02      2.163e-02      6.218e-03      1.000e+00         0.105
+           50      2.963e+00      3.602e-02      9.739e-04      1.413e-03      2.079e-04      1.000e+00         0.113
+           66      2.963e+00      3.602e-02      9.887e-05      2.812e-04      4.277e-05      1.000e+00         0.120
+
+SOLVED in  0.120s, 66 iterations
+Total time:  0.392s
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Final RMSE: 0.05094111</code></pre><h2 id="MLSolver-interface"><a class="docs-heading-anchor" href="#MLSolver-interface">MLSolver interface</a><a id="MLSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#MLSolver-interface" title="Permalink"></a></h2><p>Under the hood, this is just a wrapper around the <code>MLSolver</code> interface. This interface is more general, and allows us to specify the objective function.</p><pre><code class="language-julia hljs">f(x) = 0.5*x^2
 df(x) = x
 d2f(x) = 1.0
 fconj(x) = 0.5*x^2
@@ -19,39 +39,39 @@ solver = GeNIOS.MLSolver(f, df, d2f, λ1, λ2, A, b; fconj=fconj)
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, dual_gap_tol=1e-3, verbose=true))
 rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
 println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.346s
+Setup in  0.262s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration      Objective           RMSE       Dual Gap       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      1.682e+01      2.900e-01      9.256e+00            Inf            Inf      1.000e+00         0.000
-            1      9.621e+00      2.078e-01      4.492e+00      1.565e+00      1.293e+00      1.000e+00         0.109
-           25      2.963e+00      3.617e-02      2.757e-02      2.163e-02      6.218e-03      1.000e+00         0.117
-           50      2.963e+00      3.602e-02      9.739e-04      1.413e-03      2.079e-04      1.000e+00         0.127
+            1      9.617e+00      2.077e-01      4.502e+00      1.566e+00      1.295e+00      1.000e+00         0.095
+           25      2.963e+00      3.618e-02      2.900e-02      2.101e-02      5.734e-03      1.000e+00         0.102
+           49      2.963e+00      3.602e-02      9.665e-04      1.356e-03      2.408e-04      1.000e+00         0.111
 
-SOLVED in  0.127s, 50 iterations
-Total time:  0.473s
+SOLVED in  0.111s, 49 iterations
+Total time:  0.373s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Final RMSE: 0.05094217</code></pre><p>Note that we also defined the conjugate function of <span>$f$</span>, defined as</p><p class="math-container">\[f^*(y) = \sup_x \{yx - f(x)\},\]</p><p>which allows us to use the dual gap as a stopping criterion (see appendix C of our paper for a derivation). Specifying the conjugate function is optional, and the solver will fall back to using the primal and dual residuals if it is not specified.</p><h3 id="Automatic-differentiation"><a class="docs-heading-anchor" href="#Automatic-differentiation">Automatic differentiation</a><a id="Automatic-differentiation-1"></a><a class="docs-heading-anchor-permalink" href="#Automatic-differentiation" title="Permalink"></a></h3><p>Note that we can also let the solver use forward-mode automatic differentiation to compute the first and second derivatives of <span>$f$</span>. The interface is the same, but we drop these arguments:</p><pre><code class="language-julia hljs">solver = GeNIOS.MLSolver(f, λ1, λ2, A, b; fconj=fconj)
+Final RMSE: 0.05094201</code></pre><p>Note that we also defined the conjugate function of <span>$f$</span>, defined as</p><p class="math-container">\[f^*(y) = \sup_x \{yx - f(x)\},\]</p><p>which allows us to use the dual gap as a stopping criterion (see appendix C of our paper for a derivation). Specifying the conjugate function is optional, and the solver will fall back to using the primal and dual residuals if it is not specified.</p><h3 id="Automatic-differentiation"><a class="docs-heading-anchor" href="#Automatic-differentiation">Automatic differentiation</a><a id="Automatic-differentiation-1"></a><a class="docs-heading-anchor-permalink" href="#Automatic-differentiation" title="Permalink"></a></h3><p>Note that we can also let the solver use forward-mode automatic differentiation to compute the first and second derivatives of <span>$f$</span>. The interface is the same, but we drop these arguments:</p><pre><code class="language-julia hljs">solver = GeNIOS.MLSolver(f, λ1, λ2, A, b; fconj=fconj)
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, dual_gap_tol=1e-3, verbose=true))
 rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
 println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.388s
+Setup in  0.355s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration      Objective           RMSE       Dual Gap       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      1.682e+01      2.900e-01      9.256e+00            Inf            Inf      1.000e+00         0.000
-            1      9.633e+00      2.080e-01      4.455e+00      1.565e+00      1.293e+00      1.000e+00         0.126
-           25      2.963e+00      3.618e-02      2.869e-02      2.110e-02      6.091e-03      1.000e+00         0.134
-           49      2.963e+00      3.602e-02      9.816e-04      1.455e-03      2.540e-04      1.000e+00         0.156
+            1      9.606e+00      2.076e-01      4.453e+00      1.566e+00      1.301e+00      1.000e+00         0.113
+           25      2.963e+00      3.618e-02      2.959e-02      2.109e-02      5.795e-03      1.000e+00         0.120
+           50      2.963e+00      3.602e-02      7.843e-04      1.321e-03      2.039e-04      1.000e+00         0.144
 
-SOLVED in  0.157s, 49 iterations
-Total time:  0.544s
+SOLVED in  0.144s, 50 iterations
+Total time:  0.499s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Final RMSE: 0.05094271</code></pre><h2 id="QPSolver-interface"><a class="docs-heading-anchor" href="#QPSolver-interface">QPSolver interface</a><a id="QPSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#QPSolver-interface" title="Permalink"></a></h2><p>The <code>QPSolver</code> interface requires us to specify the problem in the form</p><p class="math-container">\[\begin{array}{ll}
+Final RMSE: 0.05094246</code></pre><h2 id="QPSolver-interface"><a class="docs-heading-anchor" href="#QPSolver-interface">QPSolver interface</a><a id="QPSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#QPSolver-interface" title="Permalink"></a></h2><p>The <code>QPSolver</code> interface requires us to specify the problem in the form</p><p class="math-container">\[\begin{array}{ll}
 \text{minimize}     &amp; (1/2)x^TPx + q^Tx \\
 \text{subject to}   &amp;  l \leq Mx \leq u
 \end{array}\]</p><p>We introduce the new variable <span>$t$</span> and inntroduce the constraint <span>$-t \leq x \leq t$</span> to enforce the <span>$\ell_1$</span> norm. The problem then becomes</p><p class="math-container">\[\begin{array}{ll}
@@ -79,23 +99,23 @@ res = solve!(
 );
 rmse = sqrt(1/m*norm(A*solver.xk[1:n] - b, 2)^2)
 println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.009s
+Setup in  0.008s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      0.000e+00            Inf            Inf      1.000e+00         0.000
-            1     -1.484e+01      2.681e+00      2.064e+00      1.000e+00         0.307
-           25     -1.356e+01      3.115e-02      2.420e-01      1.000e+00         0.337
-           50     -1.384e+01      1.110e-02      6.097e-02      1.000e+00         0.371
-           75     -1.385e+01      2.001e-03      9.820e-03      1.000e+00         0.412
-           89     -1.385e+01      6.525e-04      2.893e-03      1.000e+00         0.442
+            1     -1.484e+01      2.678e+00      2.067e+00      1.000e+00         0.263
+           25     -1.356e+01      3.200e-02      2.422e-01      1.000e+00         0.290
+           50     -1.384e+01      1.113e-02      6.098e-02      1.000e+00         0.317
+           75     -1.385e+01      2.003e-03      9.825e-03      1.000e+00         0.351
+           89     -1.385e+01      6.529e-04      2.895e-03      1.000e+00         0.377
 
-SOLVED in  0.442s, 89 iterations
-Total time:  0.452s
+SOLVED in  0.377s, 89 iterations
+Total time:  0.385s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Final RMSE: 0.05122644</code></pre><h2 id="Generic-interface"><a class="docs-heading-anchor" href="#Generic-interface">Generic interface</a><a id="Generic-interface-1"></a><a class="docs-heading-anchor-permalink" href="#Generic-interface" title="Permalink"></a></h2><p>Finally, we use the generic interface, which provides a large amount of control but is more complicated to use than the specialized interfaces demonstrated above.</p><p>First, we define the custom <code>HessianOperator</code>, which is used to solve the linear system in the <span>$x$</span>-subproblem. Since the Hessian of the objective is simply <span>$A^TA$</span>, this operator is simple for the Lasso problem. However, note that, since this is a custom type, we can speed up the multiplication to be more efficient than if we were to use <span>$A^TA$</span> directly.</p><p>The <code>update!</code> function is called before the solution of the <span>$x$</span>-subproblem to update the Hessian, if necessary.</p><pre><code class="language-julia hljs">struct HessianLasso{T, S &lt;: AbstractMatrix{T}} &lt;: HessianOperator
+Final RMSE: 0.05122666</code></pre><h2 id="Generic-interface"><a class="docs-heading-anchor" href="#Generic-interface">Generic interface</a><a id="Generic-interface-1"></a><a class="docs-heading-anchor-permalink" href="#Generic-interface" title="Permalink"></a></h2><p>Finally, we use the generic interface, which provides a large amount of control but is more complicated to use than the specialized interfaces demonstrated above.</p><p>First, we define the custom <code>HessianOperator</code>, which is used to solve the linear system in the <span>$x$</span>-subproblem. Since the Hessian of the objective is simply <span>$A^TA$</span>, this operator is simple for the Lasso problem. However, note that, since this is a custom type, we can speed up the multiplication to be more efficient than if we were to use <span>$A^TA$</span> directly.</p><p>The <code>update!</code> function is called before the solution of the <span>$x$</span>-subproblem to update the Hessian, if necessary.</p><pre><code class="language-julia hljs">struct HessianLasso{T, S &lt;: AbstractMatrix{T}} &lt;: HessianOperator
     A::S
     vm::Vector{T}
 end
@@ -135,18 +155,18 @@ end</code></pre><pre class="documenter-example-output"><code class="nohighlight 
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, verbose=true))
 rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
 println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.285s
+Setup in  0.247s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      1.682e+01            Inf            Inf      1.000e+00         0.000
-            1      3.292e+00      1.565e+00      1.299e+00      1.000e+00         0.330
-           25      2.964e+00      3.756e-03      2.104e-03      1.000e+00         0.337
-           27      2.963e+00      2.104e-03      1.623e-03      1.000e+00         0.338
+            1      3.303e+00      1.562e+00      1.299e+00      1.000e+00         0.292
+           25      2.964e+00      3.760e-03      2.106e-03      1.000e+00         0.298
+           27      2.963e+00      2.102e-03      1.627e-03      1.000e+00         0.298
 
-SOLVED in  0.338s, 27 iterations
-Total time:  0.624s
+SOLVED in  0.298s, 27 iterations
+Total time:  0.546s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Final RMSE: 0.05085657</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../huber/">« Huber Fitting</a><a class="docs-footer-nextpage" href="../logistic/">Logistic Regression »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 11 May 2023 15:38">Thursday 11 May 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Final RMSE: 0.0508565</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../huber/">« Huber Fitting</a><a class="docs-footer-nextpage" href="../logistic/">Logistic Regression »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Saturday 13 May 2023 19:03">Saturday 13 May 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

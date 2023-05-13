@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Signal Decomposition · GeNIOS.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://tjdiamandis.github.io/GeNIOS.jl/examples/signal/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">GeNIOS.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../method/">Solution method</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../constrained-ls/">Constrained Least Squares</a></li><li><a class="tocitem" href="../huber/">Huber Fitting</a></li><li><a class="tocitem" href="../lasso/">Lasso</a></li><li><a class="tocitem" href="../logistic/">Logistic Regression</a></li><li><a class="tocitem" href="../portfolio/">Markowitz Portfolio Optimization</a></li><li class="is-active"><a class="tocitem" href>Signal Decomposition</a><ul class="internal"><li><a class="tocitem" href="#Generating-the-problem-data"><span>Generating the problem data</span></a></li><li><a class="tocitem" href="#Defining-the-probelem"><span>Defining the probelem</span></a></li><li><a class="tocitem" href="#Plotting-the-results"><span>Plotting the results</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../../api/">API reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Signal Decomposition</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Signal Decomposition</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/tjdiamandis/GeNIOS.jl/blob/main/examples/signal.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><p>The source files for all examples can be found in <a href="https://github.com/tjdiamandis/GeNIOS.jl/tree/main/examples">/examples</a>.</p><h1 id="Signal-Decomposition"><a class="docs-heading-anchor" href="#Signal-Decomposition">Signal Decomposition</a><a id="Signal-Decomposition-1"></a><a class="docs-heading-anchor-permalink" href="#Signal-Decomposition" title="Permalink"></a></h1><pre><code class="language- hljs">using Pkg; Pkg.activate(joinpath(@__DIR__, &quot;..&quot;, &quot;..&quot;, &quot;docs&quot;))
+using GeNIOS
+using Random, LinearAlgebra, SparseArrays
+using Plots
+using ProximalOperators: TotalVariation1D, prox!
+using BandedMatrices</code></pre><h2 id="Generating-the-problem-data"><a class="docs-heading-anchor" href="#Generating-the-problem-data">Generating the problem data</a><a id="Generating-the-problem-data-1"></a><a class="docs-heading-anchor-permalink" href="#Generating-the-problem-data" title="Permalink"></a></h2><pre><code class="language- hljs">Random.seed!(1)
+T, K = 200, 3
+t = range(0, 1000, T)
+
+# component 2: sine wave
+s2 = @. sin(2π * t * 1/500)
+
+# component 3: square wave
+square(x) = x % 2π &lt; π ? 1 : -1
+s3 = @. square(2π  * t * 1/450)
+
+# component 1: noise
+s1 = 0.1 * randn(T)
+
+# observed signal
+X = hcat(s1, s2, s3)
+y = sum(X, dims=2) |&gt; vec
+
+sig_plt = plot(
+    t,
+    y,
+    lw=1,
+    label=&quot;observed signal&quot;,
+    xlabel=&quot;time&quot;,
+    ylabel=&quot;signal&quot;,
+    legend=:topright,
+    dpi=300,
+    marker=:circle,
+    ls=:dash,
+    color=:royalblue
+)
+plot!(sig_plt,
+    t,
+    sum(X[:, 2:end], dims=2) |&gt; vec,
+    label=&quot;true signal&quot;,
+    lw=3,
+    color=:royalblue
+)
+display(sig_plt)</code></pre><h2 id="Defining-the-probelem"><a class="docs-heading-anchor" href="#Defining-the-probelem">Defining the probelem</a><a id="Defining-the-probelem-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-the-probelem" title="Permalink"></a></h2><p>We will separate the observed signal <span>$y$</span> into a sum of <span>$K=3$</span> signals <span>$x_k$</span>. The first is mean-squared small (noise). The second is second-order smooth (smooth derivative). The third is first difference sparse (piecewise constant). This problem can be phrased as</p><p class="math-container">\[\begin{array}{ll}
+\text{minimize}  &amp; (1/T)\|y - x^2 - x^3\|_2^2 + \gamma_2 \phi_2(x^2) + \gamma_3 \phi_1(x^3),
+\end{array}\]</p><p>where</p><p class="math-container">\[\phi_2(x) = \frac{1}{T-2}\sum_{i=2}^{T-1} (x_{t+1} - 2x_t + x_{t-1})^2\]</p><p>and</p><p class="math-container">\[\phi_3(x) = \frac{1}{T-1}\sum_{i=1}^{T-1} \lvert x_{t+1} - x_t \rvert\]</p><p>.</p><p>We will solve this problem using the genertic solver interface, with the first term as <span>$f(x)$</span> and the second and third terms as <span>$g(z)$</span>. Specifically, this problem can be rephrased as</p><p class="math-container">\[\begin{array}{ll}
+\text{minimize}  &amp; (1/T)\|x^1\|_2^2 + I_{\{0\}}(z^1) + \gamma_2 \phi_2(z^2) + \gamma_3 \phi_1(z^3),
+\text{subject to} &amp; x^1 + x^2 + x^3 - z^1 = y \\
+&amp;&amp; x^2 - z^2 = 0 \\
+&amp;&amp; x^3 - z^3 = 0,
+\end{array}\]</p><p>where <span>$I_{\{0\}}(z^1)$</span> is the indicator function for the zeros vector. We note that the proximal operators for the second, third, and fourth terms can be parallelized.</p><p>First we define <span>$f(x)$</span>, which is just a quadratic.</p><pre><code class="language-julia hljs">f(x, T) = sum(w-&gt;w^2, x[1:T] ) / T
+f(x) = f(x, T)
+
+function grad_f!(g, x, T)
+    @. g[1:T] = 2/T * x[1:T]
+    g[T+1:end] .= zero(eltype(x))
+    return nothing
+end
+grad_f!(g, x) = grad_f!(g, x, T)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">grad_f! (generic function with 2 methods)</code></pre><p>The <code>HessianOperator</code> here is block diagonal, with a <span>$T \times T$</span> identity block, followed by two zero blocks.</p><pre><code class="language- hljs">struct HessianSignal &lt;: HessianOperator end
+function LinearAlgebra.mul!(y, ::HessianSignal, x)
+    T = length(x) ÷ 3
+    @. y[1:T] = 2/T * x[1:T]
+    y[T+1:end] .= zero(eltype(x))
+    return nothing
+end
+update!(::HessianSignal, ::Solver) = nothing
+Hf = HessianSignal()</code></pre><h3 id="A-custom-proximal-operator"><a class="docs-heading-anchor" href="#A-custom-proximal-operator">A custom proximal operator</a><a id="A-custom-proximal-operator-1"></a><a class="docs-heading-anchor-permalink" href="#A-custom-proximal-operator" title="Permalink"></a></h3><p>Now, we define <span>$g$</span> and its proximal operator. Here, we will take advantage of parallelization, as this problem is clearly separable across components. Further performance improvements could be made for these proximal operators, which we avoid for simplicity.</p><pre><code class="language-julia hljs">function g(z, T)
+    @views z1, z2, z3 = z[1:T], z[T+1:2T], z[2T+1:end]
+    any(.!iszero.(z1)) &amp;&amp; return Inf
+
+    gz2 = sum(t-&gt;(z2[t+1] - 2z[t] + z[t-1])^2, 2:T-1)
+    gz3 = sum(abs, diff(z3)) / (T-1)
+    return gz2 + gz3
+end
+g(z) = g(z, T)
+
+# the prox operator for g, using ProximalOperators.jl
+function prox_g!(v, z, ρ, T)
+    @views z1, z2, z3 = z[1:T], z[T+1:2T], z[2T+1:end]
+    @views v1, v2, v3 = v[1:T], v[T+1:2T], v[2T+1:end]
+
+    Threads.@threads for k in 1:3
+        if k == 1
+            # Prox for z1
+            v1 .= zero(eltype(z))
+        elseif k == 2
+            # Prox for z2
+            # g²(z²) = θ₂/T * ||Az||²
+            du = vcat(zeros(1), ones(T-2))
+            d = vcat(zeros(1), -2*ones(T-2), zeros(1))
+            dl = vcat(ones(T-2), zeros(1))
+
+            # Use banded matrix for O(T) solve time
+            A = BandedMatrix(-1 =&gt; dl, 0 =&gt; d, 1 =&gt; du)
+            F = cholesky(I + 1e3/(ρ * T) * A&#39;*A)
+            ldiv!(v2, F, z2)
+        else
+            # Prox for z3
+            ϕ³ = TotalVariation1D(1/T)
+            prox!(v3, ϕ³, z3, 1/ρ)
+        end
+    end
+
+    return nothing
+end
+prox_g!(v, z, ρ) = prox_g!(v, z, ρ, T)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">prox_g! (generic function with 2 methods)</code></pre><h3 id="The-constraints"><a class="docs-heading-anchor" href="#The-constraints">The constraints</a><a id="The-constraints-1"></a><a class="docs-heading-anchor-permalink" href="#The-constraints" title="Permalink"></a></h3><p>Note that <span>$M$</span> is a highly structured matrix. We could use this fact to speed up the operators <span>$M$</span> and <span>$M^T$</span>, but we do not in this example.</p><pre><code class="language- hljs">IT = sparse(Matrix(1.0I, T, T))
+_0 = spzeros(T, T)
+M = [
+        IT  IT  IT;
+        _0  IT  _0;
+        _0  _0  IT
+    ]
+c = vcat(y, zeros(T), zeros(T))</code></pre><h3 id="Solving-the-problem"><a class="docs-heading-anchor" href="#Solving-the-problem">Solving the problem</a><a id="Solving-the-problem-1"></a><a class="docs-heading-anchor-permalink" href="#Solving-the-problem" title="Permalink"></a></h3><pre><code class="language- hljs">solver = GeNIOS.GenericSolver(
+    f, grad_f!, Hf,         # f(x)
+    g, prox_g!,             # g(z)
+    M, c;                   # M, c: Mx + z = c
+    ρ=1.0, α=1.0
+)
+res = solve!(solver, options=GeNIOS.SolverOptions(eps_abs=1e-5))
+
+x1 = solver.xk[1:T]
+x2 = solver.xk[T+1:2T]
+x3 = solver.xk[2T+1:end];
+nothing #hide</code></pre><h2 id="Plotting-the-results"><a class="docs-heading-anchor" href="#Plotting-the-results">Plotting the results</a><a id="Plotting-the-results-1"></a><a class="docs-heading-anchor-permalink" href="#Plotting-the-results" title="Permalink"></a></h2><pre><code class="language- hljs">res_plt = plot(
+    t,
+    y,
+    lw=1,
+    label=&quot;observed signal&quot;,
+    xlabel=&quot;time&quot;,
+    ylabel=&quot;signal&quot;,
+    legend=:topright,
+    dpi=300,
+    marker=:circle,
+    ls=:dash
+)
+plot!(res_plt,
+    t,
+    sum(X[:, 2:end], dims=2) |&gt; vec,
+    label=&quot;true signal&quot;,
+    lw=3,
+    color=:blue
+)
+plot!(res_plt,
+    t,
+    x2 + x3,
+    label=&quot;reconstructed signal&quot;,
+    lw=3,
+    color=:coral1
+)
+display(res_plt)</code></pre><h3 id="Visualizing-each-component"><a class="docs-heading-anchor" href="#Visualizing-each-component">Visualizing each component</a><a id="Visualizing-each-component-1"></a><a class="docs-heading-anchor-permalink" href="#Visualizing-each-component" title="Permalink"></a></h3><pre><code class="language- hljs">p1 = plot(
+    t,
+    X[:, 1],
+    lw=1,
+    label=&quot;x1 true&quot;,
+    xlabel=&quot;time&quot;,
+    ylabel=&quot;signal&quot;,
+    legend=:topright,
+    dpi=300,
+    marker=:circle,
+    ls=:dash,
+    color=:royalblue
+)
+plot!(p1,
+    t,
+    x1,
+    label=&quot;x1 estimated&quot;,
+    lw=3,
+    color=:coral1
+)
+
+p2 = plot(
+    t,
+    X[:, 2],
+    lw=3,
+    label=&quot;x2 true&quot;,
+    xlabel=&quot;time&quot;,
+    ylabel=&quot;signal&quot;,
+    legend=:topright,
+    dpi=300,
+    ls=:dash,
+    color=:royalblue
+)
+plot!(p2,
+    t,
+    x2,
+    label=&quot;x2 estimated&quot;,
+    lw=3,
+    color=:coral1
+)
+
+p3 = plot(
+    t,
+    X[:, 3],
+    lw=3,
+    label=&quot;x3 true&quot;,
+    xlabel=&quot;time&quot;,
+    ylabel=&quot;signal&quot;,
+    legend=:topright,
+    dpi=300,
+    ls=:dash,
+    color=:royalblue
+)
+plot!(p3,
+    t,
+    x3,
+    label=&quot;x3 estimated&quot;,
+    lw=3,
+    color=:coral1
+)
+decomp_plt = plot(p1, p2, p3, layout=(3,1))
+display(decomp_plt)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../portfolio/">« Markowitz Portfolio Optimization</a><a class="docs-footer-nextpage" href="../../api/">API reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Saturday 13 May 2023 19:03">Saturday 13 May 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
