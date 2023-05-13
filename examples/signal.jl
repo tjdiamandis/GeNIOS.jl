@@ -2,7 +2,6 @@
 # Signal Decomposition
 
 =#
-using Pkg; Pkg.activate(joinpath(@__DIR__, "..", "..", "docs"))
 using GeNIOS
 using Random, LinearAlgebra, SparseArrays
 using Plots
@@ -50,7 +49,7 @@ plot!(sig_plt,
     lw=3,
     color=:royalblue
 )
-display(sig_plt)
+
 
 #=
 ## Defining the probelem
@@ -80,7 +79,7 @@ Specifically, this problem can be rephrased as
 
 $$
 \begin{array}{ll}
-\text{minimize}  & (1/T)\|x^1\|_2^2 + I_{\{0\}}(z^1) + \gamma_2 \phi_2(z^2) + \gamma_3 \phi_1(z^3),
+\text{minimize}  & (1/T)\|x^1\|_2^2 + I_{\{0\}}(z^1) + \gamma_2 \phi_2(z^2) + \gamma_3 \phi_1(z^3) \\
 \text{subject to} & x^1 + x^2 + x^3 - z^1 = y \\
 && x^2 - z^2 = 0 \\
 && x^3 - z^3 = 0,
@@ -145,7 +144,7 @@ function prox_g!(v, z, ρ, T)
             v1 .= zero(eltype(z))
         elseif k == 2
             ## Prox for z2
-            ## g²(z²) = θ₂/T * ||Az||²
+            ## g²(z²) = γ₂/T * ||Az||²
             du = vcat(zeros(1), ones(T-2))
             d = vcat(zeros(1), -2*ones(T-2), zeros(1))
             dl = vcat(ones(T-2), zeros(1))
@@ -180,7 +179,7 @@ M = [
         _0  IT  _0; 
         _0  _0  IT
     ]
-c = vcat(y, zeros(T), zeros(T))
+c = vcat(y, zeros(T), zeros(T));
 
 #=
 ### Solving the problem
@@ -191,7 +190,7 @@ solver = GeNIOS.GenericSolver(
     M, c;                   # M, c: Mx + z = c
     ρ=1.0, α=1.0
 )
-res = solve!(solver, options=GeNIOS.SolverOptions(eps_abs=1e-5))
+res = solve!(solver, options=GeNIOS.SolverOptions(eps_abs=1e-5, print_iter=100))
 
 x1 = solver.xk[1:T]
 x2 = solver.xk[T+1:2T]
@@ -227,7 +226,6 @@ plot!(res_plt,
     lw=3,
     color=:coral1
 )
-display(res_plt)
 
 #=
 ### Visualizing each component
@@ -293,4 +291,3 @@ plot!(p3,
     color=:coral1
 )
 decomp_plt = plot(p1, p2, p3, layout=(3,1))
-display(decomp_plt)
