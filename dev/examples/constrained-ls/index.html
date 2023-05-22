@@ -36,22 +36,22 @@ res = solve!(
         eps_rel=1e-6,
         verbose=true)
 );</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  1.306s
+Setup in  1.157s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      0.000e+00            Inf            Inf      1.000e+00         0.000
-            1      0.000e+00      5.069e+00      2.059e+01      1.000e+00         2.640
-           25      6.789e+00      1.110e-01      4.985e-03      1.000e+00         2.708
-           50      7.467e+00      3.296e-02      1.047e-03      2.000e+00         2.783
-           75      7.665e+00      5.836e-03      4.492e-04      2.000e+00         2.784
-          100      7.689e+00      1.297e-03      8.085e-05      4.000e+00         2.786
-          125      7.694e+00      7.456e-05      1.909e-05      4.000e+00         2.788
-          141      7.694e+00      1.200e-05      3.083e-06      4.000e+00         2.790
+            1      0.000e+00      5.069e+00      2.059e+01      1.000e+00         2.226
+           25      6.789e+00      1.110e-01      4.985e-03      1.000e+00         2.287
+           50      7.467e+00      3.296e-02      1.047e-03      2.000e+00         2.356
+           75      7.665e+00      5.836e-03      4.492e-04      2.000e+00         2.357
+          100      7.689e+00      1.297e-03      8.085e-05      4.000e+00         2.359
+          125      7.694e+00      7.456e-05      1.909e-05      4.000e+00         2.360
+          141      7.694e+00      1.200e-05      3.083e-06      4.000e+00         2.361
 
-SOLVED in  2.790s, 141 iterations
-Total time:  4.096s
+SOLVED in  2.361s, 141 iterations
+Total time:  3.518s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</code></pre><h2 id="Examining-the-solution"><a class="docs-heading-anchor" href="#Examining-the-solution">Examining the solution</a><a id="Examining-the-solution-1"></a><a class="docs-heading-anchor-permalink" href="#Examining-the-solution" title="Permalink"></a></h2><p>We can check the solution and its optimality</p><pre><code class="language-julia hljs">xstar = solver.zk[m+1:end]
 ls_residual =  1/√(m) * norm(Ad*xstar - b)
 feas = all(xstar .&gt;= 0) &amp;&amp; all(xstar .&lt;= 1)
@@ -61,4 +61,4 @@ println(&quot;Primal residual: $(round(solver.rp_norm, digits=8))&quot;)
 println(&quot;Dual residual: $(round(solver.rd_norm, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Is feasible? true
 Least Squres RMSE = 0.71620899
 Primal residual: 1.2e-5
-Dual residual: 3.08e-6</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../method/">« Solution method</a><a class="docs-footer-nextpage" href="../huber/">Huber Fitting »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Saturday 13 May 2023 19:30">Saturday 13 May 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Dual residual: 3.08e-6</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../method/">« Solution method</a><a class="docs-footer-nextpage" href="../huber/">Huber Fitting »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Monday 22 May 2023 22:42">Monday 22 May 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
