@@ -346,7 +346,7 @@ Base.@kwdef struct SolverOptions{T <: Real, S <: Real}
 end
 
 
-struct NysADMMLog{T <: AbstractFloat, S <: AbstractVector{T}}
+struct GeNIOSLog{T <: AbstractFloat, S <: AbstractVector{T}}
     dual_gap::Union{S, Nothing}
     obj_val::Union{S, Nothing}
     iter_time::Union{S, Nothing}
@@ -357,8 +357,8 @@ struct NysADMMLog{T <: AbstractFloat, S <: AbstractVector{T}}
     precond_time::T
     solve_time::T
 end
-function NysADMMLog(setup_time::T, precond_time::T, solve_time::T) where {T <: AbstractFloat}
-    return NysADMMLog(
+function GeNIOSLog(setup_time::T, precond_time::T, solve_time::T) where {T <: AbstractFloat}
+    return GeNIOSLog(
         nothing, nothing, nothing, nothing, nothing, nothing,
         setup_time, precond_time, solve_time
     )
@@ -366,7 +366,7 @@ end
 
 function create_temp_log(solver::Solver, max_iters::Int)
     T = eltype(solver.xk)
-    return NysADMMLog(
+    return GeNIOSLog(
         zeros(T, max_iters),
         zeros(T, max_iters),
         zeros(T, max_iters),
@@ -379,12 +379,34 @@ function create_temp_log(solver::Solver, max_iters::Int)
     )
 end
 
-struct NysADMMResult{T}
+struct GeNIOSResult{T}
     obj_val::T                 # primal objective
     loss::T                    # TODO:
     x::AbstractVector{T}       # primal soln
     z::AbstractVector{T}       # primal soln
+    u::AbstractVector{T}       # dual soln
     dual_gap::T                # duality gap
-    # vT::AbstractVector{T}      # dual certificate
-    log::NysADMMLog{T}
+    log::GeNIOSLog{T}
+end
+
+function populate_log!(genios_log, solver::Solver, ::SolverOptions, t, time_sec, time_linsys)
+    genios_log.obj_val[t] = solver.obj_val
+    genios_log.iter_time[t] = time_sec
+    genios_log.linsys_time[t] = time_linsys
+    genios_log.rp[t] = solver.rp_norm
+    genios_log.rd[t] = solver.rd_norm
+    return nothing
+end
+
+function populate_log!(genios_log, solver::MLSolver, options::SolverOptions, t, time_sec, time_linsys)
+    genios_log.obj_val[t] = solver.obj_val
+    genios_log.iter_time[t] = time_sec
+    genios_log.linsys_time[t] = time_linsys
+    genios_log.rp[t] = solver.rp_norm
+    genios_log.rd[t] = solver.rd_norm
+
+    if options.use_dual_gap
+        genios_log.dual_gap[t] = solver.dual_gap
+    end
+    return nothing
 end

@@ -337,7 +337,6 @@ function solve!(
     options.verbose && @printf("\nSetup in %6.3fs\n", setup_time)
 
     # --- Print Headers ---
-    # TODO: allow for custom headers
     format = print_format(solver, options)
     headers = print_headers(solver, options)
     options.verbose && print_header(format, headers)
@@ -353,8 +352,8 @@ function solve!(
     while t < options.max_iters && 
         (time_ns() - solve_time_start) / 1e9 < options.max_time_sec &&
         !converged(solver, options)
+        
         t += 1
-
 
         # --- ADMM iterations ---
         time_linsys = update_x!(solver, options, linsys_solver)
@@ -369,52 +368,33 @@ function solve!(
         obj_val!(solver, options)
         convergence_criteria!(solver, options)
 
-
         # --- Update ρ ---
         if t % options.rho_update_iter == 0
-            ρ_old = solver.ρ
             updated_rho = update_rho!(solver)
 
             if updated_rho
                 update_preconditioner_rho!(solver, options)
             end
-            # if updated_rho && !indirect && typeof(solver) <: LassoSolver
-            #     # NOTE: logistic solver recomputes fact at each iteration anyway
-            #     KKT_mat[diagind(KKT_mat)] .+= (solver.ρ .- ρ_old)
-            #     linsys_solver = cholesky(KKT_mat)
         end
 
-
-
-         # --- Update preconditioner ---
-         if options.precondition && t % options.sketch_update_iter == 0
+        # --- Update preconditioner ---
+        if options.precondition && t % options.sketch_update_iter == 0
             update_preconditioner!(solver, options)
         end
-
 
         # --- Logging ---
         time_sec = (time_ns() - solve_time_start) / 1e9
         if options.logging
-            # TODO: dual gap??
-            # TODO: functionize
-            # tmp_log.dual_gap[t] = solver.dual_gap
-            tmp_log.obj_val[t] = solver.obj_val
-            tmp_log.iter_time[t] = time_sec
-            tmp_log.linsys_time[t] = time_linsys
-            tmp_log.rp[t] = solver.rp_norm
-            tmp_log.rd[t] = solver.rd_norm
+            populate_log!(tmp_log, solver, options, t, time_sec, time_linsys)
         end
 
         # --- Printing ---
         if options.verbose && (t == 1 || t % options.print_iter == 0)
-            # TODO: customization -- take a type of solver
-            # TODO: functionize
             print_iter_func(
                 iter_fmt,
                 iter_data(solver, options, t, time_sec)
             )
         end
-
     end
 
     # --- Print Final Iteration ---
@@ -443,7 +423,7 @@ function solve!(
 
     # --- Construct Logs ---
     if options.logging
-        log = NysADMMLog(
+        log = GeNIOSLog(
             tmp_log.dual_gap[1:t-1],
             tmp_log.obj_val[1:t-1],
             tmp_log.iter_time[1:t-1],
@@ -455,16 +435,16 @@ function solve!(
             solve_time
         )
     else
-        log = NysADMMLog(setup_time, precond_time, solve_time)
+        log = GeNIOSLog(setup_time, precond_time, solve_time)
     end
 
-
     # --- Construct Solution ---
-    res = NysADMMResult(
+    res = GeNIOSResult(
         solver.obj_val,
         solver.loss,
         solver.xk,
         solver.zk,          # usually want zk since it is feasible (or sparsified)
+        solver.uk,
         solver.dual_gap,
         log
     )
