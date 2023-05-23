@@ -278,16 +278,51 @@ function update_u!(solver::Solver, options::SolverOptions)
     @. solver.uk += solver.Mxk - solver.zk - solver.data.c
 end
 
-function compute_residuals!(solver::Solver, options::SolverOptions)
-    # primal residual
+function compute_primal_residual!(solver::Solver, options::SolverOptions)
     @. solver.rp = solver.Mxk - solver.zk - solver.data.c
     solver.rp_norm = norm(solver.rp, options.norm_type)
+    return nothing
+end
 
-    # dual residual
-    @. solver.cache.vm = solver.zk_old - solver.zk
-    mul!(solver.rd, solver.data.M', solver.cache.vm)
-    @. solver.rd *= solver.ρ
+function compute_dual_residual!(solver::Solver, options::SolverOptions)
+    solver.data.grad_f!(solver.cache.vn, solver.xk)
+    mul!(solver.cache.vn2, solver.data.M', solver.uk)
+
+    @. solver.rd = solver.cache.vn + solver.ρ * solver.cache.vn2
     solver.rd_norm = norm(solver.rd, options.norm_type)
+
+    # dual residual option 2
+    # @. solver.cache.vm = solver.zk_old - solver.zk
+    # mul!(solver.rd, solver.data.M', solver.cache.vm)
+    # @. solver.rd *= solver.ρ
+
+    return nothing
+end
+
+function compute_dual_residual!(solver::ConicSolver, options::SolverOptions)
+    mul!(solver.cache.vn, solver.data.P, solver.xk)
+    solver.cache.vn .+= solver.data.q
+    mul!(solver.cache.vn2, solver.data.M', solver.uk)
+
+    @. solver.rd = solver.cache.vn + solver.ρ * solver.cache.vn2
+    solver.rd_norm = norm(solver.rd, options.norm_type)
+    return nothing
+end
+
+function compute_dual_residual!(solver::MLSolver, options::SolverOptions)
+    @. solver.cache.vN = solver.data.df(solver.pred)
+    mul!(solver.cache.vn, solver.data.Adata', solver.cache.vN)
+    mul!(solver.cache.vn2, solver.data.M', solver.uk)
+
+    @. solver.rd = solver.cache.vn + solver.ρ * solver.cache.vn2
+    solver.rd_norm = norm(solver.rd, options.norm_type)
+    return nothing
+end
+
+function compute_residuals!(solver::Solver, options::SolverOptions)
+    compute_primal_residual!(solver, options)
+    compute_dual_residual!(solver, options)
+    return nothing
 end
 
 function solve!(
@@ -361,11 +396,11 @@ function solve!(
         solver.zk_old .= solver.zk
         update_z!(solver, options)
         update_u!(solver, options)
-        compute_residuals!(solver, options)
-
-        # --- Update objective & dual gap ---
-        # Also updates pred = Adata*xk - bdata for MLSolver 
+        
+        # --- Update objective & convergence criteria ---
+        # obj_val! Also updates pred = Adata*xk - bdata for MLSolver 
         obj_val!(solver, options)
+        compute_residuals!(solver, options)
         convergence_criteria!(solver, options)
 
         # --- Update ρ ---
