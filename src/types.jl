@@ -105,10 +105,12 @@ mutable struct ConicSolver{T} <: Solver
     lhs_op::LinearOperator{T}   # LinerOperator for LHS of x update system
     P                           # preconditioner; TODO: combine with lhs_op?
     xk::AbstractVector{T}       # var   : primal (loss)
+    δx::AbstractVector{T}       # var   : primal  
     Mxk::AbstractVector{T}      # var   : primal 
     zk::AbstractVector{T}       # var   : primal (reg)
     zk_old::AbstractVector{T}   # var   : dual (prev step)
     uk::AbstractVector{T}       # var   : dual
+    δy::AbstractVector{T}       # var   : dual
     rp::AbstractVector{T}       # resid : primal
     rd::AbstractVector{T}       # resid : dual
     rp_norm::T                  # resid_norm : primal
@@ -126,9 +128,11 @@ function ConicSolver(P, q, K, M, c::Vector{T}; ρ=1.0, α=1.0) where {T}
     data = ConicProgramData(M, c, m, n, P, q, K)
     xk = zeros(T, n)
     Mxk = zeros(T, m)
+    δx = zeros(T, n)
     zk = zeros(T, m)
     zk_old = zeros(T, m)
     uk = zeros(T, m)
+    δy = zeros(T, m)
     rp = zeros(T, m)
     rd = zeros(T, n)
     obj_val, loss, dual_gap = zero(T), zero(T), zero(T)
@@ -140,7 +144,7 @@ function ConicSolver(P, q, K, M, c::Vector{T}; ρ=1.0, α=1.0) where {T}
         data, 
         LinearOperator(M, ρ, ConicHessianOperator(P), m, n), 
         I,
-        xk, Mxk, zk, zk_old, uk, rp, rd, 
+        xk, δx, Mxk, zk, zk_old, uk, δy, rp, rd, 
         rp_norm, rd_norm,
         obj_val, loss, dual_gap,
         ρ, α, r0,
@@ -149,7 +153,7 @@ function ConicSolver(P, q, K, M, c::Vector{T}; ρ=1.0, α=1.0) where {T}
 end
 
 function QPSolver(P, q, M, l, u; ρ=1.0, α=1.0)
-    m = size(M, 1)
+    m =  M == I || M == -I ? length(q) : size(M, 1)
     # Optimal QP step size: https://www.merl.com/publications/docs/TR2014-050.pdf
     # - perhaps estimate with randomized method??
     # - strictly convex case
@@ -340,6 +344,7 @@ Base.@kwdef struct SolverOptions{T <: Real, S <: Real}
     linsys_max_tol::T = 1e-1
     eps_abs::T = 1e-4
     eps_rel::T = 1e-4
+    eps_inf::T = 1e-8
     norm_type::S = 2
     use_dual_gap::Bool = false
     update_preconditioner::Bool = true

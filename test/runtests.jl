@@ -12,4 +12,5 @@ end
 @testset "Quadratic Programs" begin
     include("portfolio.jl")
     include("randqp.jl")
+    include("infeas.jl")
 end

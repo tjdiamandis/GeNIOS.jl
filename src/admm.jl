@@ -188,6 +188,14 @@ function compute_rhs!(solver::ConicSolver)
     return nothing
 end
 
+function update_δx!(::AbstractVector, ::Solver, ::SolverOptions)
+    return nothing
+end
+
+function update_δx!(x::AbstractVector, solver::ConicSolver, ::SolverOptions)
+    @. solver.δx = x - solver.xk
+    return nothing
+end
 
 function update_x!(
     solver::Solver,
@@ -217,6 +225,8 @@ function update_x!(
         M=solver.P, rtol=linsys_tol
     )
     !issolved(linsys_solver) && error("CG failed")
+    
+    update_δx!(linsys_solver.x, solver, options)
     solver.xk .= linsys_solver.x
 
     if options.logging 
@@ -278,6 +288,11 @@ function update_u!(solver::Solver, options::SolverOptions)
     @. solver.uk += solver.Mxk - solver.zk - solver.data.c
 end
 
+function update_u!(solver::ConicSolver, options::SolverOptions)
+    @. solver.δy .= solver.ρ * ( solver.Mxk - solver.zk - solver.data.c )
+    @. solver.uk += solver.δy / solver.ρ
+end
+
 function compute_primal_residual!(solver::Solver, options::SolverOptions)
     @. solver.rp = solver.Mxk - solver.zk - solver.data.c
     solver.rp_norm = norm(solver.rp, options.norm_type)
@@ -324,6 +339,55 @@ function compute_residuals!(solver::Solver, options::SolverOptions)
     compute_dual_residual!(solver, options)
     return nothing
 end
+
+function infeasible(::Solver, ::SolverOptions)
+    return false
+end
+
+# TODO: Update for general conic programs
+function infeasible(solver::ConicSolver, options::SolverOptions)
+    return primal_infeasible(solver, options) || dual_infeasible(solver, options)
+end
+
+# ------------------------------------------------------------------------------
+# TODO: change to use scaled dual variable
+function primal_infeasible(solver::ConicSolver, options::SolverOptions)
+    isinf(solver.rp_norm) && return false
+    vn = solver.cache.vn
+    δy = solver.δy
+    
+    # TODO: figure out if need to add this
+    all(iszero, δy) && return false
+
+    δy_norm = norm(δy, Inf)
+    mul!(vn, solver.data.M', δy)
+    ATδy_norm = norm(vn, Inf)
+    ATδy_norm > options.eps_inf * δy_norm && return false
+
+    support(δy, solver.data.K) > options.eps_inf * δy_norm && return false
+
+    return true    
+end
+
+function dual_infeasible(solver::ConicSolver, options::SolverOptions)
+    isinf(solver.rp_norm) && return false
+    vn, vm = solver.cache.vn, solver.cache.vm
+    δx = solver.δx
+
+    δx_norm = norm(δx, Inf)
+    mul!(vn, solver.data.P, δx)
+    Pδx_inf = norm(vn, Inf)
+    Pδx_inf > options.eps_inf * δx_norm && return false
+
+    dot(solver.data.q, δx) > options.eps_inf * δx_norm && return false
+
+    mul!(vm, solver.data.M, δx)
+    !in_recession_cone(vm, solver.data.K, options.eps_inf * δx_norm) && return false
+    
+    return true
+
+end
+# ------------------------------------------------------------------------------
 
 function solve!(
     solver::Solver;
@@ -386,7 +450,7 @@ function solve!(
     solve_time_start = time_ns()
     while t < options.max_iters && 
         (time_ns() - solve_time_start) / 1e9 < options.max_time_sec &&
-        !converged(solver, options)
+        !converged(solver, options) && !infeasible(solver, options)
         
         t += 1
 
@@ -398,7 +462,7 @@ function solve!(
         update_u!(solver, options)
         
         # --- Update objective & convergence criteria ---
-        # obj_val! Also updates pred = Adata*xk - bdata for MLSolver 
+        # NOTE: obj_val! also updates pred = Adata*xk - bdata for MLSolver 
         obj_val!(solver, options)
         compute_residuals!(solver, options)
         convergence_criteria!(solver, options)
@@ -448,6 +512,8 @@ function solve!(
             options.verbose && @printf(" (max iterations reached)\n")
         elseif (time_ns() - solve_time_start) / 1e9 >= options.max_time_sec
             options.verbose && @printf(" (max time reached)\n")
+        elseif infeasible(solver, options)
+            options.verbose && @printf(" (infeasible problem detected)\n")
         end
     else
         options.verbose && @printf("\nSOLVED in %6.3fs, %d iterations\n", solve_time, t)
