@@ -384,7 +384,14 @@ function create_temp_log(solver::Solver, max_iters::Int)
     )
 end
 
+# Status is one of:
+# - OPTIMAL
+# - INFEASIBLE
+# - DUAL_INFEASIBLE
+# - ITERATION_LIMIT
+# - TIME_LIMIT
 struct GeNIOSResult{T}
+    status::Symbol
     obj_val::T                 # primal objective
     loss::T                    # TODO:
     x::AbstractVector{T}       # primal soln

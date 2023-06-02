@@ -15,6 +15,7 @@
     res = solve!(solver; options=options)
     @test GeNIOS.primal_infeasible(solver, options)
     @test !GeNIOS.dual_infeasible(solver, options)
+    @test res.status == :INFEASIBLE
 
     # Dual infeasible
     n = 100
@@ -30,4 +31,5 @@
 
     @test !GeNIOS.primal_infeasible(solver, options)
     @test GeNIOS.dual_infeasible(solver, options)
+    @test res.status == :DUAL_INFEASIBLE
 end

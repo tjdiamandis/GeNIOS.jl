@@ -355,7 +355,7 @@ function primal_infeasible(solver::ConicSolver, options::SolverOptions)
     isinf(solver.rp_norm) && return false
     vn = solver.cache.vn
     δy = solver.δy
-    
+
     # TODO: figure out if need to add this
     all(iszero, δy) && return false
 
@@ -510,14 +510,21 @@ function solve!(
         options.verbose && @printf("\nWARNING: did not converge after %d iterations, %6.3fs:", t, solve_time)
         if t >= options.max_iters
             options.verbose && @printf(" (max iterations reached)\n")
+            status = :ITERATION_LIMIT
         elseif (time_ns() - solve_time_start) / 1e9 >= options.max_time_sec
             options.verbose && @printf(" (max time reached)\n")
-        elseif infeasible(solver, options)
-            options.verbose && @printf(" (infeasible problem detected)\n")
+            status = :TIME_LIMIT
+        elseif primal_infeasible(solver, options)
+            options.verbose && @printf(" (primal infeasible problem detected)\n")
+            status = :INFEASIBLE
+        elseif dual_infeasible(solver, options)
+            options.verbose && @printf(" (dual infeasible problem detected)\n")
+            status = :DUAL_INFEASIBLE
         end
     else
         options.verbose && @printf("\nSOLVED in %6.3fs, %d iterations\n", solve_time, t)
         options.verbose && @printf("Total time: %6.3fs\n", setup_time + solve_time)
+        status = :OPTIMAL
     end 
     options.verbose && print_footer()
 
@@ -541,6 +548,7 @@ function solve!(
 
     # --- Construct Solution ---
     res = GeNIOSResult(
+        status,
         solver.obj_val,
         solver.loss,
         solver.xk,

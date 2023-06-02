@@ -32,4 +32,5 @@
     fstar = solver.obj_val
     fstar_mosek = -1.443337417081063
     @test abs(fstar - fstar_mosek) <= tol
+    @test res.status == :OPTIMAL
 end
