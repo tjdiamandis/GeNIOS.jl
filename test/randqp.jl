@@ -20,7 +20,7 @@
     end
     @test check_equals(solver, solver_qp)
 
-    res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, max_iters=1000, eps_abs=1e-6, eps_rel=1e-6, verbose=false))
+    res = solve!(solver; options=GeNIOS.SolverOptions(relax=false, max_iters=1000, eps_abs=1e-6, eps_rel=1e-6, verbose=false))
     xk, zk = solver.xk, solver.zk
     
     tol = 1e-3

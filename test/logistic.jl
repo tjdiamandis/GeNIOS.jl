@@ -23,7 +23,7 @@
     λ1 = γ
     λ2 = 0.0
     solver = GeNIOS.MLSolver(f2, df2, d2f2, λ1, λ2, A, b; fconj=f2conj)
-    res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, dual_gap_tol=1e-4, verbose=false))
+    res = solve!(solver; options=GeNIOS.SolverOptions(relax=false, use_dual_gap=true, dual_gap_tol=1e-4, verbose=false))
     tol = 5e-3
     test_optimality_conditions(solver, tol)
 

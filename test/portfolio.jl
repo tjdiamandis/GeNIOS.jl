@@ -103,7 +103,7 @@ end
     solver = GeNIOS.ConicSolver(
         P, q, K, M, c
     )
-    res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, max_iters=1000, eps_abs=1e-6, eps_rel=1e-6, verbose=false))
+    res = solve!(solver; options=GeNIOS.SolverOptions(relax=false, max_iters=1000, eps_abs=1e-6, eps_rel=1e-6, verbose=false))
 
     # Check optimality
     xk, zk = solver.xk, solver.zk
