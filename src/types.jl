@@ -71,7 +71,7 @@ function GenericSolver(f, grad_f!, Hf, g, prox_g!, M, c::Vector{T}; ρ=1.0, α=1
     rd = zeros(T, n)
     obj_val, loss, dual_gap = zero(T), zero(T), zero(T)
     rp_norm, rd_norm = zero(T), zero(T)
-    r0 = 0
+    r0 = min(50, n ÷ 10)
     cache = init_cache(data)
     
     return GenericSolver(
@@ -137,7 +137,7 @@ function ConicSolver(P, q, K, M, c::Vector{T}; ρ=1.0, α=1.0) where {T}
     rd = zeros(T, n)
     obj_val, loss, dual_gap = zero(T), zero(T), zero(T)
     rp_norm, rd_norm = zero(T), zero(T)
-    r0 = 0
+    r0 = min(50, n ÷ 10)
     cache = init_cache(data)
     
     return ConicSolver(
@@ -212,7 +212,7 @@ function MLSolver(f,
     rd = zeros(T, n)
     obj_val, loss, dual_gap = zero(T), zero(T), zero(T)
     rp_norm, rd_norm = zero(T), zero(T)
-    r0 = 0
+    r0 = min(50, n ÷ 10)
     cache = init_cache(data)
 
     Hf = MLHessianOperator(Adata, bdata, d2f, λ2) 
@@ -348,6 +348,7 @@ Base.@kwdef struct SolverOptions{T <: Real, S <: Real}
     norm_type::S = 2
     use_dual_gap::Bool = false
     update_preconditioner::Bool = true
+    infeas_check_iter::Int = 25
 end
 
 

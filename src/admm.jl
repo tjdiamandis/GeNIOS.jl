@@ -236,7 +236,7 @@ function update_x!(
     end
 end
 
-function update_Ax!(solver::MLSolver{T}, options::SolverOptions) where {T}
+function update_Mx!(solver::MLSolver{T}, options::SolverOptions) where {T}
     if options.relax
         @. solver.cache.vm = solver.xk
         @. solver.Mxk = solver.α * solver.cache.vm - (one(T) - solver.α) * solver.zk
@@ -246,7 +246,7 @@ function update_Ax!(solver::MLSolver{T}, options::SolverOptions) where {T}
     return nothing
 end
 
-function update_Ax!(solver::Solver, options::SolverOptions)
+function update_Mx!(solver::Solver, options::SolverOptions)
     T = eltype(solver.xk)
     if options.relax
         mul!(solver.cache.vm, solver.data.M, solver.xk)
@@ -261,7 +261,7 @@ function update_z!(solver::Solver, options::SolverOptions)
     solver.cache.vm .= solver.Mxk
     @. solver.cache.vm += solver.uk - solver.data.c
     
-    # prox_{g/ρ}(v) = prox_{g/ρ}( Axᵏ⁺¹ - c + uᵏ⁺¹ )
+    # prox_{g/ρ}(v) = prox_{g/ρ}( Axᵏ⁺¹ - c + uᵏ)
     solver.data.prox_g!(solver.zk, solver.cache.vm, solver.ρ)
     return nothing
 end
@@ -449,14 +449,13 @@ function solve!(
     # --------------------------------------------------------------------------
     solve_time_start = time_ns()
     while t < options.max_iters && 
-        (time_ns() - solve_time_start) / 1e9 < options.max_time_sec &&
-        !converged(solver, options) && !infeasible(solver, options)
+        (time_ns() - solve_time_start) / 1e9 < options.max_time_sec
         
         t += 1
 
         # --- ADMM iterations ---
         time_linsys = update_x!(solver, options, linsys_solver)
-        update_Ax!(solver, options)
+        update_Mx!(solver, options)
         solver.zk_old .= solver.zk
         update_z!(solver, options)
         update_u!(solver, options)
@@ -466,6 +465,24 @@ function solve!(
         obj_val!(solver, options)
         compute_residuals!(solver, options)
         convergence_criteria!(solver, options)
+
+        # --- Logging ---
+        time_sec = (time_ns() - solve_time_start) / 1e9
+        if options.logging
+            populate_log!(tmp_log, solver, options, t, time_sec, time_linsys)
+        end
+
+        # --- Printing ---
+        if options.verbose && (t == 1 || t % options.print_iter == 0)
+            print_iter_func(
+                iter_fmt,
+                iter_data(solver, options, t, time_sec)
+            )
+        end
+
+        # --- Check convergence & infeasibility ---
+        converged(solver, options) && break
+        t % options.infeas_check_iter == 0 && infeasible(solver, options) && break
 
         # --- Update ρ ---
         if t % options.rho_update_iter == 0
@@ -481,19 +498,6 @@ function solve!(
             update_preconditioner!(solver, options)
         end
 
-        # --- Logging ---
-        time_sec = (time_ns() - solve_time_start) / 1e9
-        if options.logging
-            populate_log!(tmp_log, solver, options, t, time_sec, time_linsys)
-        end
-
-        # --- Printing ---
-        if options.verbose && (t == 1 || t % options.print_iter == 0)
-            print_iter_func(
-                iter_fmt,
-                iter_data(solver, options, t, time_sec)
-            )
-        end
     end
 
     # --- Print Final Iteration ---

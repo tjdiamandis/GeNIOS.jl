@@ -47,8 +47,9 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
-        "Solution method" => "method.md",
         "Examples" => examples_nav,
+        "User Guide" => "guide.md",
+        "Solution method" => "method.md",
         "API reference" => "api.md"
     ],
 )

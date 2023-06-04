@@ -3,7 +3,8 @@ CurrentModule = GeNIOS
 ```
 
 # GeNIOS.jl
-TODO
+`GeNIOS` is an efficient large-scale operator splitting solver for convex 
+optimization problems.
 
 ### Documentation Contents:
 ```@contents
@@ -130,8 +131,8 @@ And, finally, using the fully general interface, it is written as
 # TODO:
 ```
 
-Please see the [User Guide](@ref) for a full explanation of the interfaces, keyword 
-arguments and performance tips. Also check out the examples as well.
+Please see the [User Guide](@ref) for a full explanation of the solver parameter
+options. Check out the examples as well.
 
 
 ## References

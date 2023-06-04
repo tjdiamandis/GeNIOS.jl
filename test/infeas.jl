@@ -18,7 +18,6 @@
     @test res.status == :INFEASIBLE
 
     # Dual infeasible
-    n = 100
     P = sparse(Matrix(I, n, n))
     P[end,end] = 0.0
     # q = vcat(1.0, zeros(n-1))
