@@ -238,10 +238,9 @@ end
 
 function update_Mx!(solver::MLSolver{T}, options::SolverOptions) where {T}
     if options.relax
-        @. solver.cache.vm = solver.xk
-        @. solver.Mxk = solver.α * solver.cache.vm - (one(T) - solver.α) * solver.zk
+        @. solver.Mxk = solver.α * solver.xk + (one(T) - solver.α) * solver.zk
     else
-        @. solver.Mxk = -solver.xk
+        @. solver.Mxk = solver.xk
     end
     return nothing
 end

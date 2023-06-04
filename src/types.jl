@@ -59,7 +59,7 @@ mutable struct GenericSolver{T} <: Solver
     r0::Int                     # param : preconditioner rank
     cache                       # cache : cache for intermediate results
 end
-function GenericSolver(f, grad_f!, Hf, g, prox_g!, M, c::Vector{T}; ρ=1.0, α=1.0) where {T}
+function GenericSolver(f, grad_f!, Hf, g, prox_g!, M, c::Vector{T}; ρ=1.0, α=1.6) where {T}
     m, n = M == I || M == -I ? (length(c), length(c)) : size(M)
     data = GenericProblemData(M, c, m, n, Hf, grad_f!, f, g, prox_g!)
     xk = zeros(T, n)
@@ -85,7 +85,7 @@ function GenericSolver(f, grad_f!, Hf, g, prox_g!, M, c::Vector{T}; ρ=1.0, α=1
         cache)
 end
 
-function GenericSolver(data::ProblemData; ρ=1.0, α=1.0)
+function GenericSolver(data::ProblemData; ρ=1.0, α=1.6)
     return GenericSolver(
         data.f,
         data.grad_f!,
@@ -123,7 +123,7 @@ mutable struct ConicSolver{T} <: Solver
     r0::Int                     # param : preconditioner rank
     cache                       # cache : cache for intermediate results
 end
-function ConicSolver(P, q, K, M, c::Vector{T}; ρ=1.0, α=1.0) where {T}
+function ConicSolver(P, q, K, M, c::Vector{T}; ρ=1.0, α=1.6) where {T}
     m, n = M == I || M == -I ? (length(c), length(c)) : size(M)
     data = ConicProgramData(M, c, m, n, P, q, K)
     xk = zeros(T, n)
@@ -152,7 +152,7 @@ function ConicSolver(P, q, K, M, c::Vector{T}; ρ=1.0, α=1.0) where {T}
     )
 end
 
-function QPSolver(P, q, M, l, u; ρ=1.0, α=1.0)
+function QPSolver(P, q, M, l, u; ρ=1.0, α=1.6)
     m =  M == I || M == -I ? length(q) : size(M, 1)
     # Optimal QP step size: https://www.merl.com/publications/docs/TR2014-050.pdf
     # - perhaps estimate with randomized method??
@@ -195,7 +195,7 @@ function MLSolver(f,
     bdata::AbstractVector{T}; 
     fconj=x->error(ArgumentError("dual gap used but fconj not defined")),
     ρ=1.0,
-    α=1.0
+    α=1.6
 ) where {T}
     N, n = size(Adata)
     #TODO: may want to add offset?
@@ -238,7 +238,7 @@ function MLSolver(
     bdata::AbstractVector{T}; 
     fconj=x->error(ArgumentError("dual gap used but fconj not defined")),
     ρ=1.0,
-    α=1.0
+    α=1.6
 ) where {T <: Real, S <: Number}
     λ1 = convert(T, λ1)
     λ2 = convert(T, λ2)
@@ -252,7 +252,7 @@ function LassoSolver(
     Adata::AbstractMatrix{T},
     bdata::AbstractVector{T}; 
     ρ=1.0,
-    α=1.0
+    α=1.6
 ) where {T <: Real, S <: Number}
     λ1 = convert(T, λ1)
     λ2 = zero(T)
@@ -269,7 +269,7 @@ function ElasticNetSolver(
     Adata::AbstractMatrix{T},
     bdata::AbstractVector{T}; 
     ρ=1.0,
-    α=1.0
+    α=1.6
 ) where {T <: Real, S <: Number}
     λ1 = convert(T, λ1)
     λ2 = convert(T, λ2)
@@ -286,7 +286,7 @@ function LogisticSolver(
     Adata::AbstractMatrix{T},
     bdata::AbstractVector{T}; 
     ρ=1.0,
-    α=1.0
+    α=1.6
 ) where {T <: Real, S <: Number}
     λ1 = convert(T, λ1)
     λ2 = convert(T, λ2)
