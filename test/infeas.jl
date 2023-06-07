@@ -1,6 +1,6 @@
 @testset "QP -- infeasible" begin
     # Infeas detection
-    options = GeNIOS.SolverOptions(relax=false, max_iters=1_000, verbose=false)
+    options = GeNIOS.SolverOptions(relax=true, max_iters=1_000, verbose=false)
 
 
     # Primal infeasible

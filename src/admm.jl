@@ -237,7 +237,8 @@ function update_x!(
 end
 
 function update_Mx!(solver::MLSolver{T}, options::SolverOptions) where {T}
-    if options.relax
+    if options.relax && sqrt(solver.rp_norm * solver.rd_norm) < options.relax_tol
+        # TODO: using solver.zk vs solver.Mxk??
         @. solver.Mxk = solver.α * solver.xk + (one(T) - solver.α) * solver.zk
     else
         @. solver.Mxk = solver.xk
@@ -247,9 +248,9 @@ end
 
 function update_Mx!(solver::Solver, options::SolverOptions)
     T = eltype(solver.xk)
-    if options.relax
+    if options.relax && sqrt(solver.rp_norm * solver.rd_norm) < options.relax_tol
         mul!(solver.cache.vm, solver.data.M, solver.xk)
-        @. solver.Mxk = solver.α * solver.cache.vm - (one(T) - solver.α) * (solver.zk - solver.data.c)
+        @. solver.Mxk = solver.α * solver.cache.vm + (one(T) - solver.α) * (solver.zk + solver.data.c)
     else
         mul!(solver.Mxk, solver.data.M, solver.xk)
     end
@@ -257,8 +258,7 @@ function update_Mx!(solver::Solver, options::SolverOptions)
 end
 
 function update_z!(solver::Solver, options::SolverOptions)
-    solver.cache.vm .= solver.Mxk
-    @. solver.cache.vm += solver.uk - solver.data.c
+    @. solver.cache.vm = solver.Mxk + solver.uk - solver.data.c
     
     # prox_{g/ρ}(v) = prox_{g/ρ}( Axᵏ⁺¹ - c + uᵏ)
     solver.data.prox_g!(solver.zk, solver.cache.vm, solver.ρ)
@@ -268,16 +268,14 @@ end
 function update_z!(solver::MLSolver, options::SolverOptions)
     @inline soft_threshold(x::T, κ::T) where {T <: Real} = sign(x) * max(zero(T), abs(x) - κ)
     
-    solver.cache.vm .= solver.Mxk
-    @. solver.cache.vm += solver.uk - solver.data.c
+    @. solver.cache.vm = solver.Mxk + solver.uk - solver.data.c
     
     solver.zk .= soft_threshold.(solver.cache.vm, solver.λ1/solver.ρ)
     return nothing
 end
 
 function update_z!(solver::ConicSolver, options::SolverOptions)
-    solver.cache.vm .= solver.Mxk
-    @. solver.cache.vm += solver.uk - solver.data.c
+    @. solver.cache.vm = solver.Mxk + solver.uk - solver.data.c
 
     project!(solver.zk, solver.data.K, solver.cache.vm)
     return nothing
@@ -455,7 +453,7 @@ function solve!(
         # --- ADMM iterations ---
         time_linsys = update_x!(solver, options, linsys_solver)
         update_Mx!(solver, options)
-        solver.zk_old .= solver.zk
+        # solver.zk_old .= solver.zk
         update_z!(solver, options)
         update_u!(solver, options)
         

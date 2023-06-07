@@ -113,22 +113,22 @@ end
     test_optimality_conditions(solver_en, 5e-3)
 
     solver_dg = GeNIOS.MLSolver(f2, df2, d2f2, λ1, λ2, Adata, bdata)
-    res = solve!(solver_dg; options=GeNIOS.SolverOptions(relax=false, use_dual_gap=false, verbose=false))
+    res = solve!(solver_dg; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=false, verbose=false))
     test_optimality_conditions(solver_dg, 5e-3)
 
     solver_dg2 = GeNIOS.MLSolver(f2, λ1, λ2, Adata, bdata)
-    res = solve!(solver_dg2; options=GeNIOS.SolverOptions(relax=false, use_dual_gap=false, verbose=false))
+    res = solve!(solver_dg2; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=false, verbose=false))
     test_optimality_conditions(solver_dg2, 5e-3)
 
     solver_dg3 = GeNIOS.MLSolver(f2, λ1, λ2, Adata, bdata; fconj=f2conj)
-    res = solve!(solver_dg3; options=GeNIOS.SolverOptions(relax=false, use_dual_gap=true, verbose=false))
+    res = solve!(solver_dg3; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, verbose=false))
     test_optimality_conditions(solver_dg3, 5e-3)
 
     solver_en = GeNIOS.ElasticNetSolver(λ1, λ2, Adata, bdata)
-    res = solve!(solver_en; options=GeNIOS.SolverOptions(relax=false, use_dual_gap=true, verbose=false))
+    res = solve!(solver_en; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, verbose=false))
     test_optimality_conditions(solver_en, 5e-3)
 
     solver_la = GeNIOS.LassoSolver(λ1, Adata, bdata)
-    res = solve!(solver_la; options=GeNIOS.SolverOptions(relax=false, use_dual_gap=true, verbose=false))
+    res = solve!(solver_la; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, verbose=false))
     test_optimality_conditions(solver_la, 5e-3)
 end
