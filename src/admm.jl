@@ -1,6 +1,6 @@
 function build_preconditioner!(solver::Solver, options::SolverOptions)
     !options.precondition && return zero(T)
-    options.r0 = solver.data.n ≥ 1_000 ? options.r0 : solver.data.n ÷ 20
+    options.init_sketch_size = solver.data.n ≥ 1_000 ? options.init_sketch_size : solver.data.n ÷ 20
     precond_time_start = time_ns()
     _build_preconditioner!(solver, options)
     return (time_ns() - precond_time_start) / 1e9
@@ -12,24 +12,41 @@ end
 # - alternatively, could use the OSQP approach
 function _build_preconditioner!(solver::Solver, options::SolverOptions)
     update!(solver.lhs_op.Hf_xk, solver)
-    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.r0; n=solver.lhs_op.n)
+    if options.use_adaptive_sketch
+        ∇²fx_nys = adaptive_nystrom_sketch(
+            solver.lhs_op.Hf_xk, solver.lhs_op.n,
+            options.init_sketch_size;
+            tol=options.adaptive_sketch_tol*solver.data.n^2
+        )
+    else    
+        ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.init_sketch_size; n=solver.lhs_op.n)
+    end
     solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ)
     return nothing
 end
 
 function _build_preconditioner!(solver::MLSolver, options::SolverOptions)
     update!(solver.lhs_op.Hf_xk, solver)
-    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.r0; n=solver.lhs_op.n)
+    if options.use_adaptive_sketch
+        ∇²fx_nys = adaptive_nystrom_sketch(
+            solver.lhs_op.Hf_xk, solver.lhs_op.n,
+            options.init_sketch_size;
+            tol=options.adaptive_sketch_tol*solver.data.n^2
+        )
+    else    
+        ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.init_sketch_size; n=solver.lhs_op.n)
+    end
     
     # Adds the ℓ2 regularization term to the preconditioner
     solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ + solver.λ2)
     return nothing
 end
 
+# TODO: which sketch size should this be?
 function update_preconditioner!(solver::Solver, options::SolverOptions)
     !options.update_preconditioner && return nothing
     update!(solver.lhs_op.Hf_xk, solver)
-    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.r0; n=solver.lhs_op.n)
+    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.init_sketch_size; n=solver.lhs_op.n)
     solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ)
     return nothing
 end
@@ -37,7 +54,7 @@ end
 function update_preconditioner!(solver::MLSolver, options::SolverOptions)
     !options.update_preconditioner && return nothing
     update!(solver.lhs_op.Hf_xk, solver)
-    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.r0; n=solver.lhs_op.n)
+    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.init_sketch_size; n=solver.lhs_op.n)
 
     # Adds the ℓ2 regularization term to the preconditioner
     solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ + solver.λ2)

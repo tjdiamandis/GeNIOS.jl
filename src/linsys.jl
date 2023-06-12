@@ -72,3 +72,67 @@ function LinearAlgebra.mul!(y::AbstractVector{T}, M::LinearOperator{T}, x::Abstr
 end
 Base.size(M::LinearOperator) = (M.n, M.n)
 Base.eltype(::LinearOperator{T}) where {T} = T
+
+function adaptive_nystrom_sketch(
+    A,
+    n::Int,
+    r0::Int;
+    condition_number=false,
+    ρ=1e-4,
+    r_inc_factor=2.0,
+    tol=1e-6,
+    q_norm=10,
+    verbose=false
+)
+    cache = (
+        u=zeros(n),
+        v=zeros(n),
+        Ahat_mul=zeros(n)
+    )
+    r = r0
+    Ahat = nothing
+    error_metric = Inf
+    while error_metric > tol && r < n
+        # k = round(Int, k_factor*r)
+        Ahat = RP.NystromSketch(A, r; n=n)
+        # Ahat = RP.NystromSketch(A, k, r, SketchType; check=check, q=q_sketch)
+        if condition_number
+            error_metric = (Ahat.Λ[end] + ρ) / ρ - 1
+            verbose && @info "κ = $error_metric, r = $r"
+        else
+            error_metric = estimate_norm_E(A, Ahat; q=q_norm, cache=cache)
+            verbose && @info "||E|| = $error_metric, r = $r"
+        end
+        r = round(Int, r_inc_factor*r)
+    end
+    return Ahat
+end
+
+# Power method to estimate ||A - Ahat|| (specialized for Symmetric)
+function estimate_norm_E(A, Ahat::NystromSketch{T}; q=10, cache=nothing) where {T <: Number}
+    n = size(Ahat, 2)
+    if !isnothing(cache)
+        u, v = cache.u, cache.v
+    else
+        u, v = zeros(T, n), zeros(T, n)
+        cache = (Ahat_mul=zeros(T, n),)
+    end
+    
+    randn!(v)
+    normalize!(v)
+    
+    Ehat = Inf
+    for _ in 1:q
+        # v = (A - Ahat)*u
+        mul!(u, Ahat, v; cache=cache.Ahat_mul)
+        mul!(cache.Ahat_mul, A, v)
+        u .-= cache.Ahat_mul
+        # mul!(u, A, v, 1.0, -1.0)
+        Ehat = dot(u, v)
+        normalize!(u)
+        v .= u
+
+    end
+    
+    return Ehat
+end

@@ -313,7 +313,7 @@ end
 
 
 Base.@kwdef mutable struct SolverOptions{T <: Real, S <: Real}
-    ρ0::T = 1.0                                      # param : ADMM penalty
+    ρ0::T = 1.0                                     # param : ADMM penalty
     α::T = 1.2                                      # param : relaxation
     relax::Bool = false
     logging::Bool = true
@@ -335,7 +335,9 @@ Base.@kwdef mutable struct SolverOptions{T <: Real, S <: Real}
     update_preconditioner::Bool = true
     infeas_check_iter::Int = 25
     num_threads::Int = 1
-    r0::Int = 50                                    # param : preconditioner rank
+    init_sketch_size::Int = 50                      # param : preconditioner rank
+    use_adaptive_sketch::Bool = false
+    adaptive_sketch_tol::Float64 = eps()
 end
 
 
