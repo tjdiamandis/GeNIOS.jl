@@ -4,24 +4,21 @@ To get started, check out the **Examples**.
 The **Advanced Examples** demonstrate ways to improve performance for a
 variety of different problem types.
 
-## Solver parameters
-The important ADMM parameters are saved as part of the `Solver` object:
-- `α`
-    - Over-relaxation parameter. Note that `relax` option (in `SolverOptions`, see [Algorithm parameters](@ref)) must be `true`, which is the default to use over-relaxation.
-    - Default value: `1.6`
-- `ρ`
-    - ADMM dual update parameter
-    - Default value: `1.0`
-
 ## Algorithm parameters
 The `GeNIOS` algorithm has the following tunable parameters, which are tunable
 either through the JuMP interface or via the [`SolverOptions`](@ref) object,
 passed to `solve!`:
 
+- `ρ0`
+    - ADMM penalty parameter initial value (updated by the algorithm)
+    - Default value: `1.0`
 - `relax::Bool` 
     - Toggles if over-relaxation is used. Empirically, over-relaxation has been
     shown to improve convergence.
-    - default value: `true`
+    - default value: `false`
+- `α`
+    - Over-relaxation parameter. Note that `relax` option (in `SolverOptions`, see [Algorithm parameters](@ref)) must be `true`, which is the default to use over-relaxation. For QPs, we recommend a parameter of `1.5` to `1.8`, which has empirically been shown to help convergence in the literature.
+    - Default value: `1.2`
 - `logging::Bool` 
     - Toggles if the iterates are logged (objective value, iteration time, linear system solve time, primal and dual residuals, dual gap (if applicable))
     - default value: `true`
