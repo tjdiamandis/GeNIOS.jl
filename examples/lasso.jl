@@ -177,8 +177,7 @@ Finally, we can solve the problem.
 solver = GeNIOS.GenericSolver(
     f, grad_f!, Hf,         # f(x)
     g, prox_g!,             # g(z)
-    I, zeros(n);           # M, c: Mx + z = c
-    ρ=1.0, α=1.0
+    I, zeros(n)             # M, c: Mx + z = c
 )
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, verbose=true))
 rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)

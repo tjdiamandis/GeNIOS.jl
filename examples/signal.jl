@@ -187,8 +187,7 @@ c = vcat(y, zeros(T), zeros(T));
 solver = GeNIOS.GenericSolver(
     f, grad_f!, Hf,         # f(x)
     g, prox_g!,             # g(z)
-    M, c;                   # M, c: Mx + z = c
-    ρ=1.0, α=1.0
+    M, c                    # M, c: Mx + z = c
 )
 res = solve!(solver, options=GeNIOS.SolverOptions(eps_abs=1e-5, print_iter=100))
 
