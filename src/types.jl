@@ -55,11 +55,9 @@ mutable struct GenericSolver{T} <: Solver
     loss::T                     # log   : TODO: rem
     dual_gap::T                 # log   : TODO: rem
     ρ::T                        # param : ADMM penalty
-    α::T                        # param : relaxation
-    r0::Int                     # param : preconditioner rank
     cache                       # cache : cache for intermediate results
 end
-function GenericSolver(f, grad_f!, Hf, g, prox_g!, M, c::Vector{T}; ρ=1.0, α=1.6) where {T}
+function GenericSolver(f, grad_f!, Hf, g, prox_g!, M, c::Vector{T}) where {T}
     m, n = M == I || M == -I ? (length(c), length(c)) : size(M)
     data = GenericProblemData(M, c, m, n, Hf, grad_f!, f, g, prox_g!)
     xk = zeros(T, n)
@@ -71,21 +69,21 @@ function GenericSolver(f, grad_f!, Hf, g, prox_g!, M, c::Vector{T}; ρ=1.0, α=1
     rd = zeros(T, n)
     obj_val, loss, dual_gap = zero(T), zero(T), zero(T)
     rp_norm, rd_norm = zero(T), zero(T)
-    r0 = min(50, n ÷ 10)
+    ρ = one(T)
     cache = init_cache(data)
     
     return GenericSolver(
         data, 
-        LinearOperator(M, ρ, Hf, m, n), 
+        LinearOperator(M, one(T), Hf, m, n), 
         I,
         xk, Mxk, zk, zk_old, uk, rp, rd, 
         rp_norm, rd_norm,
         obj_val, loss, dual_gap,
-        ρ, α, r0,
+        ρ,
         cache)
 end
 
-function GenericSolver(data::ProblemData; ρ=1.0, α=1.6)
+function GenericSolver(data::ProblemData)
     return GenericSolver(
         data.f,
         data.grad_f!,
@@ -93,9 +91,7 @@ function GenericSolver(data::ProblemData; ρ=1.0, α=1.6)
         data.g,
         data.prox_g!,
         data.M,
-        data.c,
-        ρ=ρ,
-        α=α
+        data.c
     )
 end
 
@@ -119,11 +115,9 @@ mutable struct ConicSolver{T} <: Solver
     loss::T                     # log   : TODO: rem
     dual_gap::T                 # log   : TODO: rem
     ρ::T                        # param : ADMM penalty
-    α::T                        # param : relaxation
-    r0::Int                     # param : preconditioner rank
     cache                       # cache : cache for intermediate results
 end
-function ConicSolver(P, q, K, M, c::Vector{T}; ρ=1.0, α=1.6) where {T}
+function ConicSolver(P, q, K, M, c::Vector{T}) where {T}
     m, n = M == I || M == -I ? (length(c), length(c)) : size(M)
     data = ConicProgramData(M, c, m, n, P, q, K)
     xk = zeros(T, n)
@@ -137,28 +131,28 @@ function ConicSolver(P, q, K, M, c::Vector{T}; ρ=1.0, α=1.6) where {T}
     rd = zeros(T, n)
     obj_val, loss, dual_gap = zero(T), zero(T), zero(T)
     rp_norm, rd_norm = zero(T), zero(T)
-    r0 = min(50, n ÷ 10)
+    ρ = one(T)
     cache = init_cache(data)
     
     return ConicSolver(
         data, 
-        LinearOperator(M, ρ, ConicHessianOperator(P), m, n), 
+        LinearOperator(M, one(T), ConicHessianOperator(P), m, n), 
         I,
         xk, δx, Mxk, zk, zk_old, uk, δy, rp, rd, 
         rp_norm, rd_norm,
         obj_val, loss, dual_gap,
-        ρ, α, r0,
+        ρ,
         cache
     )
 end
 
-function QPSolver(P, q, M, l, u; ρ=1.0, α=1.6)
+function QPSolver(P, q, M, l, u)
     m =  M == I || M == -I ? length(q) : size(M, 1)
-    # Optimal QP step size: https://www.merl.com/publications/docs/TR2014-050.pdf
+    # TODO: Optimal QP step size: https://www.merl.com/publications/docs/TR2014-050.pdf
     # - perhaps estimate with randomized method??
     # - strictly convex case
     # ρ = sqrt(λmin(P)*λmax(P))
-    return ConicSolver(P, q, IntervalCone(l, u), M, zeros(m), ρ=ρ, α=α)
+    return ConicSolver(P, q, IntervalCone(l, u), M, zeros(m))
 end
 
 mutable struct MLSolver{T} <: Solver
@@ -179,10 +173,8 @@ mutable struct MLSolver{T} <: Solver
     loss::T                     # log   : 0.5*∑f(aᵢᵀx - bᵢ) (uses zk)
     dual_gap::T                 # log   : obj_val - g(ν)
     ρ::T                        # param : ADMM penalty
-    α::T                        # param : relaxation
     λ1::T                       # param : l1 regularization
     λ2::T                       # param : l2 regularization
-    r0::Int                     # param : preconditioner rank
     cache                       # cache : cache for intermediate results
 end
 
@@ -193,9 +185,7 @@ function MLSolver(f,
     λ2,
     Adata::AbstractMatrix{T},
     bdata::AbstractVector{T}; 
-    fconj=x->error(ArgumentError("dual gap used but fconj not defined")),
-    ρ=1.0,
-    α=1.6
+    fconj=x->error(ArgumentError("dual gap used but fconj not defined"))
 ) where {T}
     N, n = size(Adata)
     #TODO: may want to add offset?
@@ -212,19 +202,20 @@ function MLSolver(f,
     rd = zeros(T, n)
     obj_val, loss, dual_gap = zero(T), zero(T), zero(T)
     rp_norm, rd_norm = zero(T), zero(T)
-    r0 = min(50, n ÷ 10)
+    ρ = one(T)
     cache = init_cache(data)
 
     Hf = MLHessianOperator(Adata, bdata, d2f, λ2) 
 
     return MLSolver(
         data, 
-        LinearOperator(I, ρ, Hf, m, n),
+        LinearOperator(I, one(T), Hf, m, n),
         I,
         xk, Mxk, pred, zk, zk_old, uk, rp, rd, 
         rp_norm, rd_norm,
         obj_val, loss, dual_gap,
-        ρ, α, λ1, λ2, r0,
+        ρ,
+        λ1, λ2,
         cache
     )
 end
@@ -236,23 +227,19 @@ function MLSolver(
     λ2::S,
     Adata::AbstractMatrix{T},
     bdata::AbstractVector{T}; 
-    fconj=x->error(ArgumentError("dual gap used but fconj not defined")),
-    ρ=1.0,
-    α=1.6
+    fconj=x->error(ArgumentError("dual gap used but fconj not defined"))
 ) where {T <: Real, S <: Number}
     λ1 = convert(T, λ1)
     λ2 = convert(T, λ2)
     df = x->derivative(f, x)
     d2f = x->derivative(y->derivative(f, y), x)
-    return MLSolver(f, df, d2f, λ1, λ2, Adata, bdata, fconj=fconj, ρ=ρ, α=α)
+    return MLSolver(f, df, d2f, λ1, λ2, Adata, bdata, fconj=fconj)
 end
 
 function LassoSolver(
     λ1::S,
     Adata::AbstractMatrix{T},
-    bdata::AbstractVector{T}; 
-    ρ=1.0,
-    α=1.6
+    bdata::AbstractVector{T}
 ) where {T <: Real, S <: Number}
     λ1 = convert(T, λ1)
     λ2 = zero(T)
@@ -260,16 +247,14 @@ function LassoSolver(
     df(x) = x
     d2f(x) = 1.0
     fconj(x) = 0.5*x^2
-    return MLSolver(f, df, d2f, λ1, λ2, Adata, bdata, fconj=fconj, ρ=ρ, α=α)
+    return MLSolver(f, df, d2f, λ1, λ2, Adata, bdata, fconj=fconj)
 end
 
 function ElasticNetSolver(
     λ1::S,
     λ2::S,
     Adata::AbstractMatrix{T},
-    bdata::AbstractVector{T}; 
-    ρ=1.0,
-    α=1.6
+    bdata::AbstractVector{T}
 ) where {T <: Real, S <: Number}
     λ1 = convert(T, λ1)
     λ2 = convert(T, λ2)
@@ -277,16 +262,14 @@ function ElasticNetSolver(
     df(x) = x
     d2f(x) = 1.0
     fconj(x) = 0.5*x^2
-    return MLSolver(f, df, d2f, λ1, λ2, Adata, bdata, fconj=fconj, ρ=ρ, α=α)
+    return MLSolver(f, df, d2f, λ1, λ2, Adata, bdata, fconj=fconj)
 end
 
 function LogisticSolver(
     λ1::S,
     λ2::S,
     Adata::AbstractMatrix{T},
-    bdata::AbstractVector{T}; 
-    ρ=1.0,
-    α=1.6
+    bdata::AbstractVector{T}
 ) where {T <: Real, S <: Number}
     λ1 = convert(T, λ1)
     λ2 = convert(T, λ2)
@@ -294,7 +277,7 @@ function LogisticSolver(
     df(x) = GeNIOS.logistic(x)
     d2f(x) = GeNIOS.logistic(x) / GeNIOS.log1pexp(x)
     fconj(x::T) where {T} = (one(T) - x) * log(one(T) - x) + x * log(x)
-    return MLSolver(f, df, d2f, λ1, λ2, Adata, bdata, fconj=fconj, ρ=ρ, α=α)
+    return MLSolver(f, df, d2f, λ1, λ2, Adata, bdata, fconj=fconj)
 end
 
 function init_cache(data::GenericProblemData{T}) where {T <: Real}
@@ -329,7 +312,9 @@ function init_cache(data::MLProblemData{T}) where {T <: Real}
 end
 
 
-Base.@kwdef struct SolverOptions{T <: Real, S <: Real}
+Base.@kwdef mutable struct SolverOptions{T <: Real, S <: Real}
+    ρ0::T = 1.0                                      # param : ADMM penalty
+    α::T = 1.2                                      # param : relaxation
     relax::Bool = false
     logging::Bool = true
     precondition::Bool = true
@@ -341,7 +326,6 @@ Base.@kwdef struct SolverOptions{T <: Real, S <: Real}
     rho_update_iter::Int = 50
     sketch_update_iter::Int = 20
     verbose::Bool = true
-    multithreaded::Bool = false
     linsys_max_tol::T = 1e-1
     eps_abs::T = 1e-4
     eps_rel::T = 1e-4
@@ -350,6 +334,8 @@ Base.@kwdef struct SolverOptions{T <: Real, S <: Real}
     use_dual_gap::Bool = false
     update_preconditioner::Bool = true
     infeas_check_iter::Int = 25
+    num_threads::Int = 1
+    r0::Int = 50                                    # param : preconditioner rank
 end
 
 

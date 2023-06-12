@@ -78,8 +78,7 @@ q = -μ
     solver = GeNIOS.GenericSolver(
         f, grad_f!, Hf,         # f(x)
         g, prox_g!,             # g(z)
-        I, zeros(n);           # A, c: Ax + z = c
-        ρ=1.0, α=1.0
+        I, zeros(n)             # A, c: Ax + z = c
     )
     res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, max_iters=1000, eps_abs=1e-6, eps_rel=1e-6, verbose=false))
 

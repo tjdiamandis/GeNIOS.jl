@@ -1,8 +1,8 @@
 function build_preconditioner!(solver::Solver, options::SolverOptions)
     !options.precondition && return zero(T)
-    solver.r0 = solver.data.n ≥ 1_000 ? 50 : solver.data.n ÷ 20
+    options.r0 = solver.data.n ≥ 1_000 ? options.r0 : solver.data.n ÷ 20
     precond_time_start = time_ns()
-    build_preconditioner!(solver)
+    _build_preconditioner!(solver, options)
     return (time_ns() - precond_time_start) / 1e9
 end
 
@@ -10,16 +10,16 @@ end
 # TODO: possibly want to include ρMᵀM in the preconditioner??
 # - would need to estimate the smallest eigenvalue for the regularization, I think
 # - alternatively, could use the OSQP approach
-function build_preconditioner!(solver::Solver)
+function _build_preconditioner!(solver::Solver, options::SolverOptions)
     update!(solver.lhs_op.Hf_xk, solver)
-    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, solver.r0; n=solver.lhs_op.n)
+    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.r0; n=solver.lhs_op.n)
     solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ)
     return nothing
 end
 
-function build_preconditioner!(solver::MLSolver)
+function _build_preconditioner!(solver::MLSolver, options::SolverOptions)
     update!(solver.lhs_op.Hf_xk, solver)
-    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, solver.r0; n=solver.lhs_op.n)
+    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.r0; n=solver.lhs_op.n)
     
     # Adds the ℓ2 regularization term to the preconditioner
     solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ + solver.λ2)
@@ -29,7 +29,7 @@ end
 function update_preconditioner!(solver::Solver, options::SolverOptions)
     !options.update_preconditioner && return nothing
     update!(solver.lhs_op.Hf_xk, solver)
-    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, solver.r0; n=solver.lhs_op.n)
+    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.r0; n=solver.lhs_op.n)
     solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ)
     return nothing
 end
@@ -37,7 +37,7 @@ end
 function update_preconditioner!(solver::MLSolver, options::SolverOptions)
     !options.update_preconditioner && return nothing
     update!(solver.lhs_op.Hf_xk, solver)
-    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, solver.r0; n=solver.lhs_op.n)
+    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.r0; n=solver.lhs_op.n)
 
     # Adds the ℓ2 regularization term to the preconditioner
     solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ + solver.λ2)
@@ -54,7 +54,7 @@ function update_preconditioner_rho!(solver::MLSolver, options::SolverOptions)
     return nothing
 end
 
-function update_rho!(solver::Solver)
+function update_rho!(solver::Solver, options::SolverOptions)
     # TODO:
     # https://proceedings.mlr.press/v54/xu17a/xu17a.pdf
 
@@ -142,7 +142,7 @@ function convergence_criteria!(solver::MLSolver, options::SolverOptions)
     return nothing
 end
 
-function compute_rhs!(solver::Solver)
+function compute_rhs!(solver::Solver, options::SolverOptions)
     # RHS = ∇²f(xᵏ)xᵏ - ∇f(xᵏ) + ρAᵀ(zᵏ + c - uᵏ)
     mul!(solver.cache.vn, solver.data.Hf, solver.xk)
     solver.data.grad_f!(solver.cache.vn2, solver.xk)
@@ -155,7 +155,7 @@ function compute_rhs!(solver::Solver)
 end
 
 # NOTE: Assumes that pred has been computed
-function compute_rhs!(solver::MLSolver)
+function compute_rhs!(solver::MLSolver, options::SolverOptions)
     # RHS = ∇²f(xᵏ)xᵏ - ∇f(xᵏ) + ρAᵀ(zᵏ + c - uᵏ)
 
     # compute first term (hessian)
@@ -177,7 +177,7 @@ function compute_rhs!(solver::MLSolver)
     return nothing
 end
 
-function compute_rhs!(solver::ConicSolver)
+function compute_rhs!(solver::ConicSolver, options::SolverOptions)
     # RHS = ∇²f(xᵏ)xᵏ - ∇f(xᵏ) + ρAᵀ(zᵏ + c - uᵏ) = -q + ρAᵀ(zᵏ + c - uᵏ)
     @. solver.cache.vn = -solver.data.q
     
@@ -203,7 +203,7 @@ function update_x!(
     linsys_solver::CgSolver
 )
     # RHS = ∇²f(xᵏ)xᵏ - ∇f(xᵏ) - ρAᵀ(zᵏ - c + uᵏ)
-    compute_rhs!(solver)
+    compute_rhs!(solver, options)
 
     
     # if options.logging, time the linear system solve
@@ -239,7 +239,7 @@ end
 function update_Mx!(solver::MLSolver{T}, options::SolverOptions) where {T}
     if options.relax && sqrt(solver.rp_norm * solver.rd_norm) < options.relax_tol
         # TODO: using solver.zk vs solver.Mxk??
-        @. solver.Mxk = solver.α * solver.xk + (one(T) - solver.α) * solver.zk
+        @. solver.Mxk = options.α * solver.xk + (one(T) - options.α) * solver.zk
     else
         @. solver.Mxk = solver.xk
     end
@@ -250,7 +250,7 @@ function update_Mx!(solver::Solver, options::SolverOptions)
     T = eltype(solver.xk)
     if options.relax && sqrt(solver.rp_norm * solver.rd_norm) < options.relax_tol
         mul!(solver.cache.vm, solver.data.M, solver.xk)
-        @. solver.Mxk = solver.α * solver.cache.vm + (one(T) - solver.α) * (solver.zk + solver.data.c)
+        @. solver.Mxk = options.α * solver.cache.vm + (one(T) - options.α) * (solver.zk + solver.data.c)
     else
         mul!(solver.Mxk, solver.data.M, solver.xk)
     end
@@ -413,13 +413,11 @@ function solve!(
 
 
     # --- enable multithreaded BLAS ---
-    if options.multithreaded
-        BLAS.set_num_threads(Sys.CPU_THREADS)
-    else
-        BLAS.set_num_threads(1)
-    end
+    BLAS.set_num_threads(options.num_threads)
 
     # --- Setup Linear System Solver ---
+    solver.ρ = options.ρ0
+    solver.lhs_op.ρ[1] = options.ρ0
     precond_time = build_preconditioner!(solver, options)
     linsys_solver = CgSolver(n, n, typeof(solver.xk))
 
@@ -483,7 +481,7 @@ function solve!(
 
         # --- Update ρ ---
         if t % options.rho_update_iter == 0
-            updated_rho = update_rho!(solver)
+            updated_rho = update_rho!(solver, options)
 
             if updated_rho
                 update_preconditioner_rho!(solver, options)
