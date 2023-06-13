@@ -341,6 +341,8 @@ end
 function compute_dual_residual!(solver::MLSolver, options::SolverOptions)
     @. solver.cache.vN = solver.data.df(solver.pred)
     mul!(solver.cache.vn, solver.data.Adata', solver.cache.vN)
+    @. solver.cache.vn += solver.λ2 * solver.xk
+
     mul!(solver.cache.vn2, solver.data.M', solver.uk)
 
     @. solver.rd = solver.cache.vn + solver.ρ * solver.cache.vn2
