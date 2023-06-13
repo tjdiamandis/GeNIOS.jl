@@ -1,5 +1,5 @@
 function build_preconditioner!(solver::Solver, options::SolverOptions)
-    !options.precondition && return zero(T)
+    !options.precondition && return 0.0
     options.init_sketch_size = solver.data.n ≥ 1_000 ? options.init_sketch_size : solver.data.n ÷ 20
     precond_time_start = time_ns()
     _build_preconditioner!(solver, options)
@@ -500,7 +500,7 @@ function solve!(
         if t % options.rho_update_iter == 0
             updated_rho = update_rho!(solver, options)
 
-            if updated_rho
+            if options.precondition && updated_rho
                 update_preconditioner_rho!(solver, options)
             end
         end
