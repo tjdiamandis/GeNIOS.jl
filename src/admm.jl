@@ -127,7 +127,7 @@ function obj_val!(solver::MLSolver, options::SolverOptions)
     
     solver.loss = sum(x->solver.data.f(x), solver.pred)
     solver.obj_val = solver.loss + 
-        solver.λ1*norm(solver.zk, 1) + solver.λ2*sum(abs2, solver.zk)
+        solver.λ1*norm(solver.zk, 1) + (solver.λ2/2)*sum(abs2, solver.zk)
 end
 
 function obj_val!(solver::ConicSolver, options::SolverOptions)
@@ -148,13 +148,27 @@ function convergence_criteria!(solver::MLSolver, options::SolverOptions)
     ν .= solver.data.df.(solver.pred)
     mul!(solver.cache.vn, solver.data.Adata', ν)
     @. solver.cache.vn += solver.λ2 * solver.zk
-    normalization = solver.λ1 / norm(solver.cache.vn, Inf)
-    ν .*= normalization
+    
+    # Applies normalization if needed
+    if iszero(solver.λ2)
+        normalization = solver.λ1 / norm(solver.cache.vn, Inf)
+        ν .*= normalization
+    end
 
     # g(ν) = -∑f*(νᵢ) - bᵀνᵢ
     dual_obj = -sum(x->solver.data.fconj(x), ν)
     dual_obj -= dot(solver.data.bdata, ν)
 
+    # Adds extra term -(1/2λ₂)∑( (Aᵀν - λ₁)₊ )² for λ₂ > 0
+    if !iszero(solver.λ2)
+        mul!(solver.cache.vn, solver.data.Adata', ν)
+        @. solver.cache.vn = abs(solver.cache.vn)
+        solver.cache.vn .-= solver.λ1
+        @. solver.cache.vn = (max(solver.cache.vn, zero(eltype(solver.cache.vn))))^2
+        dual_obj -= 1/2solver.λ2 * sum(solver.cache.vn)
+    end
+
+    # NOTE: assumes that loss is positive
     solver.dual_gap = (solver.obj_val - dual_obj) / min(solver.obj_val, abs(dual_obj))
     return nothing
 end
