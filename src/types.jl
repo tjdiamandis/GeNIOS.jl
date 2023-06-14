@@ -346,6 +346,7 @@ struct GeNIOSLog{T <: AbstractFloat, S <: AbstractVector{T}}
     obj_val::Union{S, Nothing}
     iter_time::Union{S, Nothing}
     linsys_time::Union{S, Nothing}
+    prox_time::Union{S, Nothing}
     rp::Union{S, Nothing}
     rd::Union{S, Nothing}
     setup_time::T
@@ -354,7 +355,7 @@ struct GeNIOSLog{T <: AbstractFloat, S <: AbstractVector{T}}
 end
 function GeNIOSLog(setup_time::T, precond_time::T, solve_time::T) where {T <: AbstractFloat}
     return GeNIOSLog(
-        nothing, nothing, nothing, nothing, nothing, nothing,
+        nothing, nothing, nothing, nothing, nothing, nothing, nothing,
         setup_time, precond_time, solve_time
     )
 end
@@ -362,6 +363,7 @@ end
 function create_temp_log(solver::Solver, max_iters::Int)
     T = eltype(solver.xk)
     return GeNIOSLog(
+        zeros(T, max_iters),
         zeros(T, max_iters),
         zeros(T, max_iters),
         zeros(T, max_iters),
@@ -391,19 +393,21 @@ struct GeNIOSResult{T}
     log::GeNIOSLog{T}
 end
 
-function populate_log!(genios_log, solver::Solver, ::SolverOptions, t, time_sec, time_linsys)
+function populate_log!(genios_log, solver::Solver, ::SolverOptions, t, time_sec, time_linsys, time_prox)
     genios_log.obj_val[t] = solver.obj_val
     genios_log.iter_time[t] = time_sec
     genios_log.linsys_time[t] = time_linsys
+    genios_log.prox_time[t] = time_prox
     genios_log.rp[t] = solver.rp_norm
     genios_log.rd[t] = solver.rd_norm
     return nothing
 end
 
-function populate_log!(genios_log, solver::MLSolver, options::SolverOptions, t, time_sec, time_linsys)
+function populate_log!(genios_log, solver::MLSolver, options::SolverOptions, t, time_sec, time_linsys, time_prox)
     genios_log.obj_val[t] = solver.obj_val
     genios_log.iter_time[t] = time_sec
     genios_log.linsys_time[t] = time_linsys
+    genios_log.prox_time[t] = time_prox
     genios_log.rp[t] = solver.rp_norm
     genios_log.rd[t] = solver.rd_norm
 

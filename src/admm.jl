@@ -275,27 +275,30 @@ function update_Mx!(solver::Solver, options::SolverOptions)
 end
 
 function update_z!(solver::Solver, options::SolverOptions)
+    options.logging && (time_start = time_ns();)
     @. solver.cache.vm = solver.Mxk + solver.uk - solver.data.c
     
     # prox_{g/ρ}(v) = prox_{g/ρ}( Axᵏ⁺¹ - c + uᵏ)
     solver.data.prox_g!(solver.zk, solver.cache.vm, solver.ρ)
-    return nothing
+    return options.logging ? (time_ns() - time_start) / 1e9 : nothing
 end
 
 function update_z!(solver::MLSolver, options::SolverOptions)
+    options.logging && (time_start = time_ns();)
     @inline soft_threshold(x::T, κ::T) where {T <: Real} = sign(x) * max(zero(T), abs(x) - κ)
     
     @. solver.cache.vm = solver.Mxk + solver.uk - solver.data.c
     
     solver.zk .= soft_threshold.(solver.cache.vm, solver.λ1/solver.ρ)
-    return nothing
+    return options.logging ? (time_ns() - time_start) / 1e9 : nothing
 end
 
 function update_z!(solver::ConicSolver, options::SolverOptions)
+    options.logging && (time_start = time_ns();)
     @. solver.cache.vm = solver.Mxk + solver.uk - solver.data.c
 
     project!(solver.zk, solver.data.K, solver.cache.vm)
-    return nothing
+    return options.logging ? (time_ns() - time_start) / 1e9 : nothing
 end
 
 function update_u!(solver::Solver, options::SolverOptions)
@@ -471,7 +474,7 @@ function solve!(
         time_linsys = update_x!(solver, options, linsys_solver)
         update_Mx!(solver, options)
         # solver.zk_old .= solver.zk
-        update_z!(solver, options)
+        time_prox = update_z!(solver, options)
         update_u!(solver, options)
         
         # --- Update objective & convergence criteria ---
@@ -483,7 +486,7 @@ function solve!(
         # --- Logging ---
         time_sec = (time_ns() - solve_time_start) / 1e9
         if options.logging
-            populate_log!(tmp_log, solver, options, t, time_sec, time_linsys)
+            populate_log!(tmp_log, solver, options, t, time_sec, time_linsys, time_prox)
         end
 
         # --- Printing ---
@@ -554,6 +557,7 @@ function solve!(
             tmp_log.obj_val[1:t-1],
             tmp_log.iter_time[1:t-1],
             tmp_log.linsys_time[1:t-1],
+            tmp_log.prox_time[1:t-1],
             tmp_log.rp[1:t-1], 
             tmp_log.rd[1:t-1],
             setup_time, 
