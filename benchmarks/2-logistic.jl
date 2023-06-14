@@ -2,16 +2,17 @@ using Pkg
 Pkg.activate(@__DIR__)
 using Random, LinearAlgebra, SparseArrays, Printf
 using Plots, LaTeXStrings
-# using OpenML, Tables, JLD2
+using OpenML, Tables, JLD2
 using CSV, DataFrames, Statistics, JLD2
 
 Pkg.activate(joinpath(@__DIR__, ".."))
 using GeNIOS
 
 DATAPATH = joinpath(@__DIR__, "data")
-DATAFILE = joinpath(DATAPATH, "YearPredictionMSD.txt")
+# DATAFILE = joinpath(DATAPATH, "YearPredictionMSD.txt")
+DATAFILE = joinpath(DATAPATH, "year-pred.jld2")
 SAVEPATH = joinpath(@__DIR__, "saved")
-SAVEFILE = joinpath(SAVEPATH, "elastic-net.jld2")
+SAVEFILE = joinpath(SAVEPATH, "2-logistic.jld2")
 FIGS_PATH = joinpath(@__DIR__, "figures")
 
 function gauss_fourier_features!(A_aug, A, σ)
@@ -31,14 +32,25 @@ end
 m, n = 1_000, 5_000
 BLAS.set_num_threads(Sys.CPU_THREADS)
 
-file = CSV.read(DATAFILE, DataFrame)
-M = Matrix(file[1:m,:])
-size(M, 1)
-M .= M .- sum(M, dims=1) ./ size(M, 1)
-M .= M ./ std(M, dims=1)
+# Set this to false if you have not yet downloaded the real-sim dataset
+HAVE_DATA = false
 
-A_non_augmented = M[:, 2:end]
-b = M[:, 1]
+if !HAVE_DATA
+    dataset = OpenML.load(44027)
+
+    A_full = sparse(Tables.matrix(dataset)[:,1:end-1])
+    b_full = dataset.year
+    save(DATAFILE, "A_full", A_full, "b_full", b_full)
+else
+    A_full, b_full = load(DATAFILE, "A_full", "b_full")
+end
+A_full .= A_full .- mean(A_full; dims=1)
+A_full .= A_full ./ std(A_full, dims=1)
+b_full .= b_full .- mean(b_full)
+b_full .= b_full ./ std(b_full)
+
+A_non_augmented = A_full[1:m, :]
+b = b_full[1:m]
 
 σ = 8
 A = zeros(m, n)
@@ -48,26 +60,27 @@ GC.gc()
 # Reguarlization parameters
 λ1_max = norm(A'*b, Inf)
 λ1 = 0.05*λ1_max
-λ2 = λ1
+λ2 = 0.0
 
 ## Solving the Problem
 # For compilation
-solve!(GeNIOS.ElasticNetSolver(λ1, λ2, A, b); options=GeNIOS.SolverOptions(max_iters=2))
+solve!(GeNIOS.LogisticSolver(λ1, λ2, A, b); options=GeNIOS.SolverOptions(max_iters=2))
 
 # With everything
-solver = GeNIOS.ElasticNetSolver(λ1, λ2, A, b)
+solver = GeNIOS.LogisticSolver(λ1, λ2, A, b)
 options = GeNIOS.SolverOptions(
     relax=true,
     α=1.6,
     use_dual_gap=true,
     precondition=true,
     num_threads=Sys.CPU_THREADS,
+    max_iters=2000,
 )
 GC.gc()
 result = solve!(solver; options=options)
 
 # No preconditioner
-solver = GeNIOS.ElasticNetSolver(λ1, λ2, A, b)
+solver = GeNIOS.LogisticSolver(λ1, λ2, A, b)
 options = GeNIOS.SolverOptions(
     relax=true,
     α=1.6,
@@ -75,12 +88,13 @@ options = GeNIOS.SolverOptions(
     verbose=true,
     precondition=false,
     num_threads=Sys.CPU_THREADS,
+    max_iters=2000,
 )
 GC.gc()
 result_npc = solve!(solver; options=options)
 
 # Exact solve
-solver = GeNIOS.ElasticNetSolver(λ1, λ2, A, b)
+solver = GeNIOS.LogisticSolver(λ1, λ2, A, b)
 options = GeNIOS.SolverOptions(
     relax=true,
     α=1.6,
@@ -88,13 +102,14 @@ options = GeNIOS.SolverOptions(
     verbose=true,
     precondition=true,
     num_threads=Sys.CPU_THREADS,
-    linsys_max_tol=1e-8
+    linsys_max_tol=1e-8,
+    max_iters=2000,
 )
 GC.gc()
 result_exact = solve!(solver; options=options)
 
 # Exact solve, no pc
-solver = GeNIOS.ElasticNetSolver(λ1, λ2, A, b)
+solver = GeNIOS.LogisticSolver(λ1, λ2, A, b)
 options = GeNIOS.SolverOptions(
     relax=true,
     α=1.6,
@@ -102,13 +117,14 @@ options = GeNIOS.SolverOptions(
     verbose=true,
     precondition=false,
     num_threads=Sys.CPU_THREADS,
-    linsys_max_tol=1e-8
+    linsys_max_tol=1e-8,
+    max_iters=2000,
 )
 GC.gc()
 result_exact_npc = solve!(solver; options=options)
 
 # High precision solve
-solver = GeNIOS.ElasticNetSolver(λ1, λ2, A, b)
+solver = GeNIOS.LogisticSolver(λ1, λ2, A, b)
 options = GeNIOS.SolverOptions(
     relax=true,
     α=1.6,
@@ -117,6 +133,7 @@ options = GeNIOS.SolverOptions(
     verbose=true,
     precondition=true,
     num_threads=Sys.CPU_THREADS,
+    max_iters=10_000
 )
 GC.gc()
 result_high_precision = solve!(solver; options=options)
@@ -251,7 +268,7 @@ add_to_plot!(obj_val_iter_plot, log_exact.iter_time, (log_exact.obj_val .- pstar
 add_to_plot!(obj_val_iter_plot, log_exact_npc.iter_time, (log_exact_npc.obj_val .- pstar) ./ pstar, "ADMM (no pc)", :mediumblue);
 obj_val_iter_plot
 
-savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "1-elastic-net-dual-gap-iter.pdf"))
-savefig(rp_iter_plot, joinpath(FIGS_PATH, "1-elastic-net-rp-iter.pdf"))
-savefig(rd_iter_plot, joinpath(FIGS_PATH, "1-elastic-net-rd-iter.pdf"))
-savefig(obj_val_iter_plot, joinpath(FIGS_PATH, "1-elastic-net-obj-val-iter.pdf"))
+savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "2-logistic-dual-gap-iter.pdf"))
+savefig(rp_iter_plot, joinpath(FIGS_PATH, "2-logistic-rp-iter.pdf"))
+savefig(rd_iter_plot, joinpath(FIGS_PATH, "2-logistic-rd-iter.pdf"))
+savefig(obj_val_iter_plot, joinpath(FIGS_PATH, "2-logistic-obj-val-iter.pdf"))
