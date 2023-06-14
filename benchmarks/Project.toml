@@ -2,7 +2,6 @@
 BandedMatrices = "aae01518-5342-5314-be14-df237901396f"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-GeNIOS = "633953ab-b710-48ef-9c4e-3b2d1d3d8185"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 OpenML = "8b6db2d4-7670-4922-a472-f9537c81ab66"

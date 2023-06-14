@@ -4,6 +4,7 @@ using Random, LinearAlgebra, SparseArrays, Printf
 using Plots, LaTeXStrings
 using OpenML, Tables, JLD2
 using CSV, DataFrames, Statistics, JLD2
+include(joinpath(@__DIR__, "utils.jl"))
 
 Pkg.activate(joinpath(@__DIR__, ".."))
 using GeNIOS
@@ -14,18 +15,6 @@ DATAFILE = joinpath(DATAPATH, "year-pred.jld2")
 SAVEPATH = joinpath(@__DIR__, "saved")
 SAVEFILE = joinpath(SAVEPATH, "2-logistic.jld2")
 FIGS_PATH = joinpath(@__DIR__, "figures")
-
-function gauss_fourier_features!(A_aug, A, σ)
-    s = size(A_aug, 2)
-    d = size(A, 2)
-    W = 1/σ * randn(d, s)
-    b = 2π*rand(s)
-    mul!(A_aug, A, W)
-    A_aug .+= b'
-    A_aug .= cos.(A_aug)    
-    A_aug .*= sqrt(2 / s) 
-    return nothing
-end
 
 
 ## Construct the problem data
@@ -173,34 +162,12 @@ log_high_precision = result_high_precision.log
 pstar = log_high_precision.obj_val[end]
 
 # Printout timings
-function print_timing(name, log)
-    print("\n$name:")
-    @printf("\n- setup:           %6.4fs", log.setup_time)
-    @printf("\n-- pc time:        %6.4fs", log.precond_time)
-    @printf("\n- num iter:        %7d", length(log.dual_gap))
-    @printf("\n- iter time:       %6.4fs", log.solve_time / length(log.dual_gap))
-    @printf("\n-- linsys time:    %6.4fs", mean(log.linsys_time))
-    @printf("\n-- prox time:      %6.4fs", mean(log.prox_time))
-    return nothing
-end
-
 print_timing("GeNIOS", log)
 print_timing("GeNIOS (no pc)", log_npc)
 print_timing("ADMM (exact)", log_exact)
 print_timing("ADMM (exact, no pc)", log_exact_npc)
 
 # Plot things
-function add_to_plot!(plt, x, y, label, color; style=:solid, lw=3)
-    start = findfirst(y .> 0)
-    inds = start:length(x)
-    plot!(plt, x[inds], y[inds],
-        label=label,
-        lw=lw,
-        linecolor=color,
-        linestyle=style
-    )
-end
-
 dual_gap_iter_plt = plot(; 
     dpi=300,
     legendfontsize=10,

@@ -3,6 +3,7 @@ Pkg.activate(@__DIR__)
 using Random, LinearAlgebra, SparseArrays, Printf
 using Plots, LaTeXStrings
 using OpenML, Tables, JLD2, Statistics
+include(joinpath(@__DIR__, "utils.jl"))
 
 Pkg.activate(joinpath(@__DIR__, ".."))
 using GeNIOS
@@ -13,17 +14,6 @@ SAVEPATH = joinpath(@__DIR__, "saved")
 SAVEFILE = joinpath(SAVEPATH, "3-huber.jld2")
 FIGS_PATH = joinpath(@__DIR__, "figures")
 
-function gauss_fourier_features!(A_aug, A, σ)
-    s = size(A_aug, 2)
-    d = size(A, 2)
-    W = 1/σ * randn(d, s)
-    b = 2π*rand(s)
-    mul!(A_aug, A, W)
-    A_aug .+= b'
-    A_aug .= cos.(A_aug)    
-    A_aug .*= sqrt(2 / s) 
-    return nothing
-end
 
 ## Generating the problem data
 Random.seed!(1)
@@ -103,34 +93,11 @@ log_ml = result_ml.log
 log_qp = result_qp.log
 
 # Print timings
-function print_timing(name, log)
-    print("\n$name:")
-    @printf("\ntotal time:        %6.4fs", log.solve_time)
-    @printf("\n- setup:           %6.4fs", log.setup_time)
-    @printf("\n-- pc time:        %6.4fs", log.precond_time)
-    @printf("\n- num iter:        %7d", length(log.dual_gap))
-    @printf("\n- iter time:       %6.4fs", log.solve_time / length(log.dual_gap))
-    @printf("\n-- linsys time:    %6.4fs", mean(log.linsys_time))
-    @printf("\n-- prox time:      %6.4fs", mean(log.prox_time))
-    return nothing
-end
-
 print_timing("MLSolver", log_ml)
 print_timing("QPSolver", log_qp)
 
 # Plot things
 # TODO: add custom convergence criterion so looking at the same thing
-function add_to_plot!(plt, x, y, label, color; style=:solid, lw=3)
-    start = findfirst(y .> 0)
-    inds = start:length(x)
-    plot!(plt, x[inds], y[inds],
-        label=label,
-        lw=lw,
-        linecolor=color,
-        linestyle=style
-    )
-end
-
 rp_iter_plot = plot(; 
     dpi=300,
     legendfontsize=10,
