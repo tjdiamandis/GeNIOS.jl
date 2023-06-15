@@ -167,6 +167,10 @@ print_timing("GeNIOS (no pc)", log_npc)
 print_timing("ADMM (exact)", log_exact)
 print_timing("ADMM (exact, no pc)", log_exact_npc)
 
+names = ["GeNIOS", "GeNIOS (no pc)", "`ADMM'", "`ADMM' (no pc)"]
+logs = [log, log_npc, log_exact, log_exact_npc]
+print_timing_table(names, logs)
+
 # Plot things
 dual_gap_iter_plt = plot(; 
     dpi=300,

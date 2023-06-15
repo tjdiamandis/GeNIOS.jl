@@ -183,6 +183,11 @@ print_timing("QPSolver", log_qp)
 print_timing("QPSolver, custom operators", log_op)
 print_timing("GenericSolver", log_custom)
 
+print_timing_table(
+    ["QPSolver", "QPSolver, custom operators", "GenericSolver"], 
+    [log_qp, log_op, log_custom]
+)
+
 rp_iter_plot = plot(; 
     dpi=300,
     legendfontsize=10,

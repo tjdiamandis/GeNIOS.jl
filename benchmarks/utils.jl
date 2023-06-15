@@ -33,3 +33,43 @@ function add_to_plot!(plt, x, y, label, color; style=:solid, lw=3)
         linestyle=style
     )
 end
+
+function print_timing_table(names, logs)
+    function print_row(row_name, row_field::Symbol, names, logs; func=x->x, unit="s", int_val=false)
+        ret = row_name
+        for (name, log) in zip(names, logs)
+            val = func(getfield(log, row_field))
+            if int_val
+                ret *= " & " * @sprintf("%4d", val)
+            else
+                ret *= " & " * @sprintf("%.3f", val) * unit
+            end
+        end
+        ret *= "\\\\"
+        println(ret)
+        return nothing
+    end
+
+    n_exp = length(names)
+    println("\\begin{tabular}{@{}l" * "r"^n_exp * "@{}}")
+    println("\\toprule")
+    println("&" * join(names, " & ") * "\\\\")
+    println("\\midrule")
+    print_row("setup time (total)", :setup_time, names, logs)
+    print_row("\\qquad preconditioner time", :precond_time, names, logs)
+    print_row("solve time", :solve_time, names, logs; func=mean)
+    print_row("\\qquad number of iterations", :dual_gap, names, logs; func=length, int_val=true)
+    print_row("\\qquad avg. linear system time", :linsys_time, names, logs; func=x->mean(1000x), unit="ms")
+    print_row("\\qquad avg. prox time", :prox_time, names, logs; func=x->mean(1000x), unit="ms")
+
+    # total time
+    ret = "total time"
+    for (name, log) in zip(names, logs)
+        val = log.setup_time + log.solve_time
+        ret *= " & " * @sprintf("%.3f", val) * "s"
+    end
+    ret *= "\\\\"
+    println(ret)
+    println("\\bottomrule")
+    println("\\end{tabular}")
+end

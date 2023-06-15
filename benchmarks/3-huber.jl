@@ -96,6 +96,10 @@ log_qp = result_qp.log
 print_timing("MLSolver", log_ml)
 print_timing("QPSolver", log_qp)
 
+names = ["MLSolver", "QPSolver"]
+logs = [log_ml, log_qp]
+print_timing_table(names, logs)
+
 # Plot things
 # TODO: add custom convergence criterion so looking at the same thing
 rp_iter_plot = plot(; 

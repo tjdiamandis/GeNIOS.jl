@@ -137,7 +137,9 @@ print_timing("GeNIOS (no pc)", log_npc)
 print_timing("ADMM (exact)", log_exact)
 print_timing("ADMM (exact, no pc)", log_exact_npc)
 
-
+names = ["GeNIOS", "GeNIOS (no pc)", "ADMM", "ADMM (no pc)"]
+logs = [log_pc, log_npc, log_exact, log_exact_npc]
+print_timing_table(names, logs)
 
 # Plot things
 rp_iter_plot = plot(; 
