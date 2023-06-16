@@ -62,6 +62,7 @@ println("Optimal value: $(round(solver.obj_val, digits=4))")
 #=
 ### Performance improvements
 We can also define custom operators for $P$ and $M$ to speed up the computation.
+For $M$, we will use the `LinearMaps` package for convenience.
 =#
 ## P = γ*(F*F' + Diagonal(d))
 struct FastP
@@ -80,6 +81,18 @@ end
 P = FastP(F, d, γ, zeros(k))
 
 ## M = vcat(I, ones(1, n))
+using LinearMaps
+M = vcat(LinearMap(I, n), ones(1, n))
+
+solver = GeNIOS.QPSolver(P, q, M, l, u);
+res = solve!(solver; options=GeNIOS.SolverOptions(eps_abs=1e-6));
+println("Optimal value: $(round(solver.obj_val, digits=4))")
+
+#=
+### Custom M
+Of course, we can also define each needed operation for M ourselves, which may
+give an additional speedup for some matrices.
+=#
 struct FastM 
     n::Int
 end
