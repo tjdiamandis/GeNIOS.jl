@@ -4,6 +4,17 @@ To get started, check out the **Examples**.
 The **Advanced Examples** demonstrate ways to improve performance for a
 variety of different problem types.
 
+## Custom linear operators for QP
+The `QPSolver` interface does not require an `AbstractMatrix` for `P` and `M`.
+They only must support the following operations:
+
+- `P` must support `LinearAlgebra.mul!` (three argument)
+- `M` must support `size`, `LinearAlgebra.mul!` (three argument), `LinearAlgebra.adjoint`, and `LinearAlgebra.mul!` (three and five argument) for `M'`. The package
+[`LinearMaps.jl`](https://github.com/JuliaLinearAlgebra/LinearMaps.jl) provides
+much of this functionality, especially for the common case in which `M` contains
+an identity block (_e.g._, see the [Markowitz Portfolio Optimization](@ref)
+example).
+
 ## Algorithm parameters
 The `GeNIOS` algorithm has the following tunable parameters, which are tunable
 either through the JuMP interface or via the [`SolverOptions`](@ref) object,
