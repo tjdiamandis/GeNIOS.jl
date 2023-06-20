@@ -1,3 +1,5 @@
+using Printf, Statistics
+
 # Some utility functions
 function gauss_fourier_features!(A_aug, A, σ)
     s = size(A_aug, 2)
@@ -39,11 +41,7 @@ function print_timing_table(names, logs)
         ret = row_name
         for (name, log) in zip(names, logs)
             val = func(getfield(log, row_field))
-            if int_val
-                ret *= " & " * @sprintf("%4d", val)
-            else
-                ret *= " & " * @sprintf("%.3f", val) * unit
-            end
+            ret *= " & " * (int_val ?  @sprintf("%4d", val) : @sprintf("%.3f", val) * unit)
         end
         ret *= "\\\\"
         println(ret)
@@ -58,7 +56,7 @@ function print_timing_table(names, logs)
     print_row("setup time (total)", :setup_time, names, logs)
     print_row("\\qquad preconditioner time", :precond_time, names, logs)
     print_row("solve time", :solve_time, names, logs; func=mean)
-    print_row("\\qquad number of iterations", :dual_gap, names, logs; func=length, int_val=true)
+    print_row("\\qquad number of iterations", :dual_gap, names, logs; func=length, int_val=true, unit="")
     print_row("\\qquad avg. linear system time", :linsys_time, names, logs; func=x->mean(1000x), unit="ms")
     print_row("\\qquad avg. prox time", :prox_time, names, logs; func=x->mean(1000x), unit="ms")
 
