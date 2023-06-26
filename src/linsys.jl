@@ -15,7 +15,7 @@ struct MLHessianOperator{
 end
 function MLHessianOperator(Adata, bdata, df2, λ2)
     N, n = size(Adata)
-    return MLHessianOperator(zeros(N), bdata, Adata, df2, zeros(eltype(Adata), N), λ2)
+    return MLHessianOperator(ones(N), bdata, Adata, df2, zeros(eltype(Adata), N), λ2)
 end
 
 function LinearAlgebra.mul!(y, H::MLHessianOperator, x)
@@ -28,8 +28,38 @@ function LinearAlgebra.mul!(y, H::MLHessianOperator, x)
     mul!(y, H.Adata', H.vN)
     
     # y = y + λ₂*I*x
-    H.λ2 > 0 && (y .+= H.λ2 .* x)
+    if H.λ2 > 0
+        y .+= H.λ2 .* x
+    end
+    
     return nothing
+end
+
+# Quick fix: should not sketch the + λ₂I part of HessianOperator
+function RandomizedPreconditioners.NystromSketch(H::MLHessianOperator, r::Int; n=nothing, q=0, Ω=nothing)
+    n = isnothing(n) ? size(A, 1) : n
+    Y = zeros(n, r)
+
+    Ω = 1/sqrt(n) * randn(n, r)
+    # TODO: maybe add a powering option here?
+    for i in 1:r
+        @views mul!(H.vN, H.Adata, Ω[:, i])
+        @. H.vN *= H.w
+        @views mul!(Y[:, i], H.Adata', H.vN)
+    end
+    
+    ν = sqrt(n)*eps(norm(Y))
+    @. Y = Y + ν*Ω
+
+    Z = zeros(r, r)
+    mul!(Z, Ω', Y)
+    # Z[diagind(Z)] .+= ν                 # for numerical stability
+    
+    B = Y / cholesky(Symmetric(Z)).U
+    U, Σ, _ = svd(B)
+    Λ = Diagonal(max.(0, Σ.^2 .- ν))
+
+    return NystromSketch(U, Λ)
 end
 
 function update!(H::MLHessianOperator, solver)
