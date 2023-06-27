@@ -26,7 +26,7 @@ function print_timing(name, log)
 end
 
 function add_to_plot!(plt, x, y, label, color; style=:solid, lw=3)
-    start = findfirst(y .> 0)
+    start = findfirst(y .!= 0)
     inds = start:length(x)
     plot!(plt, x[inds], y[inds],
         label=label,
@@ -57,7 +57,9 @@ function print_timing_table(names, logs)
     print_row("\\qquad preconditioner time", :precond_time, names, logs)
     print_row("solve time", :solve_time, names, logs; func=mean)
     print_row("\\qquad number of iterations", :dual_gap, names, logs; func=length, int_val=true, unit="")
+    print_row("\\qquad total linear system time", :linsys_time, names, logs; func=x->sum(x), unit="s")
     print_row("\\qquad avg. linear system time", :linsys_time, names, logs; func=x->mean(1000x), unit="ms")
+    print_row("\\qquad total prox time", :prox_time, names, logs; func=x->sum(x), unit="s")
     print_row("\\qquad avg. prox time", :prox_time, names, logs; func=x->mean(1000x), unit="ms")
 
     # total time

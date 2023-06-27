@@ -17,7 +17,7 @@ FIGS_PATH = joinpath(@__DIR__, "figures")
 
 
 ## Construct the problem data
-m, n = 1_000, 5_000
+m, n = 5_000, 10_000
 BLAS.set_num_threads(Sys.CPU_THREADS)
 
 file = CSV.read(DATAFILE, DataFrame)
@@ -36,14 +36,11 @@ GC.gc()
 
 
 ## Setup problem
-P = blockdiag(spzeros(n, n), sparse(I, m, m))
-q = spzeros(n + m)
-A = [
-    Ad                   -sparse(I, m, m);
-    sparse(I, n, n)     spzeros(n, m)
-]
-l = [b; spzeros(n)]
-u = [b; ones(n)]
+P = Ad'*Ad
+q = Ad'*b
+A = I
+l = spzeros(n)
+u = ones(n)
 
 
 # compile
@@ -92,6 +89,7 @@ result_exact_npc = solve!(solver; options=options)
 solver = GeNIOS.QPSolver(P, q, A, l, u)
 options = GeNIOS.SolverOptions(
     eps_abs=1e-8,
+    eps_rel=1e-8,
     precondition=true,
     num_threads=Sys.CPU_THREADS,
 )
@@ -182,10 +180,10 @@ obj_val_iter_plot = plot(;
     xlabel="Time (s)",
     legend=:topright,
 )
-add_to_plot!(obj_val_iter_plot, log_pc.iter_time[2:end], (log_pc.obj_val[2:end] .- pstar) ./ pstar, "GeNIOS", :coral);
-add_to_plot!(obj_val_iter_plot, log_npc.iter_time[2:end], (log_npc.obj_val[2:end] .- pstar) ./ pstar, "No PC", :purple);
-add_to_plot!(obj_val_iter_plot, log_exact.iter_time[2:end], (log_exact.obj_val[2:end] .- pstar) ./ pstar, "ADMM (pc)", :red);
-add_to_plot!(obj_val_iter_plot, log_exact_npc.iter_time[2:end], (log_exact_npc.obj_val[2:end] .- pstar) ./ pstar, "ADMM (no pc)", :mediumblue);
+add_to_plot!(obj_val_iter_plot, log_pc.iter_time[2:end], (log_pc.obj_val[2:end] .- pstar) ./ abs(pstar), "GeNIOS", :coral);
+add_to_plot!(obj_val_iter_plot, log_npc.iter_time[2:end], (log_npc.obj_val[2:end] .- pstar) ./ abs(pstar), "No PC", :purple);
+add_to_plot!(obj_val_iter_plot, log_exact.iter_time[2:end], (log_exact.obj_val[2:end] .- pstar) ./ abs(pstar), "ADMM (pc)", :red);
+add_to_plot!(obj_val_iter_plot, log_exact_npc.iter_time[2:end], (log_exact_npc.obj_val[2:end] .- pstar) ./ abs(pstar), "ADMM (no pc)", :mediumblue);
 obj_val_iter_plot
 
 savefig(rp_iter_plot, joinpath(FIGS_PATH, "4-constrained-ls-rp-iter.pdf"))
