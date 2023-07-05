@@ -149,17 +149,15 @@ function convergence_criteria!(solver::MLSolver, options::SolverOptions)
     mul!(solver.cache.vn, solver.data.Adata', ν)
     @. solver.cache.vn += solver.λ2 * solver.zk
     
-    # Applies normalization if needed
-    if iszero(solver.λ2)
-        normalization = solver.λ1 / norm(solver.cache.vn, Inf)
-        ν .*= normalization
-    end
+    # Applies normalization
+    normalization = solver.λ1 / norm(solver.cache.vn, Inf)
+    ν .*= normalization
 
     # g(ν) = -∑f*(νᵢ) - bᵀνᵢ
     dual_obj = -sum(x->solver.data.fconj(x), ν)
     dual_obj -= dot(solver.data.bdata, ν)
 
-    # Adds extra term -(1/2λ₂)∑( (Aᵀν - λ₁)₊ )² for λ₂ > 0
+    # Adds extra term to g(ν), -(1/2λ₂)∑( (|Aᵀν| - λ₁)₊ )², for λ₂ > 0
     if !iszero(solver.λ2)
         mul!(solver.cache.vn, solver.data.Adata', ν)
         @. solver.cache.vn = abs(solver.cache.vn)
@@ -168,8 +166,7 @@ function convergence_criteria!(solver::MLSolver, options::SolverOptions)
         dual_obj -= 1/2solver.λ2 * sum(solver.cache.vn)
     end
 
-    # NOTE: assumes that loss is positive
-    solver.dual_gap = (solver.obj_val - dual_obj) / min(solver.obj_val, abs(dual_obj))
+    solver.dual_gap = (solver.obj_val - dual_obj) / max(abs(solver.obj_val), abs(dual_obj))
     return nothing
 end
 
