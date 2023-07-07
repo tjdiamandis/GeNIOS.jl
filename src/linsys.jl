@@ -11,11 +11,14 @@ struct MLHessianOperator{
     Adata::M
     df2::F
     vN::V
-    λ2::T
+    λ2::MVector{1,T}
 end
 function MLHessianOperator(Adata, bdata, df2, λ2)
-    N, n = size(Adata)
-    return MLHessianOperator(ones(N), bdata, Adata, df2, zeros(eltype(Adata), N), λ2)
+    N, _ = size(Adata)
+    T = eltype(Adata)
+    return MLHessianOperator(
+        ones(N), bdata, Adata, df2, zeros(T, N), MVector{1,T}(λ2)
+    )
 end
 
 function LinearAlgebra.mul!(y, H::MLHessianOperator, x)
@@ -28,8 +31,8 @@ function LinearAlgebra.mul!(y, H::MLHessianOperator, x)
     mul!(y, H.Adata', H.vN)
     
     # y = y + λ₂*I*x
-    if H.λ2 > 0
-        y .+= H.λ2 .* x
+    if H.λ2[1] > 0
+        y .+= H.λ2[1] .* x
     end
     
     return nothing

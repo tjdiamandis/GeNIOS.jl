@@ -1,11 +1,15 @@
 abstract type Solver end
 abstract type ProblemData end
 
-struct MLProblemData{T} <: ProblemData
+struct MLProblemData{
+    T <: Real,
+    V <: AbstractVector{T}, 
+    M <: AbstractMatrix{T}, 
+} <: ProblemData
     M
     c
-    Adata::AbstractMatrix{T}
-    bdata::AbstractVector{T}
+    Adata::M
+    bdata::V
     N::Int
     m::Int
     n::Int
@@ -38,17 +42,20 @@ struct GenericProblemData{T} <: ProblemData
 end
 
 # TODO: maybe make immutable?
-mutable struct GenericSolver{T} <: Solver
+mutable struct GenericSolver{
+    T <: Real,
+    V <: AbstractVector{T},
+} <: Solver
     data::GenericProblemData{T} # data
     lhs_op::LinearOperator{T}   # LinerOperator for LHS of x update system
-    P                           # preconditioner; TODO: combine with lhs_op?
-    xk::AbstractVector{T}       # var   : primal (loss)
-    Mxk::AbstractVector{T}      # var   : primal 
-    zk::AbstractVector{T}       # var   : primal (reg)
-    zk_old::AbstractVector{T}   # var   : dual (prev step)
-    uk::AbstractVector{T}       # var   : dual
-    rp::AbstractVector{T}       # resid : primal
-    rd::AbstractVector{T}       # resid : dual
+    P::Union{UniformScaling{Bool}, NystromPreconditionerInverse{T}} # preconditioner
+    xk::V                       # var   : primal (loss)
+    Mxk::V                      # var   : primal 
+    zk::V                       # var   : primal (reg)
+    zk_old::V                   # var   : dual (prev step)
+    uk::V                       # var   : dual
+    rp::V                       # resid : primal
+    rd::V                       # resid : dual
     rp_norm::T                  # resid_norm : primal
     rd_norm::T                  # resid_norm : dual
     obj_val::T                  # log   : f(x) + g(z)
@@ -96,19 +103,23 @@ function GenericSolver(data::ProblemData)
 end
 
 #TODO: split inequality and equality constraints??
-mutable struct ConicSolver{T} <: Solver
+# TODO: should P be in lhs_op?
+mutable struct ConicSolver{
+    T <: Real,
+    V <: AbstractVector{T},
+} <: Solver
     data::ConicProgramData{T} # data
     lhs_op::LinearOperator{T}   # LinerOperator for LHS of x update system
-    P                           # preconditioner; TODO: combine with lhs_op?
-    xk::AbstractVector{T}       # var   : primal (loss)
-    δx::AbstractVector{T}       # var   : primal  
-    Mxk::AbstractVector{T}      # var   : primal 
-    zk::AbstractVector{T}       # var   : primal (reg)
-    zk_old::AbstractVector{T}   # var   : dual (prev step)
-    uk::AbstractVector{T}       # var   : dual
-    δy::AbstractVector{T}       # var   : dual
-    rp::AbstractVector{T}       # resid : primal
-    rd::AbstractVector{T}       # resid : dual
+    P::Union{UniformScaling{Bool}, NystromPreconditionerInverse{T}} # preconditioner
+    xk::V                       # var   : primal (loss)
+    δx::V                       # var   : primal  
+    Mxk::V                      # var   : primal 
+    zk::V                       # var   : primal (reg)
+    zk_old::V                   # var   : dual (prev step)
+    uk::V                       # var   : dual
+    δy::V                       # var   : dual
+    rp::V                       # resid : primal
+    rd::V                       # resid : dual
     rp_norm::T                  # resid_norm : primal
     rd_norm::T                  # resid_norm : dual
     obj_val::T                  # log   : f(x) + g(z)
@@ -155,18 +166,21 @@ function QPSolver(P, q, M, l, u)
     return ConicSolver(P, q, IntervalCone(l, u), M, zeros(m))
 end
 
-mutable struct MLSolver{T} <: Solver
+mutable struct MLSolver{
+    T <: Real,
+    V <: AbstractVector{T}, 
+} <: Solver
     data::MLProblemData{T}      # data
-    lhs_op::LinearOperator      # LinerOperator for LHS of x update system
-    P                           # preconditioner; TODO: combine with lhs_op?
-    xk::AbstractVector{T}       # var   : primal
-    Mxk::AbstractVector{T}      # var   : primal
-    pred::AbstractVector{T}     # var   : primal (Adata*zk - bdata) TODO: zk vs xk?
-    zk::AbstractVector{T}       # var   : primal (reg)
-    zk_old::AbstractVector{T}   # var   : dual (prev step)
-    uk::AbstractVector{T}       # var   : dual
-    rp::AbstractVector{T}       # resid : primal
-    rd::AbstractVector{T}       # resid : dual
+    lhs_op::LinearOperator{T}      # LinerOperator for LHS of x update system
+    P::Union{UniformScaling{Bool}, NystromPreconditionerInverse{T}} # preconditioner
+    xk::V                       # var   : primal
+    Mxk::V                      # var   : primal
+    pred::V                     # var   : primal (Adata*zk - bdata) TODO: zk vs xk?
+    zk::V                       # var   : primal (reg)
+    zk_old::V                   # var   : dual (prev step)
+    uk::V                       # var   : dual
+    rp::V                       # resid : primal
+    rd::V                       # resid : dual
     rp_norm::T                  # resid_norm : primal
     rd_norm::T                  # resid_norm : dual
     obj_val::T                  # log   : 0.5*∑f(aᵢᵀx - bᵢ) + λ₁|x|₁ + λ₂/2|x|₂²

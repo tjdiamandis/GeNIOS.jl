@@ -125,7 +125,7 @@ function obj_val!(solver::MLSolver, options::SolverOptions)
     mul!(solver.pred, solver.data.Adata, solver.zk)
     solver.pred .-= solver.data.bdata
     
-    solver.loss = sum(x->solver.data.f(x), solver.pred)
+    solver.loss = sum(solver.data.f, solver.pred)
     solver.obj_val = solver.loss + 
         solver.λ1*norm(solver.zk, 1) + (solver.λ2/2)*sum(abs2, solver.zk)
 end
@@ -154,7 +154,7 @@ function convergence_criteria!(solver::MLSolver, options::SolverOptions)
     ν .*= normalization
 
     # g(ν) = -∑f*(νᵢ) - bᵀνᵢ
-    dual_obj = -sum(x->solver.data.fconj(x), ν)
+    dual_obj = -sum(solver.data.fconj, ν)
     dual_obj -= dot(solver.data.bdata, ν)
 
     # Adds extra term to g(ν), -(1/2λ₂)∑( (|Aᵀν| - λ₁)₊ )², for λ₂ > 0
