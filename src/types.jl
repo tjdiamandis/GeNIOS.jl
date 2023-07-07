@@ -169,9 +169,10 @@ end
 mutable struct MLSolver{
     T <: Real,
     V <: AbstractVector{T}, 
+    M <: AbstractMatrix{T},
 } <: Solver
-    data::MLProblemData{T}      # data
-    lhs_op::LinearOperator{T}      # LinerOperator for LHS of x update system
+    data::MLProblemData{T, V, M}# data
+    lhs_op::LinearOperator{T}   # LinerOperator for LHS of x update system
     P::Union{UniformScaling{Bool}, NystromPreconditionerInverse{T}} # preconditioner
     xk::V                       # var   : primal
     Mxk::V                      # var   : primal
@@ -197,10 +198,10 @@ function MLSolver(f,
     d2f,
     λ1,
     λ2,
-    Adata::AbstractMatrix{T},
-    bdata::AbstractVector{T}; 
+    Adata::M,
+    bdata::V; 
     fconj=x->error(ArgumentError("dual gap used but fconj not defined"))
-) where {T}
+) where {T, V <: AbstractVector{T}, M <: AbstractMatrix{T}}
     N, n = size(Adata)
     #TODO: may want to add offset?
     m = n
