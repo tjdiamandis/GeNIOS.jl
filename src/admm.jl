@@ -166,7 +166,7 @@ function convergence_criteria!(solver::MLSolver, options::SolverOptions)
         dual_obj -= 1/2solver.λ2 * sum(solver.cache.vn)
     end
 
-    solver.dual_gap = (solver.obj_val - dual_obj) / max(abs(solver.obj_val), abs(dual_obj))
+    solver.dual_gap = (solver.obj_val - dual_obj) / min(abs(solver.obj_val), abs(dual_obj))
     return nothing
 end
 
@@ -185,8 +185,14 @@ end
 # NOTE: Assumes that pred has been computed
 function compute_rhs!(solver::MLSolver, options::SolverOptions)
     # RHS = ∇²f(xᵏ)xᵏ - ∇f(xᵏ) + ρAᵀ(zᵏ + c - uᵏ)
+    
+    # Recompute pred = Ax - b with xᵏ instead of zᵏ (used in residuals)
+    # TODO: maybe store pred w xk and pred with zk separately? 
+    mul!(solver.pred, solver.data.Adata, solver.xk)
+    solver.pred .-= solver.data.bdata
 
     # compute first term (hessian)
+    # λ₂xᵏ from the Hessian and λ₂xᵏ from the gradient cancel out
     mul!(solver.cache.vN, solver.data.Adata, solver.xk)
     @. solver.cache.vN *= solver.data.d2f(solver.pred)
     mul!(solver.cache.vn, solver.data.Adata', solver.cache.vN)
@@ -229,18 +235,19 @@ function update_x!(
     solver::Solver,
     options::SolverOptions,
     linsys_solver::CgSolver
-)
+    )
+
+    # update linear operator, i.e., ∇²f(xᵏ)
+    update!(solver.lhs_op.Hf_xk, solver)
+
     # RHS = ∇²f(xᵏ)xᵏ - ∇f(xᵏ) - ρAᵀ(zᵏ - c + uᵏ)
     compute_rhs!(solver, options)
 
-    
     # if options.logging, time the linear system solve
     if options.logging
         time_start = time_ns()
     end
     
-    # update linear operator, i.e., ∇²f(xᵏ)
-    update!(solver.lhs_op.Hf_xk, solver)
     linsys_tol = max(
         sqrt(eps()), min(
             sqrt(solver.rp_norm * solver.rd_norm), options.linsys_max_tol)
@@ -330,15 +337,13 @@ end
 function compute_dual_residual!(solver::Solver, options::SolverOptions)
     solver.data.grad_f!(solver.cache.vn, solver.xk)
     mul!(solver.cache.vn2, solver.data.M', solver.uk)
-
     @. solver.rd = solver.cache.vn + solver.ρ * solver.cache.vn2
-    solver.rd_norm = norm(solver.rd, options.norm_type)
-
+    
     # dual residual option 2
     # @. solver.cache.vm = solver.zk_old - solver.zk
     # mul!(solver.rd, solver.data.M', solver.cache.vm)
     # @. solver.rd *= solver.ρ
-
+    solver.rd_norm = norm(solver.rd, options.norm_type)
     return nothing
 end
 
@@ -360,6 +365,7 @@ function compute_dual_residual!(solver::MLSolver, options::SolverOptions)
     mul!(solver.cache.vn2, solver.data.M', solver.uk)
 
     @. solver.rd = solver.cache.vn + solver.ρ * solver.cache.vn2
+    # @. solver.rd = solver.ρ * (solver.zk_old - solver.zk)
     solver.rd_norm = norm(solver.rd, options.norm_type)
     return nothing
 end

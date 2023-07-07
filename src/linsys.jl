@@ -36,8 +36,9 @@ function LinearAlgebra.mul!(y, H::MLHessianOperator, x)
 end
 
 # Quick fix: should not sketch the + λ₂I part of HessianOperator
+# TODO: find a better work around
 function RandomizedPreconditioners.NystromSketch(H::MLHessianOperator, r::Int; n=nothing, q=0, Ω=nothing)
-    n = isnothing(n) ? size(A, 1) : n
+    n = isnothing(n) ? size(H.Adata, 2) : n
     Y = zeros(n, r)
 
     Ω = 1/sqrt(n) * randn(n, r)
