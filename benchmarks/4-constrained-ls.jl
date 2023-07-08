@@ -2,7 +2,6 @@ using Pkg
 Pkg.activate(@__DIR__)
 using Random, LinearAlgebra, SparseArrays, Printf
 using Plots, LaTeXStrings
-# using OpenML, Tables, JLD2
 using CSV, DataFrames, Statistics, JLD2
 include(joinpath(@__DIR__, "utils.jl"))
 
@@ -17,85 +16,90 @@ FIGS_PATH = joinpath(@__DIR__, "figures")
 
 
 ## Construct the problem data
-m, n = 5_000, 10_000
-BLAS.set_num_threads(Sys.CPU_THREADS)
+function get_augmented_data(m, n, DATAFILE)
+    BLAS.set_num_threads(Sys.CPU_THREADS)
+    
+    file = CSV.read(DATAFILE, DataFrame)
+    M = Matrix{Float64}(file[1:m,:])
+    size(M, 1)
+    M .= M .- sum(M, dims=1) ./ size(M, 1)
+    M .= M ./ std(M, dims=1)
+    
+    A_non_augmented = @view M[:, 2:end]
+    b = @view M[:, 1]
+    
+    σ = 8
+    Ad = zeros(m, n)
+    gauss_fourier_features!(Ad, A_non_augmented, σ)
+    GC.gc()
+    return Ad, b
+end
 
-file = CSV.read(DATAFILE, DataFrame)
-M = Matrix(file[1:m,:])
-size(M, 1)
-M .= M .- sum(M, dims=1) ./ size(M, 1)
-M .= M ./ std(M, dims=1)
+function construct_problem_constrained_ls(Ad, b)
+    m, n = size(Ad)
+    P = Ad'*Ad
+    q = Ad'*b
+    A = I
+    l = spzeros(n)
+    u = ones(n)
+    return P, q, A, l, u
+end
 
-A_non_augmented = M[:, 2:end]
-b = M[:, 1]
-
-σ = 8
-Ad = zeros(m, n)
-gauss_fourier_features!(Ad, A_non_augmented, σ)
-GC.gc()
-
-
-## Setup problem
-P = Ad'*Ad
-q = Ad'*b
-A = I
-l = spzeros(n)
-u = ones(n)
-
+n = 10_000
+m, 2n
+P, q, A, l, u = construct_problem_constrained_ls(get_augmented_data(m, n, DATAFILE)...)
 
 # compile
-solve!(GeNIOS.QPSolver(P, q, A, l, u); options=GeNIOS.SolverOptions(max_iters=2))
+run_genios_trial_qp(P, q, A, l, u, options=GeNIOS.SolverOptions(max_iters=2))
 
-# solve
 # With everything
-solver = GeNIOS.QPSolver(P, q, A, l, u)
 options = GeNIOS.SolverOptions(
     precondition=true,
-    num_threads=Sys.CPU_THREADS,
+    sketch_update_iter=10_000
+    num_threads=1,
+    eps_abs=1e-5,
+    eps_rel=1e-5,
 )
-GC.gc()
-result = solve!(solver; options=options)
+result = run_genios_trial_qp(P, q, A, l, u; options=options)
 
 # No preconditioner
-solver = GeNIOS.QPSolver(P, q, A, l, u)
-options = GeNIOS.SolverOptions(
+options_npc = GeNIOS.SolverOptions(
     precondition=false,
-    num_threads=Sys.CPU_THREADS,
+    num_threads=1,
+    eps_abs=1e-5,
+    eps_rel=1e-5,
 )
-GC.gc()
-result_npc = solve!(solver; options=options)
+result_npc = run_genios_trial_qp(P, q, A, l, u; options=options_npc)
 
 # Exact solve
-solver = GeNIOS.QPSolver(P, q, A, l, u)
-options = GeNIOS.SolverOptions(
+options_exact = GeNIOS.SolverOptions(
     precondition=true,
-    num_threads=Sys.CPU_THREADS,
-    linsys_max_tol=1e-8
+    sketch_update_iter=10_000
+    num_threads=1,
+    linsys_max_tol=1e-8,
+    eps_abs=1e-5,
+    eps_rel=1e-5,
 )
-GC.gc()
-result_exact = solve!(solver; options=options)
+result_exact = run_genios_trial_qp(P, q, A, l, u; options=options_exact)
 
 # Exact solve, no pc
-solver = GeNIOS.QPSolver(P, q, A, l, u)
-options = GeNIOS.SolverOptions(
+options_exact_npc = GeNIOS.SolverOptions(
     precondition=false,
-    num_threads=Sys.CPU_THREADS,
-    linsys_max_tol=1e-8
+    num_threads=1,
+    linsys_max_tol=1e-8,
+    eps_abs=1e-5,
+    eps_rel=1e-5,
 )
-GC.gc()
-result_exact_npc = solve!(solver; options=options)
+result_exact_npc = run_genios_trial_qp(P, q, A, l, u; options=options_exact_npc)
 
 # High precision solve
-solver = GeNIOS.QPSolver(P, q, A, l, u)
-options = GeNIOS.SolverOptions(
+options_high_precision = GeNIOS.SolverOptions(
     eps_abs=1e-8,
     eps_rel=1e-8,
     precondition=true,
     num_threads=Sys.CPU_THREADS,
 )
-GC.gc()
-result_high_precision = solve!(solver; options=options)
-
+result_high_precision = run_genios_trial_qp(P, q, A, l, u; options=options_high_precision)
 
 save(SAVEFILE, 
     "result", result,
@@ -129,12 +133,7 @@ log_exact_npc = result_exact_npc.log
 log_high_precision = result_high_precision.log
 pstar = log_high_precision.obj_val[end]
 
-# Printout timings
-print_timing("GeNIOS", log_pc)
-print_timing("GeNIOS (no pc)", log_npc)
-print_timing("ADMM (exact)", log_exact)
-print_timing("ADMM (exact, no pc)", log_exact_npc)
-
+# Timing table
 names = ["GeNIOS", "GeNIOS (no pc)", "ADMM", "ADMM (no pc)"]
 logs = [log_pc, log_npc, log_exact, log_exact_npc]
 print_timing_table(names, logs)
@@ -170,6 +169,7 @@ add_to_plot!(rd_iter_plot, log_exact.iter_time, log_exact.rd, "ADMM (pc)", :red)
 add_to_plot!(rd_iter_plot, log_exact_npc.iter_time, log_exact_npc.rd, "ADMM (no pc)", :mediumblue);
 rd_iter_plot
 
+# NOTE: objective value is not with a feasible point; it is not very meaningful
 pstar = log_high_precision.obj_val[end]
 obj_val_iter_plot = plot(; 
     dpi=300,
@@ -180,10 +180,10 @@ obj_val_iter_plot = plot(;
     xlabel="Time (s)",
     legend=:topright,
 )
-add_to_plot!(obj_val_iter_plot, log_pc.iter_time[2:end], (log_pc.obj_val[2:end] .- pstar) ./ abs(pstar), "GeNIOS", :coral);
-add_to_plot!(obj_val_iter_plot, log_npc.iter_time[2:end], (log_npc.obj_val[2:end] .- pstar) ./ abs(pstar), "No PC", :purple);
-add_to_plot!(obj_val_iter_plot, log_exact.iter_time[2:end], (log_exact.obj_val[2:end] .- pstar) ./ abs(pstar), "ADMM (pc)", :red);
-add_to_plot!(obj_val_iter_plot, log_exact_npc.iter_time[2:end], (log_exact_npc.obj_val[2:end] .- pstar) ./ abs(pstar), "ADMM (no pc)", :mediumblue);
+add_to_plot!(obj_val_iter_plot, log_pc.iter_time[2:end], abs.(log_pc.obj_val[2:end] .- pstar) ./ abs(pstar), "GeNIOS", :coral);
+add_to_plot!(obj_val_iter_plot, log_npc.iter_time[2:end], abs.(log_npc.obj_val[2:end] .- pstar) ./ abs(pstar), "No PC", :purple);
+add_to_plot!(obj_val_iter_plot, log_exact.iter_time[2:end], abs.(log_exact.obj_val[2:end] .- pstar) ./ abs(pstar), "ADMM (pc)", :red);
+add_to_plot!(obj_val_iter_plot, log_exact_npc.iter_time[2:end], abs.(log_exact_npc.obj_val[2:end] .- pstar) ./ abs(pstar), "ADMM (no pc)", :mediumblue);
 obj_val_iter_plot
 
 savefig(rp_iter_plot, joinpath(FIGS_PATH, "4-constrained-ls-rp-iter.pdf"))

@@ -1,6 +1,8 @@
 using Printf, Statistics
 
 # Some utility functions
+
+# Data generation
 function gauss_fourier_features!(A_aug, A, σ)
     s = size(A_aug, 2)
     d = size(A, 2)
@@ -13,6 +15,15 @@ function gauss_fourier_features!(A_aug, A, σ)
     return nothing
 end
 
+# Trial running
+function run_genios_trial_qp(P, q, A, l, u; options)
+    solver = GeNIOS.QPSolver(P, q, A, l, u)
+    GC.gc()
+    result = solve!(solver; options=options)
+    return result
+end
+
+# Printing
 function print_timing(name, log)
     print("\n$name:")
     @printf("\ntotal time:        %6.4fs", log.solve_time)
@@ -23,17 +34,6 @@ function print_timing(name, log)
     @printf("\n-- linsys time:    %6.4fs", mean(log.linsys_time))
     @printf("\n-- prox time:      %6.4fs", mean(log.prox_time))
     return nothing
-end
-
-function add_to_plot!(plt, x, y, label, color; style=:solid, lw=3)
-    start = findfirst(y .!= 0)
-    inds = start:length(x)
-    plot!(plt, x[inds], y[inds],
-        label=label,
-        lw=lw,
-        linecolor=color,
-        linestyle=style
-    )
 end
 
 function print_timing_table(names, logs)
@@ -54,13 +54,13 @@ function print_timing_table(names, logs)
     println("&" * join(names, " & ") * "\\\\")
     println("\\midrule")
     print_row("setup time (total)", :setup_time, names, logs)
-    print_row("\\qquad preconditioner time", :precond_time, names, logs)
+    print_row("\\quad preconditioner time", :precond_time, names, logs)
     print_row("solve time", :solve_time, names, logs; func=mean)
-    print_row("\\qquad number of iterations", :dual_gap, names, logs; func=length, int_val=true, unit="")
-    print_row("\\qquad total linear system time", :linsys_time, names, logs; func=x->sum(x), unit="s")
-    print_row("\\qquad avg. linear system time", :linsys_time, names, logs; func=x->mean(1000x), unit="ms")
-    print_row("\\qquad total prox time", :prox_time, names, logs; func=x->sum(x), unit="s")
-    print_row("\\qquad avg. prox time", :prox_time, names, logs; func=x->mean(1000x), unit="ms")
+    print_row("\\quad number of iterations", :dual_gap, names, logs; func=length, int_val=true, unit="")
+    print_row("\\quad total linear system time", :linsys_time, names, logs; func=x->sum(x), unit="s")
+    print_row("\\quad avg. linear system time", :linsys_time, names, logs; func=x->mean(1000x), unit="ms")
+    print_row("\\quad total prox time", :prox_time, names, logs; func=x->sum(x), unit="s")
+    print_row("\\quad avg. prox time", :prox_time, names, logs; func=x->mean(1000x), unit="ms")
 
     # total time
     ret = "total time"
@@ -72,4 +72,16 @@ function print_timing_table(names, logs)
     println(ret)
     println("\\bottomrule")
     println("\\end{tabular}")
+end
+
+# Plotting
+function add_to_plot!(plt, x, y, label, color; style=:solid, lw=3)
+    start = findfirst(y .!= 0)
+    inds = start:length(x)
+    plot!(plt, x[inds], y[inds],
+        label=label,
+        lw=lw,
+        linecolor=color,
+        linestyle=style
+    )
 end
