@@ -1,4 +1,5 @@
 using Printf, Statistics
+using CSV, DataFrames, Statistics, JLD2
 
 # Some utility functions
 
@@ -13,6 +14,36 @@ function gauss_fourier_features!(A_aug, A, σ)
     A_aug .= cos.(A_aug)    
     A_aug .*= sqrt(2 / s) 
     return nothing
+end
+
+function get_augmented_data(m, n, DATAFILE)
+    BLAS.set_num_threads(Sys.CPU_THREADS)
+    
+    file = CSV.read(DATAFILE, DataFrame)
+    M = Matrix{Float64}(file[1:m,:])
+    size(M, 1)
+    M .= M .- sum(M, dims=1) ./ size(M, 1)
+    M .= M ./ std(M, dims=1)
+    
+    A_non_augmented = @view M[:, 2:end]
+    b = @view M[:, 1]
+    
+    σ = 8
+    Ad = zeros(m, n)
+    gauss_fourier_features!(Ad, A_non_augmented, σ)
+    GC.gc()
+    return Ad, b
+end
+
+# --- For constrained least squares ---
+function construct_problem_constrained_ls(Ad, b)
+    m, n = size(Ad)
+    P = Ad'*Ad
+    q = Ad'*b
+    A = I
+    l = spzeros(n)
+    u = ones(n)
+    return P, q, A, l, u
 end
 
 # Trial running

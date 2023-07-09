@@ -14,37 +14,6 @@ SAVEPATH = joinpath(@__DIR__, "saved")
 SAVEFILE = joinpath(SAVEPATH, "4-constrained-ls.jld2")
 FIGS_PATH = joinpath(@__DIR__, "figures")
 
-
-## Construct the problem data
-function get_augmented_data(m, n, DATAFILE)
-    BLAS.set_num_threads(Sys.CPU_THREADS)
-    
-    file = CSV.read(DATAFILE, DataFrame)
-    M = Matrix{Float64}(file[1:m,:])
-    size(M, 1)
-    M .= M .- sum(M, dims=1) ./ size(M, 1)
-    M .= M ./ std(M, dims=1)
-    
-    A_non_augmented = @view M[:, 2:end]
-    b = @view M[:, 1]
-    
-    σ = 8
-    Ad = zeros(m, n)
-    gauss_fourier_features!(Ad, A_non_augmented, σ)
-    GC.gc()
-    return Ad, b
-end
-
-function construct_problem_constrained_ls(Ad, b)
-    m, n = size(Ad)
-    P = Ad'*Ad
-    q = Ad'*b
-    A = I
-    l = spzeros(n)
-    u = ones(n)
-    return P, q, A, l, u
-end
-
 n = 10_000
 m, 2n
 P, q, A, l, u = construct_problem_constrained_ls(get_augmented_data(m, n, DATAFILE)...)
