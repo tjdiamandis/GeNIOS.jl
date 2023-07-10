@@ -5,5 +5,8 @@
 Manifest.toml
 dev/
 .vscode/
+/benchmarks/data/
+/benchmarks/saved/
+/benchmarks/figures/
 /docs/build/
 /docs/src/examples/
