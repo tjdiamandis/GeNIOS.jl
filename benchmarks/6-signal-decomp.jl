@@ -1,13 +1,12 @@
 # Signal Decomposition
 using Pkg
 Pkg.activate(@__DIR__)
-using Random, LinearAlgebra, SparseArrays
+using Random, LinearAlgebra, SparseArrays, BandedMatrices
 using Plots, LaTeXStrings
+include("utils.jl")
 
 Pkg.activate(joinpath(@__DIR__, ".."))
 using GeNIOS
-
-include("utils.jl")
 
 FIGS_PATH = joinpath(@__DIR__, "figures")
 
@@ -17,13 +16,14 @@ T, K = 500, 3
 t = range(1, T)
 
 # component 1: noise
-s1 = 0.2 * randn(length(t))
+s1 = 0.25 * randn(length(t))
 
-# component 2: quadratic
-s2 = @. (3t/T)^2
+# component 2: sine wave
+s2 = @. sin(2π * t * 5/T)
 
-# component 3: sine wave
-s3 = @. sin(2π * t * 5/T)
+# component 3: square wave
+# s3 = @. (t % 80 < 50) .|> x -> x > 0 ? 1.0 : -1.0
+s3 = @. 2π  * t * 3/T .|> x -> x % 2π < π ? 2.0 : -2.0
 
 # observed signal
 X = hcat(s1, s2, s3)
@@ -78,67 +78,42 @@ Hf = HessianSignal()
 # Prox for g is separable across components
 #   1: forces equality.
 #   2: second-order smooth (smooth derivative).
-#   3: first difference sparse (piecewise constant).
+#   3: in [-1, 1]
 function g(z, T)
     @views z1, z2, z3 = z[1:T], z[T+1:2T], z[2T+1:end]
     any(.!iszero.(z1)) && return Inf
 
     gz2 = sum(t->(z2[t+1] - 2z2[t] + z2[t-1])^2, 2:T-1)
-    gz3 = sum(t->(z3[t+1] - z3[t])^2, 1:T-1)
-    return gz2 + gz3
+    
+    !all(abs.(z3) .== 2.0) && return Inf
+    return gz2
 end
 g(z) = g(z, T)
 
-# Matrix for g² 
-A = spdiagm(
-    -1 => vcat(ones(T-2), zeros(1)), 
-    0 => vcat(-2*ones(T-1), zeros(1)), 
-    1 => vcat(zeros(1), ones(T-2))
-)
-M2 = Matrix(A'*A)
+# the prox operator for g
+function prox_g!(v, z, ρ, T)
+        @views z1, z2, z3 = z[1:T], z[T+1:2T], z[2T+1:end]
+        @views v1, v2, v3 = v[1:T], v[T+1:2T], v[2T+1:end]
+        θ2 = 1e4
 
-# Matrix for g³
-A = vcat(
-    spdiagm(
-        0 => -1*ones(T),
-        100 => ones(T-100), 
-        -100 => vcat(zeros(T-200), ones(100))
-    ), 
-    spdiagm(
-        0 => -1*ones(T-1),
-        1 => ones(T-1)
-    )
-)
-M3 = Matrix(A'*A)
+        # Prox for z1
+        v[1:T] .= zero(eltype(z))
 
-# the prox operator for g, using ProximalOperators.jl
-function prox_g!(v, z, ρ, T; M2, M3)
-    Threads.@threads for k in 1:3
-        if k == 1
-            ## Prox for z1
-            v[1:T] .= zero(eltype(z))
-        elseif k == 2
-            ## Prox for z2 (second order smooth)
-            ## g²(z²) = θ₂/T * ||Az²||²
-            z2 = @view z[T+1:2T]
-            v2 = @view v[T+1:2T]
-            θ2 = 1e6
+        # Prox for z2
+        du = vcat(zeros(1), ones(T-2))
+        d = vcat(zeros(1), -2*ones(T-2), zeros(1))
+        dl = vcat(ones(T-2), zeros(1))
 
-            v2 .=  (I + θ2/(ρ * T) * M2) \ z2
-        elseif k == 3
-            ## Prox for z3 (periodic)
-            ## g³(z³) = θ₃/T * ||Az³||²
-            z3 = @view z[2T+1:end]
-            v3 = @view v[2T+1:end]
-            θ3 = 5e1
+        A = BandedMatrix(-1 => dl, 0 => d, 1 => du)
+        v2 .= (I + θ2/(ρ * T) * A'*A) \ z2
 
-            v3 .= (I + θ3/(ρ * T) * M3) \ z3
-        end
-    end
+        # Prox for z3
+        @inline proj(x) = x >= 0.0 ? 2.0 : -2.0
+        @. v3 = proj(z3)
 
     return nothing
 end
-prox_g!(v, z, ρ) = prox_g!(v, z, ρ, T; M2=M2, M3=M3)
+prox_g!(v, z, ρ) = prox_g!(v, z, ρ, T)
 
 # The constraints
 # NOTE: M is a highly structured, but we do not exploit this fact here
@@ -163,9 +138,10 @@ options = GeNIOS.SolverOptions(
     num_threads=1,
     max_iters=10_000
 )
+
 # Compile pass
 solve!(solver, options=GeNIOS.SolverOptions(max_iters=2))                 
-# Real solve
+# solve
 result = solve!(solver, options=options)
 
 x1 = solver.xk[1:T]
@@ -201,7 +177,6 @@ plot!(res_plt,
     color=:coral1
 )
 savefig(res_plt, joinpath(FIGS_PATH, "6-signal-decomp-reconstructed.pdf"))
-
 
 # Visualizing results each component
 p1 = plot(
@@ -262,77 +237,5 @@ plot!(p3,
     lw=3,
     color=:coral1
 );
-decomp_plt = plot(p1, p2, p3, layout=(3,1))
+decomp_plt = plot(p1, p2, p3, layout=(3,1), size=(1600, 900), dpi=300)
 savefig(decomp_plt, joinpath(FIGS_PATH, "6-signal-decomp-components.pdf"))
-
-
-# the prox operator for g, using ProximalOperators.jl
-function prox_g_single!(v, z, ρ, T)
-    ## Prox for z1
-    v[1:T] .= zero(eltype(z))
-
-    ## Prox for z2 (second order smooth)
-    ## g²(z²) = θ₂/T * ||Az²||²
-    z2 = @view z[T+1:2T]
-    v2 = @view v[T+1:2T]
-    θ2 = 1e6
-
-    v2 .=  (I + θ2/(ρ * T) * M2) \ z2
-
-    ## Prox for z3 (periodic)
-    ## g³(z³) = θ₃/T * ||Az³||²
-    z3 = @view z[2T+1:end]
-    v3 = @view v[2T+1:end]
-    θ3 = 5e1
-
-    v3 .= (I + θ3/(ρ * T) * M3) \ z3
-
-    return nothing
-end
-prox_g_single!(v, z, ρ) = prox_g_single!(v, z, ρ, T)
-solver_single = GeNIOS.GenericSolver(
-    f, grad_f!, Hf,             # f(x)
-    g, prox_g_single!,          # g(z)
-    M, c                        # M, c: Mx + z = c
-)
-# options_single = GeNIOS.SolverOptions(eps_abs=1e-5, print_iter=100, num_threads=1)
-result_single = solve!(solver_single, options=options)
-
-
-## Timing plots
-log_threads = result.log
-log_single = result_single.log
-
-print_timing_table(
-    ["Parallel Prox", "Standard"], 
-    [log_threads, log_single]
-)
-
-rp_iter_plot = plot(; 
-    dpi=300,
-    legendfontsize=10,
-    labelfontsize=14,
-    yaxis=:log,
-    ylabel=L"Primal Residual $\ell_2$ Norm",
-    xlabel="Time (s)",
-    legend=:topright,
-)
-add_to_plot!(rp_iter_plot, log_threads.iter_time, log_threads.rp, "Multithreaded prox", :coral);
-add_to_plot!(rp_iter_plot, log_single.iter_time, log_single.rp, "Single-threaded prox", :purple);
-rp_iter_plot
-
-rd_iter_plot = plot(; 
-    dpi=300,
-    legendfontsize=10,
-    labelfontsize=14,
-    yaxis=:log,
-    ylabel=L"Dual Residual $\ell_2$ Norm",
-    xlabel="Time (s)",
-    legend=:topright,
-)
-add_to_plot!(rd_iter_plot, log_threads.iter_time, log_threads.rd, "Multithreaded prox", :coral);
-add_to_plot!(rd_iter_plot, log_single.iter_time, log_single.rd, "Single-threaded prox", :purple);
-rd_iter_plot
-
-savefig(rp_iter_plot, joinpath(FIGS_PATH, "6-signal-decomp-rp.pdf"))
-savefig(rd_iter_plot, joinpath(FIGS_PATH, "6-signal-decomp-rd.pdf"))
