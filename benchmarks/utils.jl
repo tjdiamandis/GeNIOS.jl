@@ -41,7 +41,7 @@ function construct_problem_constrained_ls(Ad, b)
     P = Ad'*Ad
     q = Ad'*b
     A = I
-    l = spzeros(n)
+    l = zeros(n)
     u = ones(n)
     return P, q, A, l, u
 end
