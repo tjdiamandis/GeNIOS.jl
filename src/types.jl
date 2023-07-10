@@ -335,7 +335,7 @@ Base.@kwdef mutable struct SolverOptions{T <: Real, S <: Real}
     precondition::Bool = true
     dual_gap_tol::T = 1e-4
     relax_tol::T = 1e-3
-    max_iters::Int = 1000
+    max_iters::Int = 4000
     max_time_sec::T = 1200.0
     print_iter::Int = 25
     rho_update_iter::Int = 50
@@ -349,7 +349,7 @@ Base.@kwdef mutable struct SolverOptions{T <: Real, S <: Real}
     use_dual_gap::Bool = false
     update_preconditioner::Bool = true
     infeas_check_iter::Int = 25
-    num_threads::Int = 1
+    num_threads::Int = Sys.CPU_THREADS
     init_sketch_size::Int = 50                      # param : preconditioner rank
     use_adaptive_sketch::Bool = false
     adaptive_sketch_tol::Float64 = eps()

@@ -114,12 +114,11 @@ function converged(solver::MLSolver, options::SolverOptions)
     return converged(solver, options, true)
 end
 
-# TODO: switch to zk for f?????
 function obj_val!(solver::Solver, options::SolverOptions)
     solver.obj_val = solver.data.f(solver.xk) + solver.data.g(solver.zk)
 end
 
-# TODO: switch to zk for f?????
+# NOTE: uses zk for f
 function obj_val!(solver::MLSolver, options::SolverOptions)
     # pred = Ax - b
     mul!(solver.pred, solver.data.Adata, solver.zk)
