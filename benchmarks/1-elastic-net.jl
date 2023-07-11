@@ -17,7 +17,7 @@ const FIGS_PATH = joinpath(@__DIR__, "figures")
 
 # Set this to false if you have not yet downloaded the real-sim dataset
 const HAVE_DATA_SPARSE = true
-const RAN_TRIALS = true
+const RAN_TRIALS = false
 
 
 function run_trial(; type, m=10_000, n=20_000)
@@ -106,7 +106,7 @@ function run_trial(; type, m=10_000, n=20_000)
         α=1.6,
         eps_abs = 1e-10,
         eps_rel = 1e-10,
-        dual_gap_tol = 100eps(),
+        dual_gap_tol = 10eps(),
         verbose=true,
         precondition=true,
         sketch_update_iter=1000,    # We know that the Hessian AᵀA does not change

@@ -16,21 +16,20 @@ function gauss_fourier_features!(A_aug, A, σ)
     return nothing
 end
 
-function get_augmented_data(m, n, DATAFILE)
+function get_augmented_data(m, n, datafile)
     BLAS.set_num_threads(Sys.CPU_THREADS)
     
-    file = CSV.read(DATAFILE, DataFrame)
+    file = CSV.read(datafile, DataFrame)
     M = Matrix{Float64}(file[1:m,:])
-    size(M, 1)
-    M .= M .- sum(M, dims=1) ./ size(M, 1)
-    M .= M ./ std(M, dims=1)
     
-    A_non_augmented = @view M[:, 2:end]
+    A = @view M[:, 2:end]
+    A .= A .- sum(A, dims=1) ./ size(A, 1)
+    A .= A ./ std(A, dims=1)
     b = copy(M[:, 1])
     
     σ = 8
     Ad = zeros(m, n)
-    gauss_fourier_features!(Ad, A_non_augmented, σ)
+    gauss_fourier_features!(Ad, A, σ)
     GC.gc()
     return Ad, b
 end
