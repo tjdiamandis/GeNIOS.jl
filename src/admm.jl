@@ -494,7 +494,7 @@ function solve!(
         update_u!(solver, options)
         
         # --- Update objective & convergence criteria ---
-        # NOTE: obj_val! also updates pred = Adata*xk - bdata for MLSolver 
+        # NOTE: obj_val! also updates pred = Adata*zk - bdata for MLSolver 
         obj_val!(solver, options)
         compute_residuals!(solver, options)
         convergence_criteria!(solver, options)
