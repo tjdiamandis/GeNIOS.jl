@@ -26,7 +26,7 @@ function get_augmented_data(m, n, DATAFILE)
     M .= M ./ std(M, dims=1)
     
     A_non_augmented = @view M[:, 2:end]
-    b = @view M[:, 1]
+    b = copy(M[:, 1])
     
     σ = 8
     Ad = zeros(m, n)
@@ -34,6 +34,21 @@ function get_augmented_data(m, n, DATAFILE)
     GC.gc()
     return Ad, b
 end
+
+function load_sparse_data(; file, have_data)
+    if !have_data
+        real_sim = OpenML.load(1578)
+    
+        b_full = real_sim.class
+        A_full = sparse(Tables.matrix(real_sim)[:,1:end-1])
+        jldsave(file, A_full, b_full)
+        return A_full, b_full
+    else
+        A_full, b_full = load(file, "A_full", "b_full")
+        return A_full, b_full
+    end
+end
+
 
 # --- For constrained least squares ---
 function construct_problem_constrained_ls(Ad, b)
