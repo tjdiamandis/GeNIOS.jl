@@ -291,7 +291,7 @@ function LogisticSolver(
     f(x) = GeNIOS.log1pexp(x)
     df(x) = GeNIOS.logistic(x)
     d2f(x) = GeNIOS.logistic(x) / GeNIOS.log1pexp(x)
-    fconj(x::T) where {T} = (one(T) - x) * log(one(T) - x) + x * log(x)
+    fconj(x::T) where {T} = x ≥ 0 && x ≤ 1 ? (one(T) - x) * log(one(T) - x) + x * log(x) : Inf
     return MLSolver(f, df, d2f, λ1, λ2, Adata, bdata, fconj=fconj)
 end
 
