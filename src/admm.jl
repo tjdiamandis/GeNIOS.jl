@@ -188,11 +188,11 @@ function compute_rhs!(solver::MLSolver, options::SolverOptions)
     # Recompute pred = Ax - b with xᵏ instead of zᵏ (used in residuals)
     # TODO: maybe store pred w xk and pred with zk separately? 
     mul!(solver.pred, solver.data.Adata, solver.xk)
+    solver.cache.vN .= solver.pred
     solver.pred .-= solver.data.bdata
 
     # compute first term (hessian)
     # λ₂xᵏ from the Hessian and λ₂xᵏ from the gradient cancel out
-    mul!(solver.cache.vN, solver.data.Adata, solver.xk)
     @. solver.cache.vN *= solver.data.d2f(solver.pred)
     mul!(solver.cache.vn, solver.data.Adata', solver.cache.vN)
 
