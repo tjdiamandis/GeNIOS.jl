@@ -1,6 +1,20 @@
 abstract type Solver end
 abstract type ProblemData end
 
+function Base.show(io::IO, solver::Solver)
+    print(io, "A $(typeof(solver).name.name) GeNIOS Solver\n")
+    n = solver.data.n
+    m = solver.data.m
+    print(io, "  num vars x:  $n\n")
+    print(io, "  num vars z:  $m\n")
+    t_solver = typeof(solver)
+    if t_solver <: MLSolver
+        print(io, "  samples:     $(solver.data.N)\n")
+    else
+        print(io, "  constraints: $m\n")
+    end
+end
+
 struct MLProblemData{
     T <: Real,
     V <: AbstractVector{T}, 
@@ -375,6 +389,14 @@ function GeNIOSLog(setup_time::T, precond_time::T, solve_time::T) where {T <: Ab
     )
 end
 
+function Base.show(io::IO, log::GeNIOSLog)
+    print(io, "--- GeNIOSLog ---\n")
+    !isnothing(log.rp) && print(io, "num iters:  $(length(log.rp))\n")
+    print(io, "setup time:  $(round(log.setup_time, digits=3))s\n")
+    print(io, " - pc time:  $(round(log.precond_time, digits=3))s\n")
+    print(io, "solve time:  $(round(log.solve_time, digits=3))s\n")
+end
+
 function create_temp_log(solver::Solver, max_iters::Int)
     T = eltype(solver.xk)
     return GeNIOSLog(
@@ -406,6 +428,17 @@ struct GeNIOSResult{T}
     u::AbstractVector{T}       # dual soln
     dual_gap::T                # duality gap
     log::GeNIOSLog{T}
+end
+
+function Base.show(io::IO, result::GeNIOSResult)
+    print(io, "--- GeNIOSResult ---\n")
+    print(io, "Status:     ")
+    color = result.status == :OPTIMAL ? :green : :red
+    printstyled(io, " $(result.status)\n", color=color)
+    print(io, "Obj. val:   $(@sprintf("%.4g", result.obj_val))\n")
+    !isnothing(result.log.rp) && print(io, "num iters:  $(length(result.log.rp))\n")
+    print(io, "setup time: $(round(result.log.setup_time, digits=3))s\n")
+    print(io, "solve time: $(round(result.log.solve_time, digits=3))s\n")
 end
 
 function populate_log!(genios_log, solver::Solver, ::SolverOptions, t, time_sec, time_linsys, time_prox)
