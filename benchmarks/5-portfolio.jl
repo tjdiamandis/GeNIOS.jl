@@ -12,7 +12,7 @@ using GeNIOS
 
 const SAVEPATH = joinpath(@__DIR__, "saved", "5-portfolio")
 const FIGS_PATH = joinpath(@__DIR__, "figures")
-const RAN_TRIALS = false
+const RAN_TRIALS = true
 
 # FOR QP SOLVER (custom operators)
 # P = γ*(F*F' + Diagonal(d))
@@ -93,11 +93,11 @@ end
 
 function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_direct, :osqp])
     GC.gc()
-    BLAS.set_num_threads(1)
-    filename = "portfolio-genios-$n.jld2"
+    BLAS.set_num_threads(Sys.CPU_THREADS)
+    filename = "portfolio-$n.jld2"
     savefile = joinpath(SAVEPATH, filename)
 
-    k = n ÷ 50
+    k = n ÷ 100
     F, d, μ, γ = generate_portfolio_data(n, k)
     P_eq, q_eq, M_eq, l_eq, u_eq = build_qp_matrices(F, d, μ, γ)
     GC.gc()
@@ -105,6 +105,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
 
     # OSQP
     if :osqp ∈ solvers
+        GC.gc()
         osqp_model = OSQP.Model()
         OSQP.setup!(
             osqp_model; P=P_eq, q=q_eq, A=M_eq, l=l_eq, u=u_eq, 
@@ -118,6 +119,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
 
     # COSMO (indirect)
     if :cosmo_indirect ∈ solvers
+        GC.gc()
         model_cosmo_indirect = COSMO.Model()
         cs1 = COSMO.Constraint(M_eq, zeros(n+k+1), COSMO.Box(l_eq, u_eq))
         settings = COSMO.Settings(
@@ -126,10 +128,9 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
             verbose_timing = true,
             eps_abs=1e-4,
             eps_rel=1e-4,
-            time_limit=600,
+            time_limit=900,
         )
         assemble!(model_cosmo_indirect, P_eq, q_eq, cs1, settings=settings)
-        GC.gc()
         result_cosmo_indirect = COSMO.optimize!(model_cosmo_indirect)
     else
         result_cosmo_indirect = nothing
@@ -138,6 +139,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
 
     # COSMO
     if :cosmo_direct ∈ solvers
+        GC.gc()
         model_cosmo_direct = COSMO.Model()
         cs1 = COSMO.Constraint(M_eq, zeros(n+k+1), COSMO.Box(l_eq, u_eq))
         settings = COSMO.Settings(
@@ -146,10 +148,9 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
             verbose_timing = true,
             eps_abs=1e-4,
             eps_rel=1e-4,
-            time_limit=600,
+            time_limit=900,
         )
         assemble!(model_cosmo_direct, P_eq, q_eq, cs1, settings=settings)
-        GC.gc()
         result_cosmo_direct = COSMO.optimize!(model_cosmo_direct)
     else
         result_cosmo_direct = nothing
@@ -162,21 +163,35 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         eps_abs=1e-4,
         eps_rel=1e-4,
         sketch_update_iter=10_000,
-        num_threads=1,
-        max_time_sec=600.0,
+        num_threads=Sys.CPU_THREADS,
+        max_time_sec=900.0,
     )
 
     if :qp ∈ solvers
-        solver = GeNIOS.QPSolver(P_eq, q_eq, M_eq, l_eq, u_eq)
         GC.gc()
+        solver = GeNIOS.QPSolver(P_eq, q_eq, M_eq, l_eq, u_eq)
         result_qp = solve!(solver; options=options)
     else
         result_qp = nothing
     end
 
+    if :qp_full ∈ solvers
+        GC.gc()
+        P = γ * (Diagonal(d) + F*F')
+        M = vcat(I, ones(1, n))
+        q = -μ
+        l = vcat(zeros(n), ones(1))
+        u = vcat(Inf*ones(n), ones(1))
+        solver = GeNIOS.QPSolver(P, q, M, l, u)
+        result_qp_full = solve!(solver; options=options)
+    else
+        result_qp_full = nothing
+    end
+
 
     # QP with custom operators
     if :op ∈ solvers
+        GC.gc()
         P = FastP(F, d, γ, zeros(k))
         M = FastM(n)
         q = -μ
@@ -184,7 +199,6 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         u = vcat(Inf*ones(n), ones(1))
 
         solver = GeNIOS.QPSolver(P, q, M, l, u);
-        GC.gc()
         result_op = solve!(solver; options=options)
     else
         result_op = nothing
@@ -193,6 +207,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
 
     # Generic interface with custom f and g 
     if :custom ∈ solvers
+        GC.gc()
         # f(x) = γ/2 xᵀ(FFᵀ + D)x - μᵀx
         function f(x, F, d, μ, γ, tmp)
             mul!(tmp, F', x)
@@ -244,7 +259,6 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
             g, prox_g!,             # g(z)
             I, zeros(n)             # M, c: Mx - z = c
         )
-        GC.gc()
         result_custom = solve!(solver; options=options)
     else
         result_custom = nothing
@@ -253,6 +267,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
     # save data 
     save(savefile,
         "result_qp", result_qp,
+        "result_qp_full", result_qp_full,
         "result_op", result_op,
         "result_custom", result_custom,
         "result_cosmo_indirect", result_cosmo_indirect,
@@ -264,29 +279,38 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
     return nothing
 end
 
-ns = [1_000, 2_000, 4_000, 8_000, 16_000, 32_000, 64_000, 128_000]
+ns = [250, 500, 1_000, 2_000, 4_000, 8_000, 16_000, 32_000, 64_000, 128_000]
 if !RAN_TRIALS
     run_trial(100)
-    for n in ns[1:4]
-        solvers = n <= 32_000 ? [:qp, :op, :custom, :cosmo_indirect, :cosmo_direct, :osqp] : [:custom, :osqp, :cosmo_direct]
+    for n in ns
+        if n <= 8_000
+            solvers = [:qp, :op, :custom, :cosmo_indirect, :cosmo_direct, :osqp, :qp_full]
+        # elseif n <= 32_000
+        #     solvers = [:qp, :op, :custom, :cosmo_indirect, :cosmo_direct, :osqp]
+        else
+            solvers = [:qp, :op, :custom, :cosmo_indirect, :cosmo_direct, :osqp]
+            # solvers = [:custom, :cosmo_indirect, :cosmo_direct]
+        end
         run_trial(n; solvers=solvers)
         @info "Finished with n=$n"
     end
 end
+@info "Finished with all trials"
 
 
 
 ## Load data from save file
 function get_logs(n)
-    savefile = joinpath(SAVEPATH, "portfolio-genios-$n.jld2")
-    r_qp, r_op, r_custom, rc_indirect, rc_direct, r_osqp = 
+    savefile = joinpath(SAVEPATH, "portfolio-$n.jld2")
+    r_qp, r_qpf, r_op, r_custom, rc_indirect, rc_direct, r_osqp = 
         load(savefile, 
-            "result_qp", "result_op", "result_custom",
+            "result_qp", "result_qp_full", "result_op", "result_custom",
             "result_cosmo_indirect", "result_cosmo_direct",
             "result_osqp"
         )    
     return [
         (:qp, r_qp),
+        (:qp_full, r_qpf),
         (:op, r_op),
         (:custom, r_custom),
         (:cosmo_indirect, rc_indirect),
@@ -300,13 +324,13 @@ function get_timing(logs)
     solve_times = Vector{Float64}(undef, 0)
 
     for (name, log) in logs
-        if name ∈ [:qp, :op, :custom] && !isnothing(log) && r_qp.status == :OPTIMAL
+        if name ∈ [:qp, :qp_full, :op, :custom] && !isnothing(log) && log.status == :OPTIMAL
             push!(setup_times, log.log.setup_time)
             push!(solve_times, log.log.solve_time)
-        elseif name ∈ [:cosmo_indirect, :cosmo_direct] && !isnothing(log) && rc_indirect.status == :Solved
+        elseif name ∈ [:cosmo_indirect, :cosmo_direct] && !isnothing(log) && log.status == :Solved
             push!(setup_times, log.times.setup_time)
             push!(solve_times, log.times.iter_time + log.times.factor_update_time)
-        elseif name == :osqp && !isnothing(log) && r_osqp.info.status == :Solved
+        elseif name == :osqp && !isnothing(log) && log.info.status == :Solved
             push!(setup_times, log.info.setup_time)
             push!(solve_times, log.info.solve_time)
         else
@@ -319,9 +343,9 @@ function get_timing(logs)
 end
 
 
-timings = zeros(length(ns), 6)
-setup_times = zeros(length(ns), 6)
-solve_times = zeros(length(ns), 6)
+timings = zeros(length(ns), 7)
+setup_times = zeros(length(ns), 7)
+solve_times = zeros(length(ns), 7)
 for (i, n) in enumerate(ns)
     logs = get_logs(n)
     setup_time, solve_time = get_timing(logs)
@@ -333,10 +357,11 @@ end
 ## Plots! Plots! Plots!
 timing_plt = plot(
     ns, 
-    timings, 
+    timings,
     yaxis=:log, 
     xaxis=:log,
-    label=["GeNIOS (eq qp)" "GeNIOS (cust ops)" "GeNIOS (GenericSolver)"  "COSMO (indirect)" "COSMO (direct)" "OSQP"], 
+    label=["GeNIOS (eq qp)" "GeNIOS (full qp)" "GeNIOS (cust ops)" "GeNIOS (GenericSolver)"  "COSMO (indirect)" "COSMO (direct)" "OSQP"], 
+    # label=["GeNIOS (eq qp)" "GeNIOS (full qp)" "GeNIOS (cust ops)" "GeNIOS (GenericSolver)"], 
     xlabel=L"Problem size $n$", 
     ylabel="Total solve time (s)", 
     legend=:bottomright,
