@@ -78,7 +78,8 @@ println("Final RMSE: $(round(rmse, digits=8))")
 Since the lasso problem is a quadratic program, we can use the `QPSolver` interface
 as well. Note that we must introduce an additional variable $t$ and the constraint
 $-t \leq x \leq t$ to enforce the $\ell_1$ norm. The problem then becomes
-$$
+
+```math
 \begin{array}{ll}
 \text{minimize}     & (1/2)x^TA^TAx + b^TAx + \gamma \mathbf{1}^Tt \\
 \text{subject to}   &  
@@ -86,7 +87,7 @@ $$
 \leq \begin{bmatrix} I & I \\ I & -I \end{bmatrix} \begin{bmatrix}x \\ t\end{bmatrix}  
 \leq \begin{bmatrix}\infty \\ 0\end{bmatrix}
 \end{array}
-$$
+```
 
 The following code uses the `QPSolver`:
 ```julia
