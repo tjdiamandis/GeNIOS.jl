@@ -11,7 +11,7 @@ using GeNIOS
 const SAVEPATH = joinpath(@__DIR__, "saved", "3-huber")
 const FIGS_PATH = joinpath(@__DIR__, "figures")
 
-const RAN_TRIALS = true
+const RAN_TRIALS = false
 
 ## Generating the problem data
 function generate_data_huber(; 
@@ -115,7 +115,7 @@ function run_trial(n)
     solve!(GeNIOS.MLSolver(f, df, d2f, λ1, λ2, A, b); options=GeNIOS.SolverOptions(max_iters=2, verbose=false))
     solver = GeNIOS.MLSolver(f, df, d2f, λ1, λ2, A, b)
     options = GeNIOS.SolverOptions(
-        verbose= n > 5_000 ? true : false,
+        verbose=false,
         relax=true,
         α=1.6,
         precondition=false,
@@ -125,6 +125,19 @@ function run_trial(n)
     GC.gc()
     result_ml = solve!(solver; options=options)
     result_ml.status != :OPTIMAL && @warn "n: $n: MLSolver did not converge!"
+
+    solver_exact = GeNIOS.MLSolver(f, df, d2f, λ1, λ2, A, b)
+    options_exact = GeNIOS.SolverOptions(
+        verbose=false,
+        relax=true,
+        α=1.6,
+        precondition=false,
+        eps_abs=1e-4,
+        ρ0=10.0,
+    )
+    GC.gc()
+    result_ml_exact = solve!(solver_exact; options=options_exact)
+    result_ml_exact.status != :OPTIMAL && @warn "n: $n: MLSolver did not converge!"
 
 
     # Solve with QPSolver
@@ -145,10 +158,26 @@ function run_trial(n)
     result_qp = solve!(solver_qp; options=options_qp)
     result_qp.status != :OPTIMAL && @warn "n: $n: QPSolver did not converge!"
 
+    # compile
+    solver_qp_exact = GeNIOS.QPSolver(P, q, Aqp, l, u)
+    options_qp_exact = GeNIOS.SolverOptions(
+        verbose=false,
+        relax=true,
+        α=1.6,
+        precondition=false,
+        eps_abs=1e-4,
+        linsys_max_tol=1e-8,
+    )
+    GC.gc()
+    result_qp_exact = solve!(solver_qp_exact; options=options_qp_exact)
+    result_qp_exact.status != :OPTIMAL && @warn "n: $n: QPSolver did not converge!"
+
     savefile = joinpath(SAVEPATH, "huber-$n.jld2")
     save(savefile, 
         "result_ml", result_ml,
-        "result_qp", result_qp
+        "result_ml_exact", result_ml_exact,
+        "result_qp", result_qp,
+        "result_qp_exact", result_qp_exact,
     )
     
     GC.gc()
@@ -166,40 +195,50 @@ end
 
 function get_logs(n)
     savefile = joinpath(SAVEPATH, "huber-$n.jld2")
-    r_ml, r_qp = load(savefile, "result_ml", "result_qp")
+    r_ml, r_ml_e, r_qp, r_qp_e = load(savefile, 
+        "result_ml", "result_ml_exact", "result_qp", "result_qp_exact"
+    )
     
-    if r_ml.status != :OPTIMAL || r_qp.status != :OPTIMAL
+    if any(x.status != :OPTIMAL for x in (r_ml, r_ml_e, r_qp, r_qp_e))
         @warn "n = $n: Some problems not solved!"
     end
     
-    return r_ml, r_qp
+    return r_ml, r_ml_e, r_qp, r_qp_e
 end
 
-function get_timing(r_ml, r_qp)
+function get_timing(r_ml, r_ml_e, r_qp, r_qp_e)
     log_ml = r_ml.log
+    # log_ml_e = r_ml_e.log
     log_qp = r_qp.log
+    log_qp_e = r_qp_e.log
     
     setup_times = [
         log_ml.setup_time, 
+        # log_ml_e.setup_time,
         log_qp.setup_time,
+        log_qp_e.setup_time,
     ]
 
     solve_times = [
         log_ml.solve_time, 
+        # log_ml_e.solve_time,
         log_qp.solve_time,
+        log_qp_e.solve_time,
     ]
 
     linsys_times = [
         sum(log_ml.linsys_time), 
+        # sum(log_ml_e.linsys_time),
         sum(log_qp.linsys_time),
+        sum(log_qp_e.linsys_time),
     ]
 
     return setup_times, solve_times, linsys_times
 end
 
-setup_times = zeros(length(ns), 2)
-solve_times = zeros(length(ns), 2)
-linsys_times = zeros(length(ns), 2)
+setup_times = zeros(length(ns), 3)
+solve_times = zeros(length(ns), 3)
+linsys_times = zeros(length(ns), 3)
 for (i, n) in enumerate(ns)
     logs = get_logs(n)
     setup_time, solve_time, linsys_time = get_timing(logs...)
@@ -214,35 +253,43 @@ timing_plt = plot(
     [linsys_times, solve_times], 
     yaxis=:log, 
     xaxis=:log,
-    label=["MLSolver linsys" "QPSolver linsys" "MLSolver solve" "QPSolver solve"], 
+    label=[
+        "ML linsys" "QP linsys" "QP (exact) linsys" "ML solve" "QP solve" "QP (exact) solve"
+    ], 
     xlabel=L"Problem size $n$",
     ylabel="Time (s)", 
     legend=:bottomright,
     lw=2,
-    markershape=[:utriangle :square :dtriangle :circle],
+    markershape=[:utriangle :square :circle :utriangle :square :circle],
+    linestyle=[:solid :solid :solid :dash :dash :dash],
     dpi=300,
     yticks=[1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3],
     xticks=[10^2.5, 1000, 10^3.5, 10000],
-    color=[:coral :indigo :coral :indigo],
+    color=[:indigo :coral :coral],
 )
 savefig(timing_plt, joinpath(FIGS_PATH, "3-huber-timing.pdf"))
 
 
 n = 16_000
-result_ml, result_qp = get_logs(n)
+result_ml, result_ml_e, result_qp, result_qp_e = get_logs(n)
 log_ml = result_ml.log
+log_ml_e = result_ml_e.log
 log_qp = result_qp.log
+log_qp_e = result_qp_e.log
 
 # Print timings
 print_timing("MLSolver", log_ml)
+print_timing("MLSolver", log_ml_e)
 print_timing("QPSolver", log_qp)
+print_timing("QPSolver", log_qp_e)
 
-names = ["MLSolver", "QPSolver"]
-logs = [log_ml, log_qp]
+names = ["MLSolver", "MLSolver (exact)", "QPSolver", "QPSolver (exact)"]
+logs = [log_ml, log_ml_e, log_qp, log_qp_e]
 print_timing_table(names, logs)
 
 time_ml = cumsum(log_ml.linsys_time)
 time_qp = cumsum(log_qp.linsys_time)
+time_qp_e = cumsum(log_qp_e.linsys_time)
 
 # Plot things
 # TODO: add custom convergence criterion so looking at the same thing
@@ -255,10 +302,12 @@ resid_iter_plot = plot(;
     xlabel="Time (s)",
     legend=:topright,
 )
-add_to_plot!(resid_iter_plot, time_ml, log_ml.rp, "MLSolver primal", :coral);
-add_to_plot!(resid_iter_plot, time_qp, log_qp.rp, "QPSolver primal", :purple);
-add_to_plot!(resid_iter_plot, time_ml, log_ml.rd, "MLSolver dual", :coral; style=:dash);
-add_to_plot!(resid_iter_plot, time_qp, log_qp.rd, "QPSolver dual", :purple; style=:dash);
+add_to_plot!(resid_iter_plot, time_ml, log_ml.rp, "MLSolver primal", :indigo);
+add_to_plot!(resid_iter_plot, time_qp, log_qp.rp, "QPSolver primal", :coral);
+add_to_plot!(resid_iter_plot, time_qp_e, log_qp_e.rp, "QPSolver (exact) primal", :firebrick);
+add_to_plot!(resid_iter_plot, time_ml, log_ml.rd, "MLSolver dual", :indigo; style=:dash);
+add_to_plot!(resid_iter_plot, time_qp, log_qp.rd, "QPSolver dual", :coral; style=:dash);
+add_to_plot!(resid_iter_plot, time_qp_e, log_qp_e.rd, "QPSolver (exact) dual", :firebrick; style=:dash);
 resid_iter_plot
 
 savefig(resid_iter_plot, joinpath(FIGS_PATH, "3-huber-residuals.pdf"))
