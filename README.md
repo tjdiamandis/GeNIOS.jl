@@ -16,7 +16,7 @@ We provide interfaces for machine learning problems (`MLSolver`) and quadratic
 programs (`QPSolver`). In addition, convex optimization problems may be specified
 directly.
 
-For more information, check out the [documentation]((https://tjdiamandis.github.io/GeNIOS.jl/dev/).
+For more information, check out the [documentation](https://tjdiamandis.github.io/GeNIOS.jl/dev/).
 
 ## Quick  start, 3 ways
 First, add the package locally.
