@@ -369,6 +369,13 @@ Base.@kwdef mutable struct SolverOptions{T <: Real, S <: Real}
     adaptive_sketch_tol::Float64 = eps()
 end
 
+function Base.show(io::IO, options::SolverOptions)
+    print(io, "GeNIOS SolverOptions:\n")
+    for property in propertynames(options)
+        @printf(io, "    %-20s: %s\n", string(property), getfield(options, property))
+    end
+end
+
 
 struct GeNIOSLog{T <: AbstractFloat, S <: AbstractVector{T}}
     dual_gap::Union{S, Nothing}
