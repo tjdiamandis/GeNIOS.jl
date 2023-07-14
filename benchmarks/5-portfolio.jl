@@ -12,7 +12,7 @@ using GeNIOS
 
 const SAVEPATH = joinpath(@__DIR__, "saved", "5-portfolio")
 const FIGS_PATH = joinpath(@__DIR__, "figures")
-const RAN_TRIALS = true
+const RAN_TRIALS = false
 
 # FOR QP SOLVER (custom operators)
 # P = γ*(F*F' + Diagonal(d))
@@ -109,7 +109,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         osqp_model = OSQP.Model()
         OSQP.setup!(
             osqp_model; P=P_eq, q=q_eq, A=M_eq, l=l_eq, u=u_eq, 
-            eps_abs=1e-4, eps_rel=1e-4, verbose=false, time_limit=600,
+            eps_abs=1e-3, eps_rel=1e-3, verbose=false, time_limit=1200,
         )
         result_osqp = OSQP.solve!(osqp_model)
     else
@@ -126,9 +126,9 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
             kkt_solver=CGIndirectKKTSolver, 
             verbose=false,
             verbose_timing = true,
-            eps_abs=1e-4,
-            eps_rel=1e-4,
-            time_limit=900,
+            eps_abs=1e-3,
+            eps_rel=1e-3,
+            time_limit=1200,
         )
         assemble!(model_cosmo_indirect, P_eq, q_eq, cs1, settings=settings)
         result_cosmo_indirect = COSMO.optimize!(model_cosmo_indirect)
@@ -146,9 +146,9 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
             kkt_solver=QdldlKKTSolver,
             verbose=false,
             verbose_timing = true,
-            eps_abs=1e-4,
-            eps_rel=1e-4,
-            time_limit=900,
+            eps_abs=1e-3,
+            eps_rel=1e-3,
+            time_limit=1200,
         )
         assemble!(model_cosmo_direct, P_eq, q_eq, cs1, settings=settings)
         result_cosmo_direct = COSMO.optimize!(model_cosmo_direct)
@@ -160,11 +160,11 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
     # GeNIOS
     options = GeNIOS.SolverOptions(
         verbose=false,
-        eps_abs=1e-4,
-        eps_rel=1e-4,
+        eps_abs=1e-3,
+        eps_rel=1e-3,
         sketch_update_iter=10_000,
         num_threads=Sys.CPU_THREADS,
-        max_time_sec=900.0,
+        max_time_sec=1200.0,
     )
 
     if :qp ∈ solvers
@@ -188,11 +188,12 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         result_qp_full = nothing
     end
 
+    Fd = Matrix(F)
 
     # QP with custom operators
     if :op ∈ solvers
         GC.gc()
-        P = FastP(F, d, γ, zeros(k))
+        P = FastP(Fd, d, γ, zeros(k))
         M = FastM(n)
         q = -μ
         l = vcat(zeros(n), ones(1))
@@ -216,7 +217,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
 
             return γ/2 * qf - dot(μ, x)
         end
-        f(x) = f(x, F, d, μ, γ, zeros(k))
+        f(x) = f(x, Fd, d, μ, γ, zeros(k))
 
         #  ∇f(x) = γ(FFᵀ + D)x - μ
         function grad_f!(g, x, F, d, μ, γ, tmp)
@@ -227,8 +228,8 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
             @. g -= μ
             return nothing
         end
-        grad_f!(g, x) = grad_f!(g, x, F, d, μ, γ, zeros(k))
-        Hf = HessianMarkowitz(F, d, zeros(k))
+        grad_f!(g, x) = grad_f!(g, x, Fd, d, μ, γ, zeros(k))
+        Hf = HessianMarkowitz(Fd, d, zeros(k))
 
         # g(z) = I(z)
         function g(z)
@@ -285,8 +286,6 @@ if !RAN_TRIALS
     for n in ns
         if n <= 8_000
             solvers = [:qp, :op, :custom, :cosmo_indirect, :cosmo_direct, :osqp, :qp_full]
-        # elseif n <= 32_000
-        #     solvers = [:qp, :op, :custom, :cosmo_indirect, :cosmo_direct, :osqp]
         else
             solvers = [:qp, :op, :custom, :cosmo_indirect, :cosmo_direct, :osqp]
             # solvers = [:custom, :cosmo_indirect, :cosmo_direct]
