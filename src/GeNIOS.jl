@@ -22,8 +22,9 @@ function __init__()
     @require Optim="429524aa-4258-5aef-a3af-852621145aeb" include("lbfgs.jl")
 end
 
-export Solver, solve!
-export HessianOperator
+export Solver, MLSolver, QPSolver, GenericSolver
+export HessianOperator, SolverOptions
+export solve!
 
 
 end
