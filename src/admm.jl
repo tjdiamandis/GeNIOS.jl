@@ -183,7 +183,7 @@ end
 
 # NOTE: Assumes that pred has been computed
 function compute_rhs!(solver::MLSolver, options::SolverOptions)
-    # RHS = ∇²f(xᵏ)xᵏ - ∇f(xᵏ) + ρAᵀ(zᵏ + c - uᵏ)
+    # RHS = ∇²f(xᵏ)xᵏ - ∇f(xᵏ) + ρMᵀ(zᵏ + c - uᵏ)
     
     # Recompute pred = Ax - b with xᵏ instead of zᵏ (used in residuals)
     # TODO: maybe store pred w xk and pred with zk separately? 
@@ -427,6 +427,7 @@ end
 function solve!(
     solver::Solver;
     options::SolverOptions=SolverOptions(),
+    use_lbfgs_ml=false
 )
     setup_time_start = time_ns()
     options.verbose && @printf("Starting setup...")
@@ -487,7 +488,11 @@ function solve!(
         t += 1
 
         # --- ADMM iterations ---
-        time_linsys = update_x!(solver, options, linsys_solver)
+        if !use_lbfgs_ml
+            time_linsys = update_x!(solver, options, linsys_solver)
+        else
+            time_linsys = update_x!(solver, options)
+        end
         update_Mx!(solver, options)
         # solver.zk_old .= solver.zk
         time_prox = update_z!(solver, options)

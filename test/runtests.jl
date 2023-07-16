@@ -1,8 +1,8 @@
 using GeNIOS
 using Test
 
-using LinearAlgebra, SparseArrays
-using Random
+using LinearAlgebra, SparseArrays, Random
+using Optim
 
 include("utils.jl")
 @testset "Machine Learning" begin

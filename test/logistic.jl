@@ -34,4 +34,12 @@
     solver = GeNIOS.LogisticSolver(λ1, λ2, A, b)
     res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=false, eps_abs=1e-5, eps_rel=1e-5, verbose=false))
     test_optimality_conditions(solver, tol)
+
+    solver_lbfgs = GeNIOS.LogisticSolver(λ1, λ2, A, b)
+    res_lbfgs = solve!(solver_lbfgs; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=false, eps_abs=1e-5, eps_rel=1e-5, verbose=false), use_lbfgs_ml=true)
+    test_optimality_conditions(solver_lbfgs, tol)
+
+    solver_lbfgs_dg = GeNIOS.LogisticSolver(λ1, λ2, A, b)
+    res_lbfgs_dg = solve!(solver_lbfgs_dg; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, eps_abs=1e-5, eps_rel=1e-5, verbose=false), use_lbfgs_ml=true)
+    test_optimality_conditions(solver_lbfgs_dg, tol)
 end

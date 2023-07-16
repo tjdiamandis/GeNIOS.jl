@@ -11,6 +11,7 @@ LogExpFunctions = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 RandomizedPreconditioners = "3e7891d3-c9d1-416a-9949-ebd96150e4f0"
+Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
@@ -19,6 +20,7 @@ julia = "1.9"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 
 [targets]
-test = ["Test"]
+test = ["Test", "Optim"]
