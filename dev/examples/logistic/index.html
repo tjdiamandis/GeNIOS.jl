@@ -23,8 +23,8 @@ res = solve!(solver; options=GeNIOS.SolverOptions(use_dual_gap=true, dual_gap_to
 Status:      OPTIMAL
 Obj. val:   1309
 num iters:  67
-setup time: 0.689s
-solve time: 3.778s
+setup time: 0.761s
+solve time: 4.068s
 </code></pre><h2 id="MLSolver-interface"><a class="docs-heading-anchor" href="#MLSolver-interface">MLSolver interface</a><a id="MLSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#MLSolver-interface" title="Permalink"></a></h2><p>Under the hood, the LogisticSolver is just a wrapper around the MLSolver interface. We can see what it&#39;s doing below. To use the <code>MLSolver</code> interface, we just need to specify <span>$f$</span> and the regularization parameters. We also define the conjugate function <span>$f^*$</span>, defined as</p><p class="math-container">\[f^*(y) = \sup_x \{yx - f(x)\},\]</p><p>to use the dual gap convergence criterion.</p><pre><code class="language-julia hljs"># Logistic problem: min ∑ log(1 + exp(aᵢᵀx)) + γ||x||₁
 f2(x) = GeNIOS.log1pexp(x)
 df2(x) = GeNIOS.logistic(x)
@@ -37,9 +37,9 @@ res = solve!(solver; options=GeNIOS.SolverOptions(use_dual_gap=true, dual_gap_to
 Status:      OPTIMAL
 Obj. val:   1309
 num iters:  67
-setup time: 0.511s
-solve time: 3.727s
+setup time: 0.572s
+solve time: 4.041s
 </code></pre><h2 id="Results"><a class="docs-heading-anchor" href="#Results">Results</a><a id="Results-1"></a><a class="docs-heading-anchor-permalink" href="#Results" title="Permalink"></a></h2><pre><code class="language-julia hljs">rmse = sqrt(1/N*norm(A*solver.zk - b, 2)^2)
 println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)
 println(&quot;Dual gap: $(round(res.dual_gap, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Final RMSE: 0.59824024
-Dual gap: 9.863e-5</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../lasso/">« Lasso</a><a class="docs-footer-nextpage" href="../portfolio/">Markowitz Portfolio Optimization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Friday 14 July 2023 02:07">Friday 14 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Dual gap: 9.863e-5</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../lasso/">« Lasso</a><a class="docs-footer-nextpage" href="../portfolio/">Markowitz Portfolio Optimization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Sunday 16 July 2023 21:07">Sunday 16 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
