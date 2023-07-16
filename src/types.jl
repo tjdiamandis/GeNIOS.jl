@@ -79,7 +79,7 @@ mutable struct GenericSolver{
     cache                       # cache : cache for intermediate results
 end
 function GenericSolver(f, grad_f!, Hf, g, prox_g!, M, c::Vector{T}) where {T}
-    m, n = M == I || M == -I ? (length(c), length(c)) : size(M)
+    m, n = typeof(M) <: UniformScaling ? (length(c), length(c)) : size(M)
     data = GenericProblemData(M, c, m, n, Hf, grad_f!, f, g, prox_g!)
     xk = zeros(T, n)
     Mxk = zeros(T, m)
@@ -142,8 +142,9 @@ mutable struct ConicSolver{
     ρ::T                        # param : ADMM penalty
     cache                       # cache : cache for intermediate results
 end
-function ConicSolver(P, q, K, M, c::Vector{T}) where {T}
-    m, n = M == I || M == -I ? (length(c), length(c)) : size(M)
+function ConicSolver(P, q, K, M, c::Vector{T}; σ=nothing) where {T}
+    check_dims(P, q, K, M, c) # errors if mismatch
+    m, n = typeof(M) <: UniformScaling ? (length(c), length(c)) : size(M)
     data = ConicProgramData(M, c, m, n, P, q, K)
     xk = zeros(T, n)
     Mxk = zeros(T, m)
@@ -158,10 +159,12 @@ function ConicSolver(P, q, K, M, c::Vector{T}) where {T}
     rp_norm, rd_norm = zero(T), zero(T)
     ρ = one(T)
     cache = init_cache(data)
+
+    σ = isnothing(σ) ? zero(T) : σ
     
     return ConicSolver(
         data, 
-        LinearOperator(M, one(T), ConicHessianOperator(P), m, n), 
+        LinearOperator(M, one(T), ConicHessianOperator(P, σ), m, n), 
         I,
         xk, δx, Mxk, zk, zk_old, uk, δy, rp, rd, 
         rp_norm, rd_norm,
@@ -171,8 +174,20 @@ function ConicSolver(P, q, K, M, c::Vector{T}) where {T}
     )
 end
 
+function check_dims(P, q, K, M, c)
+    m, n = typeof(M) <: UniformScaling ? (length(c), length(c)) : size(M)
+    size_P = typeof(P) <: UniformScaling ? (length(q), length(q)) : size(P)
+    if size_P[1] != n || size_P[2] != n || length(q) != n
+        error("objective data dimensions do not match constraint matrix M")
+    elseif length(K) != m || length(c) != m
+        error("constraint data dimensions do not match constraint matrix M")
+    end
+
+    return nothing
+end
+
 function QPSolver(P, q, M, l, u)
-    m =  M == I || M == -I ? length(q) : size(M, 1)
+    m =  typeof(M) <: UniformScaling ? length(q) : size(M, 1)
     # TODO: Optimal QP step size: https://www.merl.com/publications/docs/TR2014-050.pdf
     # - perhaps estimate with randomized method??
     # - strictly convex case

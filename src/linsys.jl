@@ -73,8 +73,15 @@ end
 
 struct ConicHessianOperator <: HessianOperator
     P
+    σ
 end
-LinearAlgebra.mul!(y, H::ConicHessianOperator, x) = mul!(y, H.P, x)
+function LinearAlgebra.mul!(y, H::ConicHessianOperator, x)
+    mul!(y, H.P, x)
+    if H.σ > zero(typeof(H.σ))
+        y .+= H.σ .* x
+    end
+    return nothing
+end
 
 
 function update!(::HessianOperator, solver)
