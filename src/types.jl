@@ -142,8 +142,8 @@ mutable struct ConicSolver{
     ρ::T                        # param : ADMM penalty
     cache                       # cache : cache for intermediate results
 end
-function ConicSolver(P, q, K, M, c::Vector{T}; σ=nothing) where {T}
-    check_dims(P, q, K, M, c) # errors if mismatch
+function ConicSolver(P, q, K, M, c::Vector{T}; σ=nothing, check_dims=true) where {T}
+    check_dims && check_data_dims(P, q, K, M, c) # errors if mismatch
     m, n = typeof(M) <: UniformScaling ? (length(c), length(c)) : size(M)
     data = ConicProgramData(M, c, m, n, P, q, K)
     xk = zeros(T, n)
@@ -174,7 +174,7 @@ function ConicSolver(P, q, K, M, c::Vector{T}; σ=nothing) where {T}
     )
 end
 
-function check_dims(P, q, K, M, c)
+function check_data_dims(P, q, K, M, c)
     m, n = typeof(M) <: UniformScaling ? (length(c), length(c)) : size(M)
     size_P = typeof(P) <: UniformScaling ? (length(q), length(q)) : size(P)
     if size_P[1] != n || size_P[2] != n || length(q) != n
@@ -186,13 +186,13 @@ function check_dims(P, q, K, M, c)
     return nothing
 end
 
-function QPSolver(P, q, M, l, u)
+function QPSolver(P, q, M, l, u; σ=nothing, check_dims=true)
     m =  typeof(M) <: UniformScaling ? length(q) : size(M, 1)
     # TODO: Optimal QP step size: https://www.merl.com/publications/docs/TR2014-050.pdf
     # - perhaps estimate with randomized method??
     # - strictly convex case
     # ρ = sqrt(λmin(P)*λmax(P))
-    return ConicSolver(P, q, IntervalCone(l, u), M, zeros(m))
+    return ConicSolver(P, q, IntervalCone(l, u), M, zeros(m); σ=σ, check_dims=check_dims)
 end
 
 mutable struct MLSolver{
