@@ -182,3 +182,24 @@ solver = GeNIOS.GenericSolver(
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, verbose=true))
 rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
 println("Final RMSE: $(round(rmse, digits=8))")
+
+
+#=
+## ProximalOperators.jl
+We could alternatively use `ProximalOperators.jl` to define the proximal operator
+for g:
+=#
+using ProximalOperators
+prox_func = NormL1(γ)
+gp(x) = prox_func(x)
+prox_gp!(v, z, ρ) = prox!(v, prox_func, z, ρ)
+
+## We see that this give the same result
+solver = GeNIOS.GenericSolver(
+    f, grad_f!, Hf,         # f(x)
+    gp, prox_gp!,             # g(z)
+    I, zeros(n);           # M, c: Mx + z = c
+)
+res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, verbose=true))
+rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
+println("Final RMSE: $(round(rmse, digits=8))")
