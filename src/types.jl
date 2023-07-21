@@ -356,9 +356,9 @@ function init_cache(data::MLProblemData{T}) where {T <: Real}
 end
 
 
-Base.@kwdef mutable struct SolverOptions{T <: Real, S <: Real}
+@kwdef mutable struct SolverOptions{T <: Real, S <: Real}
     ρ0::T = 1.0                                     # param : ADMM penalty
-    α::T = 1.2                                      # param : relaxation
+    α::T = 1.6                                      # param : relaxation
     relax::Bool = false
     logging::Bool = true
     precondition::Bool = true
