@@ -233,8 +233,10 @@ end
 function update_x!(
     solver::Solver,
     options::SolverOptions,
-    linsys_solver::CgSolver
+    linsys_solver::CgSolver,
+    t::Int
     )
+    T = eltype(solver.xk)
 
     # update linear operator, i.e., ∇²f(xᵏ)
     update!(solver.lhs_op.Hf_xk, solver)
@@ -247,10 +249,12 @@ function update_x!(
         time_start = time_ns()
     end
     
-    linsys_tol = max(
-        sqrt(eps()), min(
-            sqrt(solver.rp_norm * solver.rd_norm), options.linsys_max_tol)
-    )
+    # linsys_tol = max(
+    #     sqrt(eps()), min(
+    #         sqrt(solver.rp_norm * solver.rd_norm), options.linsys_max_tol)
+    # )
+    geomean_resid = sqrt(solver.rp_norm * solver.rd_norm)
+    linsys_tol = max(sqrt(eps()), min(geomean_resid, one(T)) / t^1.5)
 
     # warm start if past first iteration
     !isinf(solver.rp_norm) && warm_start!(linsys_solver, solver.xk)
@@ -489,7 +493,7 @@ function solve!(
 
         # --- ADMM iterations ---
         if !use_lbfgs_ml
-            time_linsys = update_x!(solver, options, linsys_solver)
+            time_linsys = update_x!(solver, options, linsys_solver, t)
         else
             time_linsys = update_x!(solver, options)
         end
