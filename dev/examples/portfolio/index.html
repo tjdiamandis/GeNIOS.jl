@@ -25,43 +25,40 @@ u = vcat(Inf*ones(n), ones(1))
 solver = GeNIOS.QPSolver(P, q, M, l, u)
 res = solve!(solver; options=GeNIOS.SolverOptions(eps_abs=1e-6))
 println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.006s
+Setup in  0.000s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      0.000e+00            Inf            Inf      1.000e+00         0.000
-            1     -2.008e+02      8.830e+00      2.810e+01      1.000e+00         0.047
-           25     -1.705e+01      3.712e-01      1.060e-01      1.000e+00         0.090
-           50     -8.409e+00      1.333e-01      2.900e-02      1.000e+00         0.137
-           75     -5.704e+00      7.383e-02      1.082e-02      1.000e+00         0.189
-          100     -4.622e+00      4.939e-02      5.121e-03      1.000e+00         0.239
-          125     -4.005e+00      3.478e-02      3.520e-03      1.000e+00         0.294
-          150     -3.560e+00      2.461e-02      2.480e-03      1.000e+00         0.344
-          175     -3.238e+00      1.745e-02      1.749e-03      1.000e+00         0.394
-          200     -3.008e+00      1.240e-02      1.239e-03      1.000e+00         0.451
-          225     -2.763e+00      7.484e-03      2.126e-03      2.000e+00         0.506
-          250     -2.645e+00      5.203e-03      1.247e-03      2.000e+00         0.559
-          275     -2.579e+00      3.779e-03      8.181e-04      2.000e+00         0.616
-          300     -2.536e+00      2.799e-03      5.786e-04      2.000e+00         0.672
-          325     -2.506e+00      2.095e-03      4.163e-04      2.000e+00         0.734
-          350     -2.485e+00      1.581e-03      3.038e-04      2.000e+00         0.790
-          375     -2.470e+00      1.199e-03      2.244e-04      2.000e+00         0.850
-          400     -2.459e+00      9.132e-04      1.674e-04      2.000e+00         0.912
-          425     -2.451e+00      6.977e-04      1.258e-04      2.000e+00         0.980
-          450     -2.445e+00      5.343e-04      9.509e-05      2.000e+00         1.042
-          475     -2.440e+00      4.099e-04      7.225e-05      2.000e+00         1.110
-          500     -2.437e+00      3.150e-04      5.511e-05      2.000e+00         1.174
-          525     -2.434e+00      2.425e-04      4.217e-05      2.000e+00         1.241
-          550     -2.432e+00      1.869e-04      3.236e-05      2.000e+00         1.303
-          575     -2.431e+00      1.442e-04      2.488e-05      2.000e+00         1.365
-          581     -2.431e+00      1.356e-04      2.337e-05      2.000e+00         1.384
+            1      0.000e+00      1.000e+00      3.201e+01      1.000e+00         0.004
+           25     -1.776e+01      3.933e-01      1.144e-01      1.000e+00         0.135
+           50     -8.561e+00      1.369e-01      2.939e-02      1.000e+00         0.246
+           75     -5.766e+00      7.509e-02      1.102e-02      1.000e+00         0.371
+          100     -4.648e+00      5.000e-02      5.181e-03      1.000e+00         0.495
+          125     -4.023e+00      3.519e-02      3.555e-03      1.000e+00         0.628
+          150     -3.573e+00      2.490e-02      2.505e-03      1.000e+00         0.776
+          175     -3.248e+00      1.765e-02      1.770e-03      1.000e+00         0.920
+          200     -3.015e+00      1.254e-02      1.253e-03      1.000e+00         1.068
+          225     -2.766e+00      7.535e-03      2.149e-03      2.000e+00         1.187
+          250     -2.647e+00      5.232e-03      1.257e-03      2.000e+00         1.305
+          275     -2.580e+00      3.797e-03      8.233e-04      2.000e+00         1.425
+          300     -2.537e+00      2.812e-03      5.819e-04      2.000e+00         1.541
+          325     -2.506e+00      3.321e-03      1.688e-03      2.000e+00         1.657
+          350     -2.479e+00      1.435e-03      2.732e-04      2.000e+00         1.768
+          375     -2.462e+00      1.612e-03      8.746e-04      2.000e+00         1.884
+          400     -2.450e+00      1.094e-03      6.069e-04      2.000e+00         1.996
+          425     -2.441e+00      7.139e-04      4.023e-04      2.000e+00         2.102
+          450     -2.436e+00      4.679e-04      2.663e-04      2.000e+00         2.209
+          475     -2.433e+00      3.078e-04      1.762e-04      2.000e+00         2.317
+          500     -2.430e+00      2.032e-04      1.167e-04      2.000e+00         2.415
+          525     -2.429e+00      1.347e-04      7.751e-05      2.000e+00         2.509
 
-SOLVED in  1.384s, 581 iterations
-Total time:  1.390s
+SOLVED in  2.509s, 525 iterations
+Total time:  2.509s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Optimal value: -2.4306</code></pre><h3 id="Performance-improvements"><a class="docs-heading-anchor" href="#Performance-improvements">Performance improvements</a><a id="Performance-improvements-1"></a><a class="docs-heading-anchor-permalink" href="#Performance-improvements" title="Permalink"></a></h3><p>We can also define custom operators for <span>$P$</span> and <span>$M$</span> to speed up the computation. For <span>$M$</span>, we will use the <code>LinearMaps</code> package for convenience.</p><pre><code class="language- hljs"># P = γ*(F*F&#39; + Diagonal(d))
+Optimal value: -2.4289</code></pre><h3 id="Performance-improvements"><a class="docs-heading-anchor" href="#Performance-improvements">Performance improvements</a><a id="Performance-improvements-1"></a><a class="docs-heading-anchor-permalink" href="#Performance-improvements" title="Permalink"></a></h3><p>We can also define custom operators for <span>$P$</span> and <span>$M$</span> to speed up the computation. For <span>$M$</span>, we will use the <code>LinearMaps</code> package for convenience.</p><pre><code class="language- hljs"># P = γ*(F*F&#39; + Diagonal(d))
 struct FastP
     F
     d
@@ -174,23 +171,23 @@ solver = GeNIOS.GenericSolver(
 )
 res = solve!(solver)
 println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.760s
+Setup in  0.324s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0            Inf            Inf            Inf      1.000e+00         0.000
-            1     -2.008e+02      1.177e+01      4.127e+00      1.000e+00         0.354
-           25     -2.468e+00      2.669e-02      2.910e-03      1.000e+00         0.357
-           50     -2.454e+00      1.616e-02      1.621e-03      1.000e+00         0.360
-           75     -2.446e+00      1.023e-02      9.590e-04      1.000e+00         0.363
-          100     -2.440e+00      6.895e-03      5.763e-04      1.000e+00         0.366
-          125     -2.433e+00      3.930e-03      9.533e-04      2.000e+00         0.370
-          150     -2.430e+00      2.704e-03      4.460e-04      2.000e+00         0.374
-          164     -2.430e+00      2.278e-03      3.218e-04      2.000e+00         0.376
+            1      0.000e+00      4.472e-02      2.292e+01      1.000e+00         0.432
+           25     -2.470e+00      2.727e-02      2.549e-03      1.000e+00         0.434
+           50     -2.454e+00      1.649e-02      1.653e-03      1.000e+00         0.437
+           75     -2.446e+00      1.042e-02      9.776e-04      1.000e+00         0.440
+          100     -2.440e+00      7.014e-03      5.876e-04      1.000e+00         0.443
+          125     -2.434e+00      3.987e-03      9.722e-04      2.000e+00         0.446
+          150     -2.431e+00      2.738e-03      4.543e-04      2.000e+00         0.450
+          164     -2.430e+00      2.239e-03      3.115e-04      2.000e+00         0.451
 
-SOLVED in  0.376s, 164 iterations
-Total time:  1.136s
+SOLVED in  0.451s, 164 iterations
+Total time:  0.776s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Optimal value: -2.4296</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../logistic/">« Logistic Regression</a><a class="docs-footer-nextpage" href="../signal/">Signal Decomposition »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Friday 21 July 2023 06:38">Friday 21 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Optimal value: -2.4295</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../logistic/">« Logistic Regression</a><a class="docs-footer-nextpage" href="../signal/">Signal Decomposition »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Sunday 23 July 2023 01:28">Sunday 23 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
