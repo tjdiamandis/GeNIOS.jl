@@ -2,14 +2,14 @@ import MathOptInterface as MOI
 
 const MOIU = MOI.Utilities
 const SparseTriplets = Tuple{Vector{Int},Vector{Int},Vector{<:Any}}
-const Affine = MOI.ScalarAffineFunction{<: AbstractFloat}
-const Quadratic = MOI.ScalarQuadraticFunction{<: AbstractFloat}
-const VectorAffine = MOI.VectorAffineFunction{<: AbstractFloat}
+const Affine = MOI.ScalarAffineFunction{Float64}
+const Quadratic = MOI.ScalarQuadraticFunction{Float64}
+const VectorAffine = MOI.VectorAffineFunction{Float64}
 
-const Interval = MOI.Interval{<: AbstractFloat}
-const LessThan = MOI.LessThan{<: AbstractFloat}
-const GreaterThan = MOI.GreaterThan{<: AbstractFloat}
-const EqualTo = MOI.EqualTo{<: AbstractFloat}
+const Interval = MOI.Interval{Float64}
+const LessThan = MOI.LessThan{Float64}
+const GreaterThan = MOI.GreaterThan{Float64}
+const EqualTo = MOI.EqualTo{Float64}
 const IntervalConvertible = Union{Interval,LessThan,GreaterThan,EqualTo}
 
 const Zeros = MOI.Zeros
