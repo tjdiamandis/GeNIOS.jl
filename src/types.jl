@@ -359,9 +359,9 @@ end
 @kwdef mutable struct SolverOptions{T <: Real, S <: Real}
     ρ0::T = 1.0                                     # param : ADMM penalty
     α::T = 1.6                                      # param : relaxation
-    relax::Bool = false
+    relax::Bool = true
     logging::Bool = true
-    precondition::Bool = true
+    precondition::Bool = false
     dual_gap_tol::T = 1e-4
     relax_tol::T = 1e-3
     max_iters::Int = 4000
@@ -448,6 +448,7 @@ struct GeNIOSResult{T}
     x::AbstractVector{T}       # primal soln
     z::AbstractVector{T}       # primal soln
     u::AbstractVector{T}       # dual soln
+    ρ::T                       # ADMM penalty
     dual_gap::T                # duality gap
     log::GeNIOSLog{T}
 end

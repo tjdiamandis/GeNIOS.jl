@@ -11,6 +11,11 @@ end
 # - would need to estimate the smallest eigenvalue for the regularization, I think
 # - alternatively, could use the OSQP approach
 function _build_preconditioner!(solver::Solver, options::SolverOptions)
+    if solver isa ConicSolver && iszero(solver.lhs_op.Hf_xk.P)
+        solver.P = I
+        return nothing
+    end
+
     update!(solver.lhs_op.Hf_xk, solver)
     if options.use_adaptive_sketch
         ∇²fx_nys = adaptive_nystrom_sketch(
@@ -601,6 +606,7 @@ function solve!(
         solver.xk,
         solver.zk,          # usually want zk since it is feasible (or sparsified)
         solver.uk,
+        solver.ρ,
         solver.dual_gap,
         log
     )

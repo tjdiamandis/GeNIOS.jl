@@ -17,6 +17,7 @@ include("cones.jl")
 include("types.jl")
 include("utils.jl")
 include("admm.jl")
+include("MOI_wrapper.jl")
 
 function __init__()
     @require Optim="429524aa-4258-5aef-a3af-852621145aeb" include("lbfgs.jl")
