@@ -303,7 +303,7 @@ function MLSolver(f,
     ρ = one(T)
     cache = init_cache(data)
 
-    Hf = MLHessianOperator(Adata, bdata, d2f, λ2) 
+    Hf = MLHessianOperator(Adata, bdata, λ2) 
 
     return MLSolver(
         data, 

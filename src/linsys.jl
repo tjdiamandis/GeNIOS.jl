@@ -4,20 +4,18 @@ struct MLHessianOperator{
         T <: Real,
         V <: AbstractVector{T}, 
         M <: AbstractMatrix{T}, 
-        F <: Function
 } <: HessianOperator
     w::V
     bdata::V
     Adata::M
-    df2::F
     vN::V
     λ2::MVector{1,T}
 end
-function MLHessianOperator(Adata, bdata, df2, λ2)
+function MLHessianOperator(Adata, bdata, λ2)
     N, _ = size(Adata)
     T = eltype(Adata)
     return MLHessianOperator(
-        ones(N), bdata, Adata, df2, zeros(T, N), MVector{1,T}(λ2)
+        ones(N), bdata, Adata, zeros(T, N), MVector{1,T}(λ2)
     )
 end
 
@@ -67,7 +65,7 @@ function RandomizedPreconditioners.NystromSketch(H::MLHessianOperator, r::Int; n
 end
 
 function update!(H::MLHessianOperator, solver)
-    @. H.w = H.df2(solver.pred)
+    @. H.w = solver.data.d2f(solver.pred)
     return nothing
 end
 
