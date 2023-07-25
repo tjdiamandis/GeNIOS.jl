@@ -5,6 +5,7 @@ using Plots, LaTeXStrings
 using StatsPlots: groupedbar
 using IterativeSolvers, LinearMaps
 using COSMO, OSQP
+using JuMP, MosekTools
 include(joinpath(@__DIR__, "utils.jl"))
 
 Pkg.activate(joinpath(@__DIR__, ".."))
@@ -15,7 +16,7 @@ const DATAFILE = joinpath(DATAPATH, "YearPredictionMSD.txt")
 const SAVEPATH = joinpath(@__DIR__, "saved", "4-constrained-ls-compare")
 const FIGS_PATH = joinpath(@__DIR__, "figures")
 
-const RAN_TRIALS = true
+const RAN_TRIALS = false
 
 function run_trial(n::Int)
     GC.gc()
@@ -24,7 +25,9 @@ function run_trial(n::Int)
     filename = "compare-$n.jld2"
     savefile = joinpath(SAVEPATH, filename)
     m = 2n
-    P, q, A, l, u = construct_problem_constrained_ls(get_augmented_data(m, n, DATAFILE)...)
+
+    Ad, b = get_augmented_data(m, n, DATAFILE)
+    P, q, A, l, u = construct_problem_constrained_ls(Ad, b)
     GC.gc()
 
     A_sp = spdiagm(ones(n))
@@ -35,9 +38,10 @@ function run_trial(n::Int)
     osqp_model = OSQP.Model()
     OSQP.setup!(
         osqp_model; P=P_sp, q=q, A=A_sp, l=l, u=u, 
-        eps_abs=1e-4, eps_rel=1e-4, verbose=false,
+        eps_abs=1e-4, eps_rel=1e-4, verbose=false, time_limit=1000,
     )
     result_osqp = OSQP.solve!(osqp_model)
+    @info "Finished OSQP"
 
     # COSMO
     GC.gc()
@@ -49,9 +53,11 @@ function run_trial(n::Int)
         verbose_timing=true,
         eps_abs=1e-4,
         eps_rel=1e-4,
+        time_limit=1000,
     )
     assemble!(model_cosmo_indirect, P, q, cs1, settings=settings)
     result_cosmo_indirect = COSMO.optimize!(model_cosmo_indirect)
+    @info "Finished COSMO indirect"
 
     # COSMO
     GC.gc()
@@ -62,9 +68,11 @@ function run_trial(n::Int)
         verbose_timing = true,
         eps_abs=1e-4,
         eps_rel=1e-4,
+        time_limit=1000,
     )
     assemble!(model_cosmo_direct, P, q, cs1, settings=settings)
     result_cosmo_direct = COSMO.optimize!(model_cosmo_direct)
+    @info "Finished COSMO direct"
 
     # GeNIOS solve
     # With everything
@@ -74,10 +82,12 @@ function run_trial(n::Int)
         verbose=false,
         precondition=true,
         num_threads=Sys.CPU_THREADS,
-        eps_abs=1e-4,
-        eps_rel=1e-4,
+        norm_type=Inf,
+        sketch_update_iter=5000,
+        max_time_sec=1000.
     )
     result = solve!(solver; options=options)
+    @info "Finished GeNIOS"
 
     # No preconditioner
     GC.gc()
@@ -86,45 +96,31 @@ function run_trial(n::Int)
         verbose=false,
         precondition=false,
         num_threads=Sys.CPU_THREADS,
-        eps_abs=1e-4,
-        eps_rel=1e-4,
+        norm_type=Inf,
+        max_time_sec=1000.
     )
     result_npc = solve!(solver_npc; options=options)
+    @info "Finished GeNIOS (no pc)"
 
-    # Exact solve
-    GC.gc()
-    solver_exact = GeNIOS.QPSolver(P, q, A, l, u)
-    options = GeNIOS.SolverOptions(
-        verbose=false,
-        precondition=true,
-        num_threads=Sys.CPU_THREADS,
-        linsys_max_tol=1e-8,
-        eps_abs=1e-4,
-        eps_rel=1e-4,
-    )
-    result_exact = solve!(solver_exact; options=options)
-
-    # Exact solve, no pc
-    GC.gc()
-    solver_exact_npc = GeNIOS.QPSolver(P, q, A, l, u)
-    options = GeNIOS.SolverOptions(
-        verbose=false,
-        precondition=false,
-        num_threads=Sys.CPU_THREADS,
-        linsys_max_tol=1e-8,
-        eps_abs=1e-4,
-        eps_rel=1e-4,
-    )
-    result_exact_npc = solve!(solver_exact_npc; options=options)
+    # Mosek solve
+    model = Model(Mosek.Optimizer)
+    @variable(model, x[1:n])
+    @objective(model, Min, 0.5*sum(P[i,j]*x[i]*x[j] for i in 1:n, j in 1:n) + sum(q[i]*x[i] for i in 1:n))
+    @constraint(model, 0.0 .≤ x)
+    @constraint(model, x .≤ 1.0)
+    set_silent(model)
+    set_time_limit_sec(model, 1000.0)
+    optimize!(model)
+    result_mosek = solution_summary(model)
+    @info "Finished Mosek"
 
     save(savefile, 
         "result", result,
         "result_npc", result_npc,
-        "result_exact", result_exact,
-        "result_exact_npc", result_exact_npc,
         "result_cosmo_indirect", result_cosmo_indirect,
         "result_cosmo_direct", result_cosmo_direct,
-        "result_osqp", result_osqp
+        "result_osqp", result_osqp,
+        "result_mosek", result_mosek,
     )
     
     GC.gc()
@@ -136,6 +132,8 @@ ns = [250, 500, 1_000, 2_000, 4_000, 8_000, 16_000]
 if !RAN_TRIALS
     run_trial(100)
     for n in ns
+        println()
+        @info "--- Starting n=$n ---"
         run_trial(n)
         @info "Finished with n=$n"
     end
@@ -143,45 +141,46 @@ end
 
 function get_logs(n)
     savefile = joinpath(SAVEPATH, "compare-$n.jld2")
-    r, r_npc, r_exact, r_exact_npc, rc_indirect, rc_direct, r_osqp = 
-        load(savefile, 
-            "result", "result_npc", "result_exact", "result_exact_npc",
-            "result_cosmo_indirect", "result_cosmo_direct", "result_osqp"
+    r, r_npc, rc_indirect, rc_direct, r_osqp, r_mosek = load(savefile,
+        "result", "result_npc", "result_cosmo_indirect", "result_cosmo_direct", "result_osqp", "result_mosek"
+    )
+    
+    println(" --- n = $n --- ")
+    for (x, y) in zip(
+            ("GeNIOS", "GeNIOS (no pc)", "COSMO (indirect)", "COSMO (direct)", "OSQP", "Mosek"),
+            (r, r_npc, rc_indirect, rc_direct, r_osqp.info)
         )
-    
-    if any(x.status ∉ (:OPTIMAL, :Solved) for x in (r, r_npc, r_exact, r_exact_npc, rc_indirect, rc_direct,)) || r_osqp.info.status != :Solved
-        @warn "n = $n: Some problems not solved!"
+        println("$x: $(y.status)")
     end
+    println("Mosek: $(r_mosek.termination_status)")
     
-    return r, r_npc, r_exact, r_exact_npc, rc_indirect, rc_direct, r_osqp
+    return r, r_npc, rc_indirect, rc_direct, r_osqp, r_mosek
 end
 
-function get_timing(r, r_npc, r_exact, r_exact_npc, rc_indirect, rc_direct, r_osqp)
+function get_timing(r, r_npc, rc_indirect, rc_direct, r_osqp, r_mosek)
     setup_times = [
         r.log.setup_time, 
         r_npc.log.setup_time, 
-        r_exact.log.setup_time, 
-        r_exact_npc.log.setup_time, 
         rc_indirect.times.setup_time, 
         rc_direct.times.setup_time,
-        r_osqp.info.setup_time
+        r_osqp.info.setup_time,
+        0.0,
     ]
     solve_times = [
         r.log.solve_time, 
         r_npc.log.solve_time, 
-        r_exact.log.solve_time, 
-        r_exact_npc.log.solve_time, 
         rc_indirect.times.iter_time + rc_indirect.times.factor_update_time,
         rc_direct.times.iter_time + rc_direct.times.factor_update_time,
-        r_osqp.info.solve_time
+        r_osqp.info.solve_time,
+        r_mosek.solve_time,
     ]
 
     return setup_times, solve_times
 end
 
-timings = zeros(length(ns), 7)
-setup_times = zeros(length(ns), 7)
-solve_times = zeros(length(ns), 7)
+timings = zeros(length(ns), 6)
+setup_times = zeros(length(ns), 6)
+solve_times = zeros(length(ns), 6)
 for (i, n) in enumerate(ns)
     logs = get_logs(n)
     setup_time, solve_time = get_timing(logs...)
@@ -196,15 +195,17 @@ timing_plt = plot(
     yaxis=:log, 
     xaxis=:log,
     label=[
-        "GeNIOS" "GeNIOS (no pc)" "GeNIOS (exact)" "GeNIOS (exact, no pc)" "COSMO (indirect)" "COSMO (direct)" "OSQP"
+        "GeNIOS" "GeNIOS (no pc)" "COSMO (indirect)" "COSMO (direct)" "OSQP" "Mosek"
     ], 
     xlabel=L"Problem size $n$", 
     ylabel="Total solve time (s)", 
     legend=:bottomright,
     lw=2,
-    markershape=[:circle :diamond :utriangle :dtriangle :star5 :square :cross],
+    markershape=[:circle :diamond :circle :cross :cross :square],
+    color=[:coral :coral :mediumblue :mediumblue :black :purple],
     dpi=300,
     yticks=[1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3],
+    minorgrid=true,
 )
 savefig(timing_plt, joinpath(FIGS_PATH, "4-constrained-ls-compare-timing.pdf"))
 
@@ -232,8 +233,9 @@ plts = [
         titlefontsize=18,
         labelfontsize=16,
         tickfontsize=10,
+        minorgrid=true,
     )
-    for ind in 1:length(names)
+    for ind in 1:length(names)-1
 ]
 setup_solve_plt = plot(
     plts..., 

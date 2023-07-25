@@ -7,6 +7,7 @@ dev/
 .vscode/
 /benchmarks/data/
 /benchmarks/saved/
+/benchmarks/test*
 /benchmarks/figures/
 /docs/build/
 /docs/src/examples/

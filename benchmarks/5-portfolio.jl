@@ -5,6 +5,7 @@ using Plots, LaTeXStrings
 using Statistics, JLD2
 using IterativeSolvers, LinearMaps
 using COSMO, OSQP
+using MosekTools, JuMP
 include(joinpath(@__DIR__, "utils.jl"))
 
 Pkg.activate(joinpath(@__DIR__, ".."))
@@ -109,7 +110,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         osqp_model = OSQP.Model()
         OSQP.setup!(
             osqp_model; P=P_eq, q=q_eq, A=M_eq, l=l_eq, u=u_eq, 
-            eps_abs=1e-3, eps_rel=1e-3, verbose=false, time_limit=1200,
+            eps_abs=1e-4, eps_rel=1e-4, verbose=false, time_limit=1000,
         )
         result_osqp = OSQP.solve!(osqp_model)
     else
@@ -126,9 +127,9 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
             kkt_solver=CGIndirectKKTSolver, 
             verbose=false,
             verbose_timing = true,
-            eps_abs=1e-3,
-            eps_rel=1e-3,
-            time_limit=1200,
+            eps_abs=1e-4,
+            eps_rel=1e-4,
+            time_limit=1000,
         )
         assemble!(model_cosmo_indirect, P_eq, q_eq, cs1, settings=settings)
         result_cosmo_indirect = COSMO.optimize!(model_cosmo_indirect)
@@ -146,9 +147,9 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
             kkt_solver=QdldlKKTSolver,
             verbose=false,
             verbose_timing = true,
-            eps_abs=1e-3,
-            eps_rel=1e-3,
-            time_limit=1200,
+            eps_abs=1e-4,
+            eps_rel=1e-4,
+            time_limit=1000,
         )
         assemble!(model_cosmo_direct, P_eq, q_eq, cs1, settings=settings)
         result_cosmo_direct = COSMO.optimize!(model_cosmo_direct)
@@ -160,11 +161,11 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
     # GeNIOS
     options = GeNIOS.SolverOptions(
         verbose=false,
-        eps_abs=1e-3,
-        eps_rel=1e-3,
+        eps_abs=1e-4,
+        eps_rel=1e-4,
+        norm_type=Inf,
         sketch_update_iter=10_000,
-        num_threads=Sys.CPU_THREADS,
-        max_time_sec=1200.0,
+        max_time_sec=1000.0,
     )
 
     if :qp ∈ solvers
@@ -199,7 +200,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         l = vcat(zeros(n), ones(1))
         u = vcat(Inf*ones(n), ones(1))
 
-        solver = GeNIOS.QPSolver(P, q, M, l, u);
+        solver = GeNIOS.QPSolver(P, q, M, l, u; check_dims=false);
         result_op = solve!(solver; options=options)
     else
         result_op = nothing
@@ -265,6 +266,24 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         result_custom = nothing
     end
 
+    # Mosek
+    if :mosek ∈ solvers
+        GC.gc()
+        model = Model(Mosek.Optimizer)
+        @variable(model, x[1:n])
+        @variable(model, y[1:k])
+        @objective(model, Min, sum(i-> γ/2*x[i]^2*d[i] - μ[i]*x[i], 1:n) +  γ/2*y'*y)
+        @constraint(model, F'*x .== y)
+        @constraint(model, sum(x) == 1)
+        @constraint(model, x .≥ 0)
+        set_silent(model)
+        set_time_limit_sec(model, 1000.0)
+        optimize!(model)
+        result_mosek = solution_summary(model)
+    else
+        result_mosek = nothing
+    end
+
     # save data 
     save(savefile,
         "result_qp", result_qp,
@@ -274,38 +293,39 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         "result_cosmo_indirect", result_cosmo_indirect,
         "result_cosmo_direct", result_cosmo_direct,
         "result_osqp", result_osqp,
+        "result_mosek", result_mosek,
     )
 
     GC.gc()
     return nothing
 end
 
-ns = [250, 500, 1_000, 2_000, 4_000, 8_000, 16_000, 32_000, 64_000, 128_000]
+ns = [250, 500, 1_000, 2_000, 4_000, 8_000, 16_000, 32_000, 64_000, 128_000, 256_000]
 if !RAN_TRIALS
     run_trial(100)
+    @info "Starting trials..."
     for n in ns
-        if n <= 8_000
-            solvers = [:qp, :op, :custom, :cosmo_indirect, :cosmo_direct, :osqp, :qp_full]
+        if n <= 16_000
+            solvers = [:qp, :op, :custom, :cosmo_indirect, :cosmo_direct, :osqp, :qp_full, :mosek]
         else
-            solvers = [:qp, :op, :custom, :cosmo_indirect, :cosmo_direct, :osqp]
-            # solvers = [:custom, :cosmo_indirect, :cosmo_direct]
+            solvers = [:qp, :op, :custom, :cosmo_indirect, :cosmo_direct, :osqp, :mosek]
         end
         run_trial(n; solvers=solvers)
         @info "Finished with n=$n"
     end
 end
-@info "Finished with all trials"
+@info "Finished with all trials!"
 
 
 
 ## Load data from save file
 function get_logs(n)
     savefile = joinpath(SAVEPATH, "portfolio-$n.jld2")
-    r_qp, r_qpf, r_op, r_custom, rc_indirect, rc_direct, r_osqp = 
+    r_qp, r_qpf, r_op, r_custom, rc_indirect, rc_direct, r_osqp, r_mosek = 
         load(savefile, 
             "result_qp", "result_qp_full", "result_op", "result_custom",
             "result_cosmo_indirect", "result_cosmo_direct",
-            "result_osqp"
+            "result_osqp", "result_mosek"
         )    
     return [
         (:qp, r_qp),
@@ -315,6 +335,7 @@ function get_logs(n)
         (:cosmo_indirect, rc_indirect),
         (:cosmo_direct, rc_direct),
         (:osqp, r_osqp),
+        (:mosek, r_mosek),
     ]
 end
 
@@ -332,6 +353,9 @@ function get_timing(logs)
         elseif name == :osqp && !isnothing(log) && log.info.status == :Solved
             push!(setup_times, log.info.setup_time)
             push!(solve_times, log.info.solve_time)
+        elseif name == :mosek && !isnothing(log) && log.termination_status == OPTIMAL
+            push!(setup_times, 0.0)
+            push!(solve_times, log.solve_time)
         else
             push!(setup_times, NaN)
             push!(solve_times, NaN)
@@ -342,9 +366,9 @@ function get_timing(logs)
 end
 
 
-timings = zeros(length(ns), 7)
-setup_times = zeros(length(ns), 7)
-solve_times = zeros(length(ns), 7)
+timings = zeros(length(ns), 8)
+setup_times = zeros(length(ns), 8)
+solve_times = zeros(length(ns), 8)
 for (i, n) in enumerate(ns)
     logs = get_logs(n)
     setup_time, solve_time = get_timing(logs)
@@ -359,14 +383,16 @@ timing_plt = plot(
     timings,
     yaxis=:log, 
     xaxis=:log,
-    label=["GeNIOS (eq qp)" "GeNIOS (full qp)" "GeNIOS (cust ops)" "GeNIOS (GenericSolver)"  "COSMO (indirect)" "COSMO (direct)" "OSQP"], 
+    label=["GeNIOS (eq qp)" "GeNIOS (full qp)" "GeNIOS (cust ops)" "GeNIOS (GenericSolver)"  "COSMO (indirect)" "COSMO (direct)" "OSQP" "Mosek"], 
     # label=["GeNIOS (eq qp)" "GeNIOS (full qp)" "GeNIOS (cust ops)" "GeNIOS (GenericSolver)"], 
     xlabel=L"Problem size $n$", 
     ylabel="Total solve time (s)", 
     legend=:bottomright,
     lw=2,
-    markershape=[:circle :diamond :utriangle :star5 :square :cross],
+    markershape=[:circle :diamond :utriangle :star5 :circle :cross :cross :square],
+    color=[:firebrick :firebrick :coral :coral :mediumblue :mediumblue :black :purple],
     dpi=300,
     yticks=[1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3],
+    minorgrid=true,
 )
 savefig(timing_plt, joinpath(FIGS_PATH, "5-portfolio-timing.pdf"))

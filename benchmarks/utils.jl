@@ -26,6 +26,8 @@ function get_augmented_data(m, n, datafile)
     A .= A .- sum(A, dims=1) ./ size(A, 1)
     A .= A ./ std(A, dims=1)
     b = copy(M[:, 1])
+    b .= b .- mean(b)
+    b .= b ./ std(b)
     
     σ = 8
     Ad = zeros(m, n)
@@ -53,7 +55,7 @@ end
 function construct_problem_constrained_ls(Ad, b)
     m, n = size(Ad)
     P = Ad'*Ad
-    q = Ad'*b
+    q = -Ad'*b
     A = I
     l = zeros(n)
     u = ones(n)
