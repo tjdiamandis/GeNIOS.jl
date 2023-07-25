@@ -1,5 +1,6 @@
 abstract type Solver end
 abstract type ProblemData end
+abstract type OptimizerCache end
 
 function Base.show(io::IO, solver::Solver)
     print(io, "A $(typeof(solver).name.name) GeNIOS Solver\n")
@@ -55,10 +56,63 @@ struct GenericProblemData{T} <: ProblemData
     prox_g!::Function
 end
 
+@kwdef struct GenericCache{T} <: OptimizerCache
+    vm::Vector{T}
+    vn::Vector{T}
+    vn2::Vector{T}
+    rhs::Vector{T}
+end
+
+function init_cache(data::GenericProblemData{T}) where {T <: Real}
+    m, n = data.m, data.n
+    return GenericCache(
+        vm=zeros(T, m),
+        vn=zeros(T, n),
+        vn2=zeros(T, n),
+        rhs=zeros(T, n),
+    )
+end
+
+@kwdef struct ConicCache{T} <: OptimizerCache
+    vm::Vector{T}
+    vn::Vector{T}
+    vn2::Vector{T}
+    rhs::Vector{T}
+end
+
+function init_cache(data::ConicProgramData{T}) where {T <: Real}
+    m, n = data.m, data.n
+    return ConicCache(
+        vm=zeros(T, m),
+        vn=zeros(T, n),
+        vn2=zeros(T, n),
+        rhs=zeros(T, n),
+    )
+end
+
+@kwdef struct MLCache{T} <: OptimizerCache
+    vm::Vector{T}
+    vn::Vector{T}
+    vN::Vector{T}
+    vn2::Vector{T}
+    rhs::Vector{T}
+end
+
+function init_cache(data::MLProblemData{T}) where {T <: Real}
+    m, n, N = data.m, data.n, data.N
+    return MLCache(
+        vm=zeros(T, m),
+        vn=zeros(T, n),
+        vN=zeros(T, N),
+        vn2=zeros(T, n),
+        rhs=zeros(T, n),
+    )
+end
+
 # TODO: maybe make immutable?
 mutable struct GenericSolver{
     T <: Real,
-    V <: AbstractVector{T},
+    V <: AbstractVector{T}
 } <: Solver
     data::GenericProblemData{T} # data
     lhs_op::LinearOperator{T}   # LinerOperator for LHS of x update system
@@ -76,7 +130,7 @@ mutable struct GenericSolver{
     loss::T                     # log   : TODO: rem
     dual_gap::T                 # log   : TODO: rem
     ρ::T                        # param : ADMM penalty
-    cache                       # cache : cache for intermediate results
+    cache::GenericCache{T}      # cache : cache for intermediate results
 end
 function GenericSolver(f, grad_f!, Hf, g, prox_g!, M, c::Vector{T}) where {T}
     m, n = typeof(M) <: UniformScaling ? (length(c), length(c)) : size(M)
@@ -140,7 +194,7 @@ mutable struct ConicSolver{
     loss::T                     # log   : TODO: rem
     dual_gap::T                 # log   : TODO: rem
     ρ::T                        # param : ADMM penalty
-    cache                       # cache : cache for intermediate results
+    cache::ConicCache{T}        # cache : cache for intermediate results
 end
 function ConicSolver(P, q, K, M, c::Vector{T}; σ=nothing, check_dims=true) where {T}
     check_dims && check_data_dims(P, q, K, M, c) # errors if mismatch
@@ -219,7 +273,7 @@ mutable struct MLSolver{
     ρ::T                        # param : ADMM penalty
     λ1::T                       # param : l1 regularization
     λ2::T                       # param : l2 regularization
-    cache                       # cache : cache for intermediate results
+    cache::MLCache{T}           # cache : cache for intermediate results
 end
 
 function MLSolver(f,
@@ -322,37 +376,6 @@ function LogisticSolver(
     d2f(x) = GeNIOS.logistic(x) / GeNIOS.log1pexp(x)
     fconj(x::T) where {T} = x ≥ 0 && x ≤ 1 ? (one(T) - x) * log(one(T) - x) + x * log(x) : Inf
     return MLSolver(f, df, d2f, λ1, λ2, Adata, bdata, fconj=fconj)
-end
-
-function init_cache(data::GenericProblemData{T}) where {T <: Real}
-    m, n = data.m, data.n
-    return (
-        vm=zeros(T, m),
-        vn=zeros(T, n),
-        vn2=zeros(T, n),
-        rhs=zeros(T, n),
-    )
-end
-
-function init_cache(data::ConicProgramData{T}) where {T <: Real}
-    m, n = data.m, data.n
-    return (
-        vm=zeros(T, m),
-        vn=zeros(T, n),
-        vn2=zeros(T, n),
-        rhs=zeros(T, n),
-    )
-end
-
-function init_cache(data::MLProblemData{T}) where {T <: Real}
-    m, n, N = data.m, data.n, data.N
-    return (
-        vm=zeros(T, m),
-        vn=zeros(T, n),
-        vN=zeros(T, N),
-        vn2=zeros(T, n),
-        rhs=zeros(T, n),
-    )
 end
 
 
