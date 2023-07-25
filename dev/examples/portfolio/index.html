@@ -1,193 +1,69 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Markowitz Portfolio Optimization · GeNIOS.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://tjdiamandis.github.io/GeNIOS.jl/examples/portfolio/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">GeNIOS.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../constrained-ls/">Constrained Least Squares</a></li><li><a class="tocitem" href="../huber/">Huber Fitting</a></li><li><a class="tocitem" href="../lasso/">Lasso</a></li><li><a class="tocitem" href="../logistic/">Logistic Regression</a></li><li class="is-active"><a class="tocitem" href>Markowitz Portfolio Optimization</a><ul class="internal"><li><a class="tocitem" href="#Generating-the-problem-data"><span>Generating the problem data</span></a></li><li><a class="tocitem" href="#QPSolver-interface"><span>QPSolver interface</span></a></li><li><a class="tocitem" href="#GenericSolver-interface"><span>GenericSolver interface</span></a></li></ul></li><li><a class="tocitem" href="../signal/">Signal Decomposition</a></li></ul></li><li><a class="tocitem" href="../../guide/">User Guide</a></li><li><a class="tocitem" href="../../method/">Solution method</a></li><li><a class="tocitem" href="../../api/">API reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Markowitz Portfolio Optimization</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Markowitz Portfolio Optimization</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/tjdiamandis/GeNIOS.jl/blob/main/examples/portfolio.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><p>The source files for all examples can be found in <a href="https://github.com/tjdiamandis/GeNIOS.jl/tree/main/examples">/examples</a>.</p><h1 id="Markowitz-Portfolio-Optimization"><a class="docs-heading-anchor" href="#Markowitz-Portfolio-Optimization">Markowitz Portfolio Optimization</a><a id="Markowitz-Portfolio-Optimization-1"></a><a class="docs-heading-anchor-permalink" href="#Markowitz-Portfolio-Optimization" title="Permalink"></a></h1><p>This example shows how to solve a Markowitz portfolio optimization problem using both the generic and the QP interface of GeNIOS.</p><p>Specifically, we want to solve the problem</p><p class="math-container">\[\begin{array}{ll}
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Markowitz Portfolio Optimization · GeNIOS.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://tjdiamandis.github.io/GeNIOS.jl/examples/portfolio/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">GeNIOS.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../constrained-ls/">Constrained Least Squares</a></li><li><a class="tocitem" href="../huber/">Huber Fitting</a></li><li><a class="tocitem" href="../lasso/">Lasso</a></li><li><a class="tocitem" href="../logistic/">Logistic Regression</a></li><li class="is-active"><a class="tocitem" href>Markowitz Portfolio Optimization</a><ul class="internal"><li><a class="tocitem" href="#Generating-the-problem-data"><span>Generating the problem data</span></a></li><li><a class="tocitem" href="#Using-JuMP"><span>Using JuMP</span></a></li></ul></li></ul></li><li><span class="tocitem">Advanced Usage</span><ul><li><a class="tocitem" href="../../advanced/lasso/">Lasso, Three Ways</a></li><li><a class="tocitem" href="../../advanced/portfolio/">Markowitz Portfolio Optimization, Three Ways</a></li><li><a class="tocitem" href="../../advanced/signal/">Signal Decomposition</a></li></ul></li><li><a class="tocitem" href="../../guide/">User Guide</a></li><li><a class="tocitem" href="../../method/">Solution method</a></li><li><a class="tocitem" href="../../api/">API reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Markowitz Portfolio Optimization</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Markowitz Portfolio Optimization</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/tjdiamandis/GeNIOS.jl/blob/main/examples/standard/portfolio.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><p>The source files for all examples can be found in <a href="https://github.com/tjdiamandis/GeNIOS.jl/tree/main/examples">/examples</a>.</p><h1 id="Markowitz-Portfolio-Optimization"><a class="docs-heading-anchor" href="#Markowitz-Portfolio-Optimization">Markowitz Portfolio Optimization</a><a id="Markowitz-Portfolio-Optimization-1"></a><a class="docs-heading-anchor-permalink" href="#Markowitz-Portfolio-Optimization" title="Permalink"></a></h1><p>This example shows how to solve a Markowitz portfolio optimization problem using the QP interface of GeNIOS, acessed through <code>JuMP</code>.</p><p>Specifically, we want to solve the problem</p><p class="math-container">\[\begin{array}{ll}
 \text{minimize}     &amp; (1/2)\gamma x^T\Sigma x - \mu^Tx \\
 \text{subject to}   &amp; \mathbf{1}^Tx = 1 \\
                     &amp; x \geq 0,
 \end{array}\]</p><p>where <span>$\Sigma$</span> is the covariance matrix of the returns of the assets, <span>$\mu$</span> is the expected return of each asset, and <span>$\gamma$</span> is a risk adversion parameter. The variable <span>$x$</span> represents the fraction of the total wealth invested in each asset.</p><pre><code class="language-julia hljs">using GeNIOS
-using Random, LinearAlgebra, SparseArrays</code></pre><h2 id="Generating-the-problem-data"><a class="docs-heading-anchor" href="#Generating-the-problem-data">Generating the problem data</a><a id="Generating-the-problem-data-1"></a><a class="docs-heading-anchor-permalink" href="#Generating-the-problem-data" title="Permalink"></a></h2><p>Note that we generate the covariance matrix <span>$\Sigma$</span> as a diagonal plus low-rank matrix, which is a common model for financial data and referred to as a &#39;factor model&#39;</p><pre><code class="language-julia hljs">Random.seed!(1)
+using Random, LinearAlgebra, SparseArrays
+using JuMP</code></pre><h2 id="Generating-the-problem-data"><a class="docs-heading-anchor" href="#Generating-the-problem-data">Generating the problem data</a><a id="Generating-the-problem-data-1"></a><a class="docs-heading-anchor-permalink" href="#Generating-the-problem-data" title="Permalink"></a></h2><p>Note that we generate the covariance matrix <span>$\Sigma$</span> as a diagonal plus low-rank matrix, which is a common model for financial data and referred to as a &#39;factor model&#39;</p><pre><code class="language-julia hljs">Random.seed!(1)
 k = 5
 n = 100k
 # Σ = F*F&#39; + diag(d)
 F = sprandn(n, k, 0.5)
 d = rand(n) * sqrt(k)
 μ = randn(n)
-γ = 1;</code></pre><h2 id="QPSolver-interface"><a class="docs-heading-anchor" href="#QPSolver-interface">QPSolver interface</a><a id="QPSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#QPSolver-interface" title="Permalink"></a></h2><p>The easiest interface for this problem is the <code>QPSolver</code>, where we just need to specify <span>$P$</span>, <span>$q$</span>, <span>$M$</span>, <span>$l$</span>, and <span>$u$</span>. The Markowitz portfolio optimization problem is equivalent to the following &#39;standard form&#39; QP:</p><p class="math-container">\[\begin{array}{ll}
-\text{minimize}     &amp; (1/2)x^T(\gamma \Sigma) x + (-\mu)Tx \\
-\text{subject to}   &amp;
-\begin{bmatrix}1 \\ 0\end{bmatrix}
-\leq \begin{bmatrix} I \\ \mathbf{1}^T \end{bmatrix} x
-\leq \begin{bmatrix}\infty \\ 1\end{bmatrix}
-\end{array}\]</p><pre><code class="language-julia hljs">P = γ*(F*F&#39; + Diagonal(d))
-q = -μ
-M = vcat(I, ones(1, n))
-l = vcat(zeros(n), ones(1))
-u = vcat(Inf*ones(n), ones(1))
-solver = GeNIOS.QPSolver(P, q, M, l, u)
-res = solve!(solver; options=GeNIOS.SolverOptions(eps_abs=1e-6))
-println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
+γ = 1;
+Σ = F*F&#39; + Diagonal(d)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">500×500 SparseArrays.SparseMatrixCSC{Float64, Int64} with 192866 stored entries:
+⎡⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎤
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎢⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎥
+⎣⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⎦</code></pre><h2 id="Using-JuMP"><a class="docs-heading-anchor" href="#Using-JuMP">Using JuMP</a><a id="Using-JuMP-1"></a><a class="docs-heading-anchor-permalink" href="#Using-JuMP" title="Permalink"></a></h2><p>The easiest way to solve a QP using <code>GENIOS</code> is through <code>JuMP</code>. We can define the problem as follows:</p><pre><code class="language-julia hljs">model = Model(GeNIOS.Optimizer)
+@variable(model, x[1:n])
+@objective(model, Min, (γ/2)x&#39;*Σ*x - μ&#39;*x)
+@constraint(model, sum(x) == 1)
+@constraint(model, x .&gt;= 0)
+optimize!(model)
+
+println(&quot;Optimal value: $(round(objective_value(model), digits=4))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
 Setup in  0.000s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      0.000e+00            Inf            Inf      1.000e+00         0.000
-            1      0.000e+00      1.000e+00      3.201e+01      1.000e+00         0.008
-           25     -1.776e+01      3.933e-01      1.144e-01      1.000e+00         0.145
-           50     -8.561e+00      1.369e-01      2.939e-02      1.000e+00         0.250
-           75     -5.766e+00      7.509e-02      1.102e-02      1.000e+00         0.370
-          100     -4.648e+00      5.000e-02      5.181e-03      1.000e+00         0.496
-          125     -4.023e+00      3.519e-02      3.555e-03      1.000e+00         0.639
-          150     -3.573e+00      2.490e-02      2.505e-03      1.000e+00         0.777
-          175     -3.248e+00      1.765e-02      1.770e-03      1.000e+00         0.927
-          200     -3.015e+00      1.254e-02      1.253e-03      1.000e+00         1.083
-          225     -2.766e+00      7.535e-03      2.149e-03      2.000e+00         1.200
-          250     -2.647e+00      5.232e-03      1.257e-03      2.000e+00         1.317
-          275     -2.580e+00      3.797e-03      8.233e-04      2.000e+00         1.431
-          300     -2.537e+00      2.812e-03      5.819e-04      2.000e+00         1.544
-          325     -2.506e+00      3.321e-03      1.688e-03      2.000e+00         1.656
-          350     -2.479e+00      1.435e-03      2.732e-04      2.000e+00         1.764
-          375     -2.462e+00      1.612e-03      8.746e-04      2.000e+00         1.874
-          400     -2.450e+00      1.094e-03      6.069e-04      2.000e+00         1.985
-          425     -2.441e+00      7.139e-04      4.023e-04      2.000e+00         2.089
-          450     -2.436e+00      4.679e-04      2.663e-04      2.000e+00         2.197
-          475     -2.433e+00      3.078e-04      1.762e-04      2.000e+00         2.301
-          500     -2.430e+00      2.032e-04      1.167e-04      2.000e+00         2.399
-          525     -2.429e+00      1.347e-04      7.751e-05      2.000e+00         2.491
+            1      0.000e+00      1.000e+00      3.201e+01      1.000e+00         0.000
+           25     -1.776e+01      3.933e-01      1.144e-01      1.000e+00         0.026
+           50     -8.561e+00      1.369e-01      2.939e-02      1.000e+00         0.054
+           75     -5.766e+00      7.509e-02      1.102e-02      1.000e+00         0.083
+          100     -4.648e+00      5.000e-02      5.181e-03      1.000e+00         0.114
+          125     -4.023e+00      3.519e-02      3.555e-03      1.000e+00         0.146
+          150     -3.573e+00      2.490e-02      2.505e-03      1.000e+00         0.179
+          175     -3.248e+00      1.765e-02      1.770e-03      1.000e+00         0.214
+          200     -3.015e+00      1.254e-02      1.253e-03      1.000e+00         0.253
+          225     -2.766e+00      7.535e-03      2.149e-03      2.000e+00         0.281
+          250     -2.647e+00      5.232e-03      1.257e-03      2.000e+00         0.309
+          275     -2.580e+00      3.797e-03      8.233e-04      2.000e+00         0.343
+          300     -2.537e+00      2.812e-03      5.819e-04      2.000e+00         0.371
+          316     -2.516e+00      2.333e-03      4.704e-04      2.000e+00         0.391
 
-SOLVED in  2.492s, 525 iterations
-Total time:  2.492s
+SOLVED in  0.391s, 316 iterations
+Total time:  0.391s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Optimal value: -2.4289</code></pre><h3 id="Performance-improvements"><a class="docs-heading-anchor" href="#Performance-improvements">Performance improvements</a><a id="Performance-improvements-1"></a><a class="docs-heading-anchor-permalink" href="#Performance-improvements" title="Permalink"></a></h3><p>We can also define custom operators for <span>$P$</span> and <span>$M$</span> to speed up the computation. For <span>$M$</span>, we will use the <code>LinearMaps</code> package for convenience.</p><pre><code class="language- hljs"># P = γ*(F*F&#39; + Diagonal(d))
-struct FastP
-    F
-    d
-    γ
-    vk
-end
-function LinearAlgebra.mul!(y::AbstractVector, P::FastP, x::AbstractVector)
-    mul!(P.vk, P.F&#39;, x)
-    mul!(y, P.F, P.vk)
-    @. y += P.d*x
-    @. y *= P.γ
-    return nothing
-end
-P = FastP(F, d, γ, zeros(k))
-
-# M = vcat(I, ones(1, n))
-using LinearMaps
-M = vcat(LinearMap(I, n), ones(1, n))
-
-solver = GeNIOS.QPSolver(P, q, M, l, u);
-res = solve!(solver; options=GeNIOS.SolverOptions(eps_abs=1e-6));
-println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></pre><h3 id="Custom-M"><a class="docs-heading-anchor" href="#Custom-M">Custom M</a><a id="Custom-M-1"></a><a class="docs-heading-anchor-permalink" href="#Custom-M" title="Permalink"></a></h3><p>Of course, we can also define each needed operation for M ourselves, which may give an additional speedup for some matrices.</p><pre><code class="language- hljs">struct FastM
-    n::Int
-end
-Base.size(M::FastM) = (M.n+1, M.n)
-Base.size(M::FastM, d::Int) = d &lt;= 2 ? size(M)[d] : 1
-function LinearAlgebra.mul!(y::AbstractVector, M::FastM, x::AbstractVector)
-    y[1:M.n] .= x
-    y[end] = sum(x)
-    return nothing
-end
-LinearAlgebra.adjoint(M::FastM) = Adjoint{Float64, FastM}(M)
-function LinearAlgebra.mul!(x::AbstractVector{T}, M::Adjoint{T, FastM}, y::AbstractVector{T}) where T &lt;: Number
-    @. x = y[1:M.parent.n] + y[end]
-    return nothing
-end
-function LinearAlgebra.mul!(x::AbstractVector{T}, M::Adjoint{T, FastM}, y::AbstractVector{T}, α::T, β::T) where T &lt;: Number
-    @. x = α * ( y[1:M.parent.n] + y[end] ) + β * x
-    return nothing
-end
-M = FastM(n)
-solver = GeNIOS.QPSolver(P, q, M, l, u);
-res = solve!(solver; options=GeNIOS.SolverOptions(eps_abs=1e-6));
-println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></pre><h2 id="GenericSolver-interface"><a class="docs-heading-anchor" href="#GenericSolver-interface">GenericSolver interface</a><a id="GenericSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#GenericSolver-interface" title="Permalink"></a></h2><p>The <code>GenericSolver</code> interface is more flexible and allows for some speedups via an alternative problem splitting. We will solve the problem</p><p class="math-container">\[\begin{array}{ll}
-\text{minimize}     &amp; (1/2)\gamma x^T\Sigma x - \mu^Tx + I(z) \\
-\text{subject to}   &amp; -x + z = 0
-\end{array}\]</p><p>where <span>$I(z)$</span> is the indicator function for the set <span>$\{z \mid z \ge 0 \text{ and } \mathbf{1}^Tz = 1\}$</span>. The gradient and Hessian of <span>$f(x) = (1/2)\gamma x^T\Sigma x$</span> are easy to compute. The proximal operator of <span>$g(z) = I(z)$</span> is simply the projection on this set, which can be solved via a one-dimensional root-finding problem (see appendix ?? of [our paper]).</p><pre><code class="language-julia hljs"># f(x) = γ/2 xᵀ(FFᵀ + D)x - μᵀx
-function f(x, F, d, μ, γ, tmp)
-    mul!(tmp, F&#39;, x)
-    qf = sum(w-&gt;w^2, tmp)
-    qf += sum(i-&gt;d[i]*x[i]^2, 1:n)
-
-    return γ/2 * qf - dot(μ, x)
-end
-f(x) = f(x, F, d, μ, γ, zeros(k))
-
-#  ∇f(x) = γ(FFᵀ + D)x - μ
-function grad_f!(g, x, F, d, μ, γ, tmp)
-    mul!(tmp, F&#39;, x)
-    mul!(g, F, tmp)
-    @. g += d*x
-    @. g *= γ
-    @. g -= μ
-    return nothing
-end
-grad_f!(g, x) = grad_f!(g, x, F, d, μ, γ, zeros(k))
-
-# ∇²f(x) = γ(FFᵀ + D)
-struct HessianMarkowitz{T, S &lt;: AbstractMatrix{T}} &lt;: HessianOperator
-    F::S
-    d::Vector{T}
-    vk::Vector{T}
-end
-function LinearAlgebra.mul!(y, H::HessianMarkowitz, x)
-    mul!(H.vk, H.F&#39;, x)
-    mul!(y, H.F, H.vk)
-    @. y += d*x
-    return nothing
-end
-Hf = HessianMarkowitz(F, d, zeros(k))
-
-# g(z) = I(z)
-function g(z)
-    T = eltype(z)
-    return all(z .&gt;= zero(T)) &amp;&amp; abs(sum(z) - one(T)) &lt; 1e-6 ? 0 : Inf
-end
-function prox_g!(v, z, ρ)
-    z_max = maximum(w-&gt;abs(w), z)
-    l = -z_max - 1
-    u = z_max
-
-    # bisection search to find zero of F
-    while u - l &gt; 1e-8
-        m = (l + u) / 2
-        if sum(w-&gt;max(w - m, zero(eltype(z))), z) - 1 &gt; 0
-            l = m
-        else
-            u = m
-        end
-    end
-    ν = (l + u) / 2
-    @. v = max(z - ν, zero(eltype(z)))
-    return nothing
-end
-
-solver = GeNIOS.GenericSolver(
-    f, grad_f!, Hf,         # f(x)
-    g, prox_g!,             # g(z)
-    I, zeros(n)             # M, c: Mx + z = c
-)
-res = solve!(solver)
-println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.367s
-
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    Iteration        Obj Val       r_primal         r_dual              ρ           Time
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-            0            Inf            Inf            Inf      1.000e+00         0.000
-            1      0.000e+00      4.472e-02      2.292e+01      1.000e+00         0.388
-           25     -2.470e+00      2.727e-02      2.549e-03      1.000e+00         0.390
-           50     -2.454e+00      1.649e-02      1.653e-03      1.000e+00         0.394
-           75     -2.446e+00      1.042e-02      9.776e-04      1.000e+00         0.397
-          100     -2.440e+00      7.014e-03      5.876e-04      1.000e+00         0.400
-          125     -2.434e+00      3.987e-03      9.722e-04      2.000e+00         0.404
-          150     -2.431e+00      2.738e-03      4.543e-04      2.000e+00         0.409
-          164     -2.430e+00      2.239e-03      3.115e-04      2.000e+00         0.411
-
-SOLVED in  0.411s, 164 iterations
-Total time:  0.778s
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-Optimal value: -2.4295</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../logistic/">« Logistic Regression</a><a class="docs-footer-nextpage" href="../signal/">Signal Decomposition »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Tuesday 25 July 2023 14:21">Tuesday 25 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Optimal value: -2.5165</code></pre><p>Check out the portfolio optimization advanced example for performance improvements</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../logistic/">« Logistic Regression</a><a class="docs-footer-nextpage" href="../../advanced/lasso/">Lasso, Three Ways »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Tuesday 25 July 2023 22:45">Tuesday 25 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
