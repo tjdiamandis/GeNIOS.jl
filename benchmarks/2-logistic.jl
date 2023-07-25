@@ -111,7 +111,7 @@ function run_trial()
 
     # Reguarlization parameters
     λ1_max = norm(A_full'*b_full, Inf)
-    λ1 = 0.1*λ1_max
+    λ1 = 0.05*λ1_max
     λ2 = 0.0
 
     A = Diagonal(b_full) * A_full

@@ -265,7 +265,7 @@ timing_plt = plot(
     dpi=300,
     yticks=[1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3],
     xticks=[10^2.5, 1000, 10^3.5, 10000],
-    color=[:indigo :coral :coral],
+    color=[:mediumblue :coral :firebrick],
 )
 savefig(timing_plt, joinpath(FIGS_PATH, "3-huber-timing.pdf"))
 
@@ -302,10 +302,10 @@ resid_iter_plot = plot(;
     xlabel="Time (s)",
     legend=:topright,
 )
-add_to_plot!(resid_iter_plot, time_ml, log_ml.rp, "MLSolver primal", :indigo);
+add_to_plot!(resid_iter_plot, time_ml, log_ml.rp, "MLSolver primal", :mediumblue);
 add_to_plot!(resid_iter_plot, time_qp, log_qp.rp, "QPSolver primal", :coral);
 add_to_plot!(resid_iter_plot, time_qp_e, log_qp_e.rp, "QPSolver (exact) primal", :firebrick);
-add_to_plot!(resid_iter_plot, time_ml, log_ml.rd, "MLSolver dual", :indigo; style=:dash);
+add_to_plot!(resid_iter_plot, time_ml, log_ml.rd, "MLSolver dual", :mediumblue; style=:dash);
 add_to_plot!(resid_iter_plot, time_qp, log_qp.rd, "QPSolver dual", :coral; style=:dash);
 add_to_plot!(resid_iter_plot, time_qp_e, log_qp_e.rd, "QPSolver (exact) dual", :firebrick; style=:dash);
 resid_iter_plot
