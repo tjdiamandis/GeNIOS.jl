@@ -14,6 +14,7 @@ $$
 
 using GeNIOS
 using Random, LinearAlgebra, SparseArrays
+using JuMP
 
 #=
 ## Generating the problem data
@@ -24,7 +25,23 @@ Ad = sprandn(m, n, 0.7)
 b = randn(m);
 
 #=
-For convenience, we will introdudce a new variable $y = Ax - b$. 
+## Using JuMP
+We can model this problem using JuMP and then pass it to GeNIOS.
+=#
+model = JuMP.Model(GeNIOS.Optimizer)
+@variable(model, x[1:n])
+@objective(model, Min, sum((Ad*x - b).^2))
+@constraint(model, 0 .<= x)
+@constraint(model, x .<= 1)
+optimize!(model)
+
+## Show optimal objective value
+println("Optimal value: $(round(objective_value(model), digits=4))")
+
+#=
+## QPSolver interface
+To make the formulations match, we will introdudce a new variable $y = Ax - b$.
+(GeNIOS does not support constants in the objective function.) 
 The problem becomes
 
 $$
@@ -56,7 +73,7 @@ $$
 $$
 =#
 
-P = blockdiag(spzeros(n, n), sparse(I, m, m))
+P = blockdiag(spzeros(n, n), 2*sparse(I, m, m))
 q = spzeros(n + m)
 M = [
     Ad                  -sparse(I, m, m);
@@ -90,3 +107,4 @@ println("Is feasible? $feas")
 println("Least Squres RMSE = $(round(ls_residual, digits=8))")
 println("Primal residual: $(round(solver.rp_norm, digits=8))")
 println("Dual residual: $(round(solver.rd_norm, digits=8))")
+println("Optimal value: $(round(solver.obj_val, digits=4))")

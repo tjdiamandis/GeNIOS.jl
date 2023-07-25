@@ -19,7 +19,7 @@ function postprocess(content)
       """ * content
 end
 
-examples_path = joinpath(@__DIR__, "../examples/")
+examples_path = joinpath(@__DIR__, "../examples/standard/")
 examples = filter(x -> endswith(x, ".jl") && !in(x, EXCLUDED_EXAMPLES), readdir(examples_path))
 build_path =  joinpath(@__DIR__, "src", "examples/")
 
@@ -32,8 +32,22 @@ for example in examples
         credit = true
     )
 end
-
 examples_nav = fix_suffix.(joinpath.("examples", examples))
+
+advanced_path = joinpath(@__DIR__, "../examples/advanced/")
+advanced = filter(x -> endswith(x, ".jl") && !in(x, EXCLUDED_EXAMPLES), readdir(advanced_path))
+build_path_advanced =  joinpath(@__DIR__, "src", "advanced/")
+
+for example in advanced
+    Literate.markdown(
+        advanced_path * example, build_path_advanced;
+        preprocess = fix_math_md,
+        postprocess = postprocess,
+        flavor = Literate.DocumenterFlavor(),
+        credit = true
+    )
+end
+advanced_nav = fix_suffix.(joinpath.("advanced", readdir(joinpath(@__DIR__, "../examples/advanced"))))
 
 makedocs(;
     modules=[GeNIOS],
@@ -48,6 +62,7 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "Examples" => examples_nav,
+        "Advanced Usage" => advanced_nav,
         "User Guide" => "guide.md",
         "Solution method" => "method.md",
         "API reference" => "api.md"

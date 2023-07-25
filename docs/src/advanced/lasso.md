@@ -1,22 +1,27 @@
-#=
-# Lasso
-This example sets up a lasso regression problem with three different interfaces
-provided by GeNIOS.
+The source files for all examples can be found in [/examples](https://github.com/tjdiamandis/GeNIOS.jl/tree/main/examples).
+```@meta
+EditURL = "<unknown>/examples/advanced/lasso.jl"
+```
 
-Specifically, we want to solve the problem
-$$
+# Lasso, Three Ways
+This example shows how to use the `MLSolver`, `QPSolver`, and the `GenericSolver`
+interfaces to solve a lasso regression problem.
+
+The lasso regression problem is
+```math
 \begin{array}{ll}
 \text{minimize}     & (1/2)\|Ax - b\|_2^2 + \gamma \|x\|_1
 \end{array}
-$$
-=#
+```
 
+````@example lasso
 using GeNIOS
 using Random, LinearAlgebra, SparseArrays
+````
 
-#=
 ## Generating the problem data
-=#
+
+````@example lasso
 Random.seed!(1)
 m, n = 200, 400
 A = randn(m, n)
@@ -24,83 +29,69 @@ A .-= sum(A, dims=1) ./ m
 normalize!.(eachcol(A))
 xstar = sprandn(n, 0.1)
 b = A*xstar + 1e-3*randn(m)
-γ = 0.05*norm(A'*b, Inf)
+λ = 0.05*norm(A'*b, Inf)
+````
 
-#=
-## LassoSolver interface
-The easiest interface for this problem is the `LassoSolver`, where we just need to
-specify the regularization parameter (in addition to the problem data).
-=#
-λ1 = γ
-solver = GeNIOS.LassoSolver(λ1, A, b)
-res = solve!(solver; options=GeNIOS.SolverOptions(use_dual_gap=true, dual_gap_tol=1e-4, verbose=true))
-rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
-println("Final RMSE: $(round(rmse, digits=8))")
-
-#=
 ## MLSolver interface
-Under the hood, this is just a wrapper around the `MLSolver` interface.
-This interface is more general, and allows us to specify the objective function.
-=#
-f(x) = 0.5*x^2 
-df(x) = x
-d2f(x) = 1.0
-fconj(x) = 0.5*x^2
-λ1 = γ
-λ2 = 0.0
-solver = GeNIOS.MLSolver(f, df, d2f, λ1, λ2, A, b; fconj=fconj)
-res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, dual_gap_tol=1e-3, verbose=true))
-rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
-println("Final RMSE: $(round(rmse, digits=8))")
-
-#=
-Note that we also defined the conjugate function of $f$, defined as
-
-$$
+The `MLSolver` interface requires the per-sample loss and (optionally) its
+conjugate, if we want to use the dual gap as a stopping criterion (discussed in
+our paper).
+The conjugate function of $f$, defined as
+```math
 f^*(y) = \sup_x \{yx - f(x)\},
-$$
-which allows us to use the dual gap as a stopping criterion (see appendix C of
-our paper for a derivation). Specifying the conjugate function is optional, and
+```
+Specifying the conjugate function is optional, and
 the solver will fall back to using the primal and dual residuals if it is not
 specified.
 
-### Automatic differentiation
-Note that we can also let the solver use forward-mode automatic differentiation
-to compute the first and second derivatives of $f$. The interface is the same,
-but we drop these arguments:
-=#
+````@example lasso
+f(x) = 0.5*x^2
+fconj(x) = 0.5*x^2
+λ1 = λ
+λ2 = 0.0
 solver = GeNIOS.MLSolver(f, λ1, λ2, A, b; fconj=fconj)
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, dual_gap_tol=1e-3, verbose=true))
 rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
 println("Final RMSE: $(round(rmse, digits=8))")
+````
 
+Note that the solver uses forward-mode automatic differentiation
+to compute the first and second derivatives of $f$. We can supply these arguments
+for additional speedup, if desired.
 
-#=
+````@example lasso
+df(x) = x
+d2f(x) = 1.0
+solver = GeNIOS.MLSolver(f, df, d2f, λ1, λ2, A, b; fconj=fconj)
+res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, dual_gap_tol=1e-3, verbose=true))
+rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
+println("Final RMSE: $(round(rmse, digits=8))")
+````
+
 ## QPSolver interface
 The `QPSolver` interface requires us to specify the problem in the form
-$$
+```math
 \begin{array}{ll}
 \text{minimize}     & (1/2)x^TPx + q^Tx \\
 \text{subject to}   &  l \leq Mx \leq u
 \end{array}
-$$
+```
 We introduce the new variable $t$ and inntroduce the constraint
 $-t \leq x \leq t$ to enforce the $\ell_1$ norm. The problem then becomes
 
-$$
+```math
 \begin{array}{ll}
 \text{minimize}     & (1/2)x^TA^TAx + b^TAx + \gamma \mathbf{1}^Tt \\
-\text{subject to}   &  
-\begin{bmatrix}0 \\ -\infty\end{bmatrix} 
-\leq \begin{bmatrix} I & I \\ I & -I \end{bmatrix} \begin{bmatrix}x \\ t\end{bmatrix}  
+\text{subject to}   &
+\begin{bmatrix}0 \\ -\infty\end{bmatrix}
+\leq \begin{bmatrix} I & I \\ I & -I \end{bmatrix} \begin{bmatrix}x \\ t\end{bmatrix}
 \leq \begin{bmatrix}\infty \\ 0\end{bmatrix}
 \end{array}
-$$
+```
 
-=#
-
+````@example lasso
 P = blockdiag(sparse(A'*A), spzeros(n, n))
-q = vcat(-A'*b, γ*ones(n))
+q = vcat(-A'*b, λ*ones(n))
 M = [
     sparse(I, n, n)     sparse(I, n, n);
     sparse(I, n, n)     -sparse(I, n, n)
@@ -110,16 +101,16 @@ u = [Inf*ones(n); zeros(n)]
 solver = GeNIOS.QPSolver(P, q, M, l, u)
 res = solve!(
     solver; options=GeNIOS.SolverOptions(
-        relax=true, 
-        max_iters=1000, 
-        eps_abs=1e-4, 
-        eps_rel=1e-4, 
+        relax=true,
+        max_iters=1000,
+        eps_abs=1e-4,
+        eps_rel=1e-4,
         verbose=true)
 );
 rmse = sqrt(1/m*norm(A*solver.xk[1:n] - b, 2)^2)
 println("Final RMSE: $(round(rmse, digits=8))")
+````
 
-#=
 ## Generic interface
 Finally, we use the generic interface, which provides a large amount of control
 but is more complicated to use than the specialized interfaces demonstrated above.
@@ -130,9 +121,10 @@ this operator is simple for the Lasso problem. However, note that, since this
 is a custom type, we can speed up the multiplication to be more efficient than
 if we were to use $A^TA$ directly.
 
-The `update!` function is called before the solution of the $x$-subproblem to 
+The `update!` function is called before the solution of the $x$-subproblem to
 update the Hessian, if necessary.
-=#
+
+````@example lasso
 struct HessianLasso{T, S <: AbstractMatrix{T}} <: HessianOperator
     A::S
     vm::Vector{T}
@@ -146,10 +138,11 @@ end
 function update!(::HessianLasso, ::Solver)
     return nothing
 end
+````
 
-#=
 Now, we define $f$, its gradient, $g$, and its proximal operator.
-=#
+
+````@example lasso
 function f(x, A, b, tmp)
     mul!(tmp, A, x)
     @. tmp -= b
@@ -164,16 +157,17 @@ function grad_f!(g, x, A, b, tmp)
 end
 grad_f!(g, x) = grad_f!(g, x, A, b, zeros(m))
 Hf = HessianLasso(A, zeros(m))
-g(z, γ) = γ*sum(x->abs(x), z)
-g(z) = g(z, γ)
+g(z, λ) = λ*sum(x->abs(x), z)
+g(z) = g(z, λ)
 function prox_g!(v, z, ρ)
     @inline soft_threshold(x::T, κ::T) where {T <: Real} = sign(x) * max(zero(T), abs(x) - κ)
-    v .= soft_threshold.(z, γ/ρ)
+    v .= soft_threshold.(z, λ/ρ)
 end
+````
 
-#=
 Finally, we can solve the problem.
-=#
+
+````@example lasso
 solver = GeNIOS.GenericSolver(
     f, grad_f!, Hf,         # f(x)
     g, prox_g!,             # g(z)
@@ -182,19 +176,19 @@ solver = GeNIOS.GenericSolver(
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, verbose=true))
 rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
 println("Final RMSE: $(round(rmse, digits=8))")
+````
 
-
-#=
 ## ProximalOperators.jl
 We could alternatively use `ProximalOperators.jl` to define the proximal operator
 for g:
-=#
+
+````@example lasso
 using ProximalOperators
-prox_func = NormL1(γ)
+prox_func = NormL1(λ)
 gp(x) = prox_func(x)
 prox_gp!(v, z, ρ) = prox!(v, prox_func, z, ρ)
 
-## We see that this give the same result
+# We see that this give the same result
 solver = GeNIOS.GenericSolver(
     f, grad_f!, Hf,         # f(x)
     gp, prox_gp!,             # g(z)
@@ -203,3 +197,9 @@ solver = GeNIOS.GenericSolver(
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, verbose=true))
 rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
 println("Final RMSE: $(round(rmse, digits=8))")
+````
+
+---
+
+*This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
+

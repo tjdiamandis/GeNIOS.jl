@@ -19,7 +19,16 @@ Pages = [
     "examples/lasso.md",
     "examples/logistic.md",
     "examples/portfolio.md",
-    "examples/signal.md",
+]
+Depth = 1
+```
+
+#### Advanced Usage:
+```@contents
+Pages = [
+    "advanced/lasso.md",
+    "advanced/portfolio.md",
+    "advanced/signal.md"
 ]
 Depth = 1
 ```
