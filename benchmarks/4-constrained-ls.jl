@@ -15,7 +15,7 @@ SAVEFILE = joinpath(SAVEPATH, "4-constrained-ls.jld2")
 FIGS_PATH = joinpath(@__DIR__, "figures")
 
 n = 10_000
-m, 2n
+m = 2n
 P, q, A, l, u = construct_problem_constrained_ls(get_augmented_data(m, n, DATAFILE)...)
 
 # compile
