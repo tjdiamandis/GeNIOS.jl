@@ -20,8 +20,6 @@ $$
 \end{array}
 $$
 =#
-using Pkg
-Pkg.activate(joinpath(@__DIR__, "..", ".."))
 
 using GeNIOS
 using Random, LinearAlgebra, SparseArrays
@@ -39,32 +37,28 @@ b = A*xstar + 1e-3*randn(N)
 
 ## Add outliers
 b += 10*collect(sprand(N, 0.05))
-γ = 0.05*norm(A'*b, Inf)
+λ = 0.05*norm(A'*b, Inf)
 
 #=
 ## MLSolver interface
 We just need to specify $f$ and the regularization parameters.
 =#
 
-## Huber problem: min ∑ fʰᵘᵇ(aᵢᵀx - bᵢ) + γ||x||₁
+## Huber problem: min ∑ fʰᵘᵇ(aᵢᵀx - bᵢ) + λ||x||₁
 f(x) = abs(x) <= 1 ? 0.5*x^2 : abs(x) - 0.5
-df(x) = abs(x) <= 1 ? x : sign(x)
-d2f(x) = abs(x) <= 1 ? 1 : 0
-λ1 = γ
+λ1 = λ
 λ2 = 0.0
-solver = GeNIOS.MLSolver(f, df, d2f, λ1, λ2, A, b)
-res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=false, verbose=true))
+solver = GeNIOS.MLSolver(f, λ1, λ2, A, b)
+res = solve!(solver; options=GeNIOS.SolverOptions(use_dual_gap=false))
 rmse = sqrt(1/N*norm(A*solver.zk - b, 2)^2)
 println("Final RMSE: $(round(rmse, digits=8))")
 
 #=
-### Automatic differentiation
-We could have let the solver figure out the derivatives for us as well:
+## Duality gap
+However, we can supply the conjugate function if we want to use the duality gap.
 =#
-f(x) = abs(x) <= 1 ? 0.5*x^2 : abs(x) - 0.5
-λ1 = γ
-λ2 = 0.0
-solver = GeNIOS.MLSolver(f, λ1, λ2, A, b)
-res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=false, verbose=true))
+fconj(y) = y > 1 ? Inf : y^2/2.0
+solver = GeNIOS.MLSolver(f, λ1, λ2, A, b; fconj=fconj)
+res = solve!(solver; options=GeNIOS.SolverOptions(use_dual_gap=true))
 rmse = sqrt(1/N*norm(A*solver.zk - b, 2)^2)
 println("Final RMSE: $(round(rmse, digits=8))")
