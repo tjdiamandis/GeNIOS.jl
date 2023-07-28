@@ -87,14 +87,7 @@ u = [b; ones(n)];
 Now we setup the solver and solve the problem
 =#
 solver = GeNIOS.QPSolver(P, q, M, l, u)
-res = solve!(
-    solver; options=GeNIOS.SolverOptions(
-        relax=true, 
-        max_iters=1000, 
-        eps_abs=1e-6, 
-        eps_rel=1e-6, 
-        verbose=true)
-);
+res = solve!(solver)
 
 #=
 ## Examining the solution

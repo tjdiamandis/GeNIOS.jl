@@ -206,7 +206,7 @@ end
 solver = GeNIOS.GenericSolver(
     f, grad_f!, Hf,         # f(x)
     g, prox_g!,             # g(z)
-    I, zeros(n)             # M, c: Mx + z = c
+    I, zeros(n)             # M, c: Mx - z = c
 )
 res = solve!(solver)
 println("Optimal value: $(round(solver.obj_val, digits=4))")
