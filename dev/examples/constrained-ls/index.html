@@ -23,16 +23,16 @@ Setup in  0.000s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      0.000e+00            Inf            Inf      1.000e+00         0.000
             1      0.000e+00      0.000e+00      3.992e+01      1.000e+00         0.000
-           25     -1.407e+01      2.512e-01      2.207e-02      1.000e+00         0.135
-           50     -1.186e+01      1.023e-01      5.777e-03      1.000e+00         0.137
-           75     -1.069e+01      3.059e-02      4.896e-03      2.000e+00         0.139
-          100     -1.043e+01      1.195e-02      1.446e-03      2.000e+00         0.141
-          125     -1.035e+01      5.224e-03      5.197e-04      2.000e+00         0.143
-          150     -1.032e+01      2.165e-03      1.974e-04      2.000e+00         0.145
-          164     -1.031e+01      7.356e-04      2.667e-04      4.000e+00         0.146
+           25     -1.407e+01      2.512e-01      2.210e-02      1.000e+00         0.095
+           50     -1.186e+01      1.023e-01      5.779e-03      1.000e+00         0.096
+           75     -1.069e+01      3.057e-02      4.897e-03      2.000e+00         0.097
+          100     -1.043e+01      1.194e-02      1.446e-03      2.000e+00         0.098
+          125     -1.035e+01      5.217e-03      5.192e-04      2.000e+00         0.099
+          150     -1.032e+01      2.162e-03      1.972e-04      2.000e+00         0.100
+          164     -1.031e+01      7.345e-04      2.664e-04      4.000e+00         0.101
 
-SOLVED in  0.146s, 164 iterations
-Total time:  0.146s
+SOLVED in  0.101s, 164 iterations
+Total time:  0.101s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 Optimal value: 15.3832</code></pre><h2 id="QPSolver-interface"><a class="docs-heading-anchor" href="#QPSolver-interface">QPSolver interface</a><a id="QPSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#QPSolver-interface" title="Permalink"></a></h2><p>To make the formulations match, we will introdudce a new variable <span>$y = Ax - b$</span>. (GeNIOS does not support constants in the objective function.) The problem becomes</p><p class="math-container">\[\begin{array}{ll}
@@ -57,33 +57,13 @@ M = [
 ]
 l = [b; spzeros(n)]
 u = [b; ones(n)];</code></pre><h2 id="Building-and-solving-the-problem"><a class="docs-heading-anchor" href="#Building-and-solving-the-problem">Building and solving the problem</a><a id="Building-and-solving-the-problem-1"></a><a class="docs-heading-anchor-permalink" href="#Building-and-solving-the-problem" title="Permalink"></a></h2><p>Now we setup the solver and solve the problem</p><pre><code class="language-julia hljs">solver = GeNIOS.QPSolver(P, q, M, l, u)
-res = solve!(
-    solver; options=GeNIOS.SolverOptions(
-        relax=true,
-        max_iters=1000,
-        eps_abs=1e-6,
-        eps_rel=1e-6,
-        verbose=true)
-);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.016s
-
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    Iteration        Obj Val       r_primal         r_dual              ρ           Time
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-            0      0.000e+00            Inf            Inf      1.000e+00         0.000
-            1      0.000e+00      5.069e+00      2.059e+01      1.000e+00         0.392
-           25      1.130e+01      2.630e-01      8.347e-03      1.000e+00         0.394
-           50      1.361e+01      1.095e-01      2.381e-03      1.000e+00         0.396
-           75      1.494e+01      3.281e-02      2.082e-03      2.000e+00         0.397
-          100      1.524e+01      1.287e-02      6.199e-04      2.000e+00         0.399
-          125      1.537e+01      2.686e-03      3.544e-04      4.000e+00         0.401
-          150      1.539e+01      4.864e-04      1.318e-04      4.000e+00         0.403
-          175      1.539e+01      4.479e-05      1.214e-05      4.000e+00         0.405
-          189      1.539e+01      1.178e-05      3.194e-06      4.000e+00         0.406
-
-SOLVED in  0.406s, 189 iterations
-Total time:  0.423s
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</code></pre><h2 id="Examining-the-solution"><a class="docs-heading-anchor" href="#Examining-the-solution">Examining the solution</a><a id="Examining-the-solution-1"></a><a class="docs-heading-anchor-permalink" href="#Examining-the-solution" title="Permalink"></a></h2><p>We can check the solution and its optimality</p><pre><code class="language-julia hljs">xstar = solver.zk[m+1:end]
+res = solve!(solver)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">--- GeNIOSResult ---
+Status:      OPTIMAL
+Obj. val:   15.38
+num iters:  140
+setup time: 0.011s
+solve time: 0.285s
+</code></pre><h2 id="Examining-the-solution"><a class="docs-heading-anchor" href="#Examining-the-solution">Examining the solution</a><a id="Examining-the-solution-1"></a><a class="docs-heading-anchor-permalink" href="#Examining-the-solution" title="Permalink"></a></h2><p>We can check the solution and its optimality</p><pre><code class="language-julia hljs">xstar = solver.zk[m+1:end]
 ls_residual =  1/√(m) * norm(Ad*xstar - b)
 feas = all(xstar .&gt;= 0) &amp;&amp; all(xstar .&lt;= 1)
 println(&quot;Is feasible? $feas&quot;)
@@ -91,7 +71,7 @@ println(&quot;Least Squres RMSE = $(round(ls_residual, digits=8))&quot;)
 println(&quot;Primal residual: $(round(solver.rp_norm, digits=8))&quot;)
 println(&quot;Dual residual: $(round(solver.rd_norm, digits=8))&quot;)
 println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Is feasible? true
-Least Squres RMSE = 0.71620899
-Primal residual: 1.178e-5
-Dual residual: 3.19e-6
-Optimal value: 15.3886</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../huber/">Huber Fitting »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Tuesday 25 July 2023 22:45">Tuesday 25 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Least Squres RMSE = 0.71620903
+Primal residual: 0.00114968
+Dual residual: 0.00031191
+Optimal value: 15.3831</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../huber/">Huber Fitting »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Friday 28 July 2023 15:11">Friday 28 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
