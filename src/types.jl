@@ -405,6 +405,7 @@ end
     init_sketch_size::Int = 50                      # param : preconditioner rank
     use_adaptive_sketch::Bool = false
     adaptive_sketch_tol::Float64 = eps()
+    linsys_exponent::T = 1.2
 end
 
 function Base.show(io::IO, options::SolverOptions)

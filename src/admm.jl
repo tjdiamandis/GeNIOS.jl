@@ -259,7 +259,7 @@ function update_x!(
     #         sqrt(solver.rp_norm * solver.rd_norm), options.linsys_max_tol)
     # )
     geomean_resid = sqrt(solver.rp_norm * solver.rd_norm)
-    linsys_tol = max(sqrt(eps()), min(geomean_resid, one(T)) / t^1.5)
+    linsys_tol = max(sqrt(eps()), min(geomean_resid, one(T)) / t^options.linsys_exponent)
 
     # warm start if past first iteration
     !isinf(solver.rp_norm) && warm_start!(linsys_solver, solver.xk)
