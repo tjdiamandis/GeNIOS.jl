@@ -76,6 +76,16 @@ passed to `solve!`:
 - `norm_type::Real` 
     - Norm to use for convergence criteria
     - default value: `2`
+- `infeas_check_iter`
+    - Frequency at which infeasibility is checked
+    - default value: `25`
+- `num_threads`
+    - Number of threads used for BLAS operations
+    - default value: `Sys.CPU_THREADS`
+- `linsys_exponent`
+    - Parameter that controls the inexactness in the x-subproblem solve.
+    - default value: `1.2`
+
 
 ### Nyström PCG Parameters
 A subset of the `SolverOptions` parameters deal with the preconditioner directly:
