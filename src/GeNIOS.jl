@@ -9,11 +9,13 @@ using StaticArrays
 using LogExpFunctions: log1pexp, logistic
 using ForwardDiff:derivative
 using Requires: @require
+# using LinearMaps
 
 const RP = RandomizedPreconditioners
 
 include("linsys.jl")
 include("cones.jl")
+include("constraints.jl")
 include("types.jl")
 include("utils.jl")
 include("admm.jl")

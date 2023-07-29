@@ -17,6 +17,10 @@ end
     include("infeas.jl")
 end
 
+@testset "Conic Intercace" begin
+    include("constraints.jl")
+end
+
 @testset "MOI" begin
     include("MOI_wrapper.jl")
 end

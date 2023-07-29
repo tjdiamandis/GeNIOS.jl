@@ -37,6 +37,25 @@ function in_recession_cone(x::AbstractVector{T}, K::ProductCone, tol::T) where {
     return true
 end
 
+struct ZeroCone <: Cone
+    n::Int
+end
+Base.length(K::ZeroCone) = K.n
+
+function project!(x::AbstractVector{T}, ::ZeroCone, y::AbstractVector{T}) where {T}
+    @. x = zero(T)
+    return nothing
+end
+
+function support(x::AbstractVector{T}, ::ZeroCone) where {T}
+    return zero(T)
+end
+
+function in_recession_cone(x::AbstractVector{T}, ::ZeroCone, tol::T) where {T}
+    return all(w->isapprox(w, zero(T), atol=tol), x)
+end
+
+
 # TODO: separate zero cone??
 struct IntervalCone{T} <: Cone
     l::AbstractVector{T}
