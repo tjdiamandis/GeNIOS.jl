@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Markowitz Portfolio Optimization, Three Ways · GeNIOS.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://tjdiamandis.github.io/GeNIOS.jl/advanced/portfolio/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">GeNIOS.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../examples/constrained-ls/">Constrained Least Squares</a></li><li><a class="tocitem" href="../../examples/huber/">Huber Fitting</a></li><li><a class="tocitem" href="../../examples/lasso/">Lasso</a></li><li><a class="tocitem" href="../../examples/logistic/">Logistic Regression</a></li><li><a class="tocitem" href="../../examples/portfolio/">Markowitz Portfolio Optimization</a></li></ul></li><li><span class="tocitem">Advanced Usage</span><ul><li><a class="tocitem" href="../lasso/">Lasso, Three Ways</a></li><li class="is-active"><a class="tocitem" href>Markowitz Portfolio Optimization, Three Ways</a><ul class="internal"><li><a class="tocitem" href="#Generating-the-problem-data"><span>Generating the problem data</span></a></li><li><a class="tocitem" href="#QPSolver-interface"><span>QPSolver interface</span></a></li><li><a class="tocitem" href="#GenericSolver-interface"><span>GenericSolver interface</span></a></li></ul></li><li><a class="tocitem" href="../signal/">Signal Decomposition</a></li></ul></li><li><a class="tocitem" href="../../guide/">User Guide</a></li><li><a class="tocitem" href="../../method/">Solution method</a></li><li><a class="tocitem" href="../../api/">API reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Advanced Usage</a></li><li class="is-active"><a href>Markowitz Portfolio Optimization, Three Ways</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Markowitz Portfolio Optimization, Three Ways</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/tjdiamandis/GeNIOS.jl/blob/main/examples/advanced/portfolio.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><p>The source files for all examples can be found in <a href="https://github.com/tjdiamandis/GeNIOS.jl/tree/main/examples">/examples</a>.</p><h1 id="Markowitz-Portfolio-Optimization,-Three-Ways"><a class="docs-heading-anchor" href="#Markowitz-Portfolio-Optimization,-Three-Ways">Markowitz Portfolio Optimization, Three Ways</a><a id="Markowitz-Portfolio-Optimization,-Three-Ways-1"></a><a class="docs-heading-anchor-permalink" href="#Markowitz-Portfolio-Optimization,-Three-Ways" title="Permalink"></a></h1><p>This example shows how to solve a Markowitz portfolio optimization problem using both the <code>GenericSolver</code> and the <code>QPSolver</code>.</p><p>Specifically, we want to solve the problem</p><p class="math-container">\[\begin{array}{ll}
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Markowitz Portfolio Optimization, Three Ways · GeNIOS.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://tjdiamandis.github.io/GeNIOS.jl/advanced/portfolio/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">GeNIOS.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../examples/constrained-ls/">Constrained Least Squares</a></li><li><a class="tocitem" href="../../examples/huber/">Huber Fitting</a></li><li><a class="tocitem" href="../../examples/lasso/">Lasso</a></li><li><a class="tocitem" href="../../examples/logistic/">Logistic Regression</a></li><li><a class="tocitem" href="../../examples/portfolio/">Markowitz Portfolio Optimization</a></li></ul></li><li><span class="tocitem">Advanced Usage</span><ul><li><a class="tocitem" href="../lasso/">Lasso, Three Ways</a></li><li class="is-active"><a class="tocitem" href>Markowitz Portfolio Optimization, Three Ways</a><ul class="internal"><li><a class="tocitem" href="#Generating-the-problem-data"><span>Generating the problem data</span></a></li><li><a class="tocitem" href="#QPSolver-interface"><span>QPSolver interface</span></a></li><li><a class="tocitem" href="#GenericSolver-interface"><span>GenericSolver interface</span></a></li></ul></li><li><a class="tocitem" href="../signal/">Signal Decomposition</a></li></ul></li><li><a class="tocitem" href="../../guide/">User Guide</a></li><li><a class="tocitem" href="../../method/">Solution method</a></li><li><a class="tocitem" href="../../api/">API reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Advanced Usage</a></li><li class="is-active"><a href>Markowitz Portfolio Optimization, Three Ways</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Markowitz Portfolio Optimization, Three Ways</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/tjdiamandis/GeNIOS.jl/blob/main/examples/advanced/portfolio.jl#L" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><p>The source files for all examples can be found in <a href="https://github.com/tjdiamandis/GeNIOS.jl/tree/main/examples">/examples</a>.</p><h1 id="Markowitz-Portfolio-Optimization,-Three-Ways"><a class="docs-heading-anchor" href="#Markowitz-Portfolio-Optimization,-Three-Ways">Markowitz Portfolio Optimization, Three Ways</a><a id="Markowitz-Portfolio-Optimization,-Three-Ways-1"></a><a class="docs-heading-anchor-permalink" href="#Markowitz-Portfolio-Optimization,-Three-Ways" title="Permalink"></a></h1><p>This example shows how to solve a Markowitz portfolio optimization problem using both the <code>GenericSolver</code> and the <code>QPSolver</code>.</p><p>Specifically, we want to solve the problem</p><p class="math-container">\[\begin{array}{ll}
 \text{minimize}     &amp; (1/2)\gamma x^T\Sigma x - \mu^Tx \\
 \text{subject to}   &amp; \mathbf{1}^Tx = 1 \\
                     &amp; x \geq 0,
@@ -31,31 +31,31 @@ Setup in  0.000s
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      0.000e+00            Inf            Inf      1.000e+00         0.000
-            1      0.000e+00      1.000e+00      3.201e+01      1.000e+00         0.008
-           25     -1.797e+01      4.020e-01      1.158e-01      1.000e+00         0.177
-           50     -8.619e+00      1.382e-01      2.990e-02      1.000e+00         0.282
-           75     -5.790e+00      7.561e-02      1.113e-02      1.000e+00         0.402
-          100     -4.660e+00      5.029e-02      5.211e-03      1.000e+00         0.524
-          125     -4.031e+00      3.538e-02      3.575e-03      1.000e+00         0.648
-          150     -3.579e+00      2.503e-02      2.518e-03      1.000e+00         0.782
-          175     -3.252e+00      1.774e-02      1.780e-03      1.000e+00         0.917
-          200     -3.017e+00      1.260e-02      1.260e-03      1.000e+00         1.067
-          225     -2.767e+00      7.557e-03      2.159e-03      2.000e+00         1.192
-          250     -2.647e+00      5.244e-03      1.261e-03      2.000e+00         1.315
-          275     -2.581e+00      3.806e-03      8.251e-04      2.000e+00         1.437
-          300     -2.537e+00      2.818e-03      5.831e-04      2.000e+00         1.558
-          325     -2.506e+00      3.328e-03      1.692e-03      2.000e+00         1.683
-          350     -2.479e+00      1.438e-03      2.737e-04      2.000e+00         1.806
-          375     -2.462e+00      1.615e-03      8.766e-04      2.000e+00         1.938
-          400     -2.450e+00      1.097e-03      6.082e-04      2.000e+00         2.058
-          425     -2.441e+00      7.153e-04      4.032e-04      2.000e+00         2.182
-          450     -2.436e+00      4.688e-04      2.668e-04      2.000e+00         2.302
-          475     -2.433e+00      3.084e-04      1.766e-04      2.000e+00         2.415
-          500     -2.430e+00      2.036e-04      1.170e-04      2.000e+00         2.520
-          525     -2.429e+00      1.349e-04      7.764e-05      2.000e+00         2.625
+            1      0.000e+00      1.000e+00      3.201e+01      1.000e+00         0.007
+           25     -1.797e+01      4.020e-01      1.158e-01      1.000e+00         0.114
+           50     -8.619e+00      1.382e-01      2.990e-02      1.000e+00         0.194
+           75     -5.790e+00      7.561e-02      1.113e-02      1.000e+00         0.294
+          100     -4.660e+00      5.029e-02      5.211e-03      1.000e+00         0.388
+          125     -4.031e+00      3.538e-02      3.575e-03      1.000e+00         0.482
+          150     -3.579e+00      2.503e-02      2.518e-03      1.000e+00         0.586
+          175     -3.252e+00      1.774e-02      1.780e-03      1.000e+00         0.690
+          200     -3.017e+00      1.260e-02      1.260e-03      1.000e+00         0.804
+          225     -2.767e+00      7.557e-03      2.159e-03      2.000e+00         0.899
+          250     -2.647e+00      5.244e-03      1.261e-03      2.000e+00         0.994
+          275     -2.581e+00      3.806e-03      8.251e-04      2.000e+00         1.089
+          300     -2.537e+00      2.818e-03      5.831e-04      2.000e+00         1.184
+          325     -2.506e+00      3.328e-03      1.692e-03      2.000e+00         1.283
+          350     -2.479e+00      1.438e-03      2.737e-04      2.000e+00         1.372
+          375     -2.462e+00      1.615e-03      8.766e-04      2.000e+00         1.461
+          400     -2.450e+00      1.097e-03      6.082e-04      2.000e+00         1.549
+          425     -2.441e+00      7.153e-04      4.032e-04      2.000e+00         1.638
+          450     -2.436e+00      4.688e-04      2.668e-04      2.000e+00         1.728
+          475     -2.433e+00      3.084e-04      1.766e-04      2.000e+00         1.824
+          500     -2.430e+00      2.036e-04      1.170e-04      2.000e+00         1.905
+          525     -2.429e+00      1.349e-04      7.764e-05      2.000e+00         1.983
 
-SOLVED in  2.626s, 525 iterations
-Total time:  2.626s
+SOLVED in  1.983s, 525 iterations
+Total time:  1.983s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 Optimal value: -2.4289</code></pre><h3 id="Performance-improvements"><a class="docs-heading-anchor" href="#Performance-improvements">Performance improvements</a><a id="Performance-improvements-1"></a><a class="docs-heading-anchor-permalink" href="#Performance-improvements" title="Permalink"></a></h3><p>We can also define custom operators for <span>$P$</span> and <span>$M$</span> to speed up the computation. For this, we will use <code>LinearMaps.jl</code>, which allows us to build these operators without ever explicitly constructing the final matrices.</p><p>If we don&#39;t implement <code>size</code> for all objects passed to the solver, we need set <code>check_dims</code> to <code>false</code>.</p><pre><code class="language-julia hljs">using LinearMaps
@@ -69,37 +69,37 @@ M = vcat(LinearMap(I, n), ones(1, n))
 solver = GeNIOS.QPSolver(P, q, M, l, u; check_dims=false);
 res = solve!(solver; options=GeNIOS.SolverOptions(eps_abs=1e-6));
 println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.381s
+Setup in  0.307s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      0.000e+00            Inf            Inf      1.000e+00         0.000
-            1      0.000e+00      1.000e+00      3.201e+01      1.000e+00         0.850
-           25     -1.797e+01      4.020e-01      1.158e-01      1.000e+00         1.840
-           50     -8.619e+00      1.382e-01      2.990e-02      1.000e+00         1.843
-           75     -5.790e+00      7.561e-02      1.113e-02      1.000e+00         1.847
-          100     -4.660e+00      5.029e-02      5.211e-03      1.000e+00         1.852
-          125     -4.031e+00      3.538e-02      3.575e-03      1.000e+00         1.857
-          150     -3.579e+00      2.503e-02      2.518e-03      1.000e+00         1.862
-          175     -3.252e+00      1.774e-02      1.780e-03      1.000e+00         1.868
-          200     -3.017e+00      1.260e-02      1.260e-03      1.000e+00         1.874
-          225     -2.767e+00      7.557e-03      2.159e-03      2.000e+00         1.879
-          250     -2.647e+00      5.244e-03      1.261e-03      2.000e+00         1.884
-          275     -2.581e+00      3.806e-03      8.251e-04      2.000e+00         1.890
-          300     -2.537e+00      2.818e-03      5.831e-04      2.000e+00         1.895
-          325     -2.506e+00      3.328e-03      1.692e-03      2.000e+00         1.901
-          350     -2.479e+00      1.438e-03      2.737e-04      2.000e+00         1.906
-          375     -2.462e+00      1.615e-03      8.766e-04      2.000e+00         1.912
-          400     -2.450e+00      1.097e-03      6.082e-04      2.000e+00         1.917
-          425     -2.441e+00      7.153e-04      4.032e-04      2.000e+00         1.923
-          450     -2.436e+00      4.688e-04      2.668e-04      2.000e+00         1.928
-          475     -2.433e+00      3.084e-04      1.766e-04      2.000e+00         1.933
-          500     -2.430e+00      2.036e-04      1.170e-04      2.000e+00         1.938
-          525     -2.429e+00      1.349e-04      7.764e-05      2.000e+00         1.942
+            1      0.000e+00      1.000e+00      3.201e+01      1.000e+00         0.743
+           25     -1.797e+01      4.020e-01      1.158e-01      1.000e+00         1.516
+           50     -8.619e+00      1.382e-01      2.990e-02      1.000e+00         1.519
+           75     -5.790e+00      7.561e-02      1.113e-02      1.000e+00         1.522
+          100     -4.660e+00      5.029e-02      5.211e-03      1.000e+00         1.526
+          125     -4.031e+00      3.538e-02      3.575e-03      1.000e+00         1.529
+          150     -3.579e+00      2.503e-02      2.518e-03      1.000e+00         1.533
+          175     -3.252e+00      1.774e-02      1.780e-03      1.000e+00         1.537
+          200     -3.017e+00      1.260e-02      1.260e-03      1.000e+00         1.541
+          225     -2.767e+00      7.557e-03      2.159e-03      2.000e+00         1.545
+          250     -2.647e+00      5.244e-03      1.261e-03      2.000e+00         1.548
+          275     -2.581e+00      3.806e-03      8.251e-04      2.000e+00         1.552
+          300     -2.537e+00      2.818e-03      5.831e-04      2.000e+00         1.556
+          325     -2.506e+00      3.328e-03      1.692e-03      2.000e+00         1.559
+          350     -2.479e+00      1.438e-03      2.737e-04      2.000e+00         1.563
+          375     -2.462e+00      1.615e-03      8.766e-04      2.000e+00         1.566
+          400     -2.450e+00      1.097e-03      6.082e-04      2.000e+00         1.570
+          425     -2.441e+00      7.153e-04      4.032e-04      2.000e+00         1.574
+          450     -2.436e+00      4.688e-04      2.668e-04      2.000e+00         1.577
+          475     -2.433e+00      3.084e-04      1.766e-04      2.000e+00         1.581
+          500     -2.430e+00      2.036e-04      1.170e-04      2.000e+00         1.604
+          525     -2.429e+00      1.349e-04      7.764e-05      2.000e+00         1.606
 
-SOLVED in  1.942s, 525 iterations
-Total time:  2.323s
+SOLVED in  1.606s, 525 iterations
+Total time:  1.913s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 Optimal value: -2.4289</code></pre><h3 id="Custom-P-and-M"><a class="docs-heading-anchor" href="#Custom-P-and-M">Custom <code>P</code> and <code>M</code></a><a id="Custom-P-and-M-1"></a><a class="docs-heading-anchor-permalink" href="#Custom-P-and-M" title="Permalink"></a></h3><p>Of course, we can also define each needed operations ourselves, which may give an additional speedup for some matrices. Here, we avoid allocations for the intermediate product when multiplying by <span>$F^T$</span> and then <span>$F$</span>.</p><pre><code class="language-julia hljs">struct FastP
@@ -142,37 +142,37 @@ M = FastM(n)
 solver = GeNIOS.QPSolver(P, q, M, l, u; check_dims=false);
 res = solve!(solver; options=GeNIOS.SolverOptions(eps_abs=1e-6));
 println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.208s
+Setup in  0.175s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      0.000e+00            Inf            Inf      1.000e+00         0.000
-            1      0.000e+00      1.000e+00      3.201e+01      1.000e+00         0.128
-           25     -1.797e+01      4.020e-01      1.158e-01      1.000e+00         0.205
-           50     -8.619e+00      1.382e-01      2.990e-02      1.000e+00         0.209
-           75     -5.790e+00      7.561e-02      1.113e-02      1.000e+00         0.248
-          100     -4.660e+00      5.029e-02      5.211e-03      1.000e+00         0.252
-          125     -4.031e+00      3.538e-02      3.575e-03      1.000e+00         0.257
-          150     -3.579e+00      2.503e-02      2.518e-03      1.000e+00         0.262
-          175     -3.252e+00      1.774e-02      1.780e-03      1.000e+00         0.267
-          200     -3.017e+00      1.260e-02      1.260e-03      1.000e+00         0.273
-          225     -2.767e+00      7.557e-03      2.159e-03      2.000e+00         0.278
-          250     -2.647e+00      5.244e-03      1.261e-03      2.000e+00         0.282
-          275     -2.581e+00      3.806e-03      8.251e-04      2.000e+00         0.287
-          300     -2.537e+00      2.818e-03      5.831e-04      2.000e+00         0.291
-          325     -2.506e+00      3.328e-03      1.692e-03      2.000e+00         0.296
-          350     -2.479e+00      1.438e-03      2.737e-04      2.000e+00         0.301
-          375     -2.462e+00      1.615e-03      8.766e-04      2.000e+00         0.305
-          400     -2.450e+00      1.097e-03      6.082e-04      2.000e+00         0.310
-          425     -2.441e+00      7.153e-04      4.032e-04      2.000e+00         0.315
-          450     -2.436e+00      4.688e-04      2.668e-04      2.000e+00         0.321
-          475     -2.433e+00      3.084e-04      1.766e-04      2.000e+00         0.326
-          500     -2.430e+00      2.036e-04      1.170e-04      2.000e+00         0.331
-          525     -2.429e+00      1.349e-04      7.764e-05      2.000e+00         0.335
+            1      0.000e+00      1.000e+00      3.201e+01      1.000e+00         0.107
+           25     -1.797e+01      4.020e-01      1.158e-01      1.000e+00         0.171
+           50     -8.619e+00      1.382e-01      2.990e-02      1.000e+00         0.174
+           75     -5.790e+00      7.561e-02      1.113e-02      1.000e+00         0.178
+          100     -4.660e+00      5.029e-02      5.211e-03      1.000e+00         0.181
+          125     -4.031e+00      3.538e-02      3.575e-03      1.000e+00         0.184
+          150     -3.579e+00      2.503e-02      2.518e-03      1.000e+00         0.188
+          175     -3.252e+00      1.774e-02      1.780e-03      1.000e+00         0.192
+          200     -3.017e+00      1.260e-02      1.260e-03      1.000e+00         0.196
+          225     -2.767e+00      7.557e-03      2.159e-03      2.000e+00         0.200
+          250     -2.647e+00      5.244e-03      1.261e-03      2.000e+00         0.203
+          275     -2.581e+00      3.806e-03      8.251e-04      2.000e+00         0.207
+          300     -2.537e+00      2.818e-03      5.831e-04      2.000e+00         0.211
+          325     -2.506e+00      3.328e-03      1.692e-03      2.000e+00         0.215
+          350     -2.479e+00      1.438e-03      2.737e-04      2.000e+00         0.219
+          375     -2.462e+00      1.615e-03      8.766e-04      2.000e+00         0.223
+          400     -2.450e+00      1.097e-03      6.082e-04      2.000e+00         0.228
+          425     -2.441e+00      7.153e-04      4.032e-04      2.000e+00         0.232
+          450     -2.436e+00      4.688e-04      2.668e-04      2.000e+00         0.236
+          475     -2.433e+00      3.084e-04      1.766e-04      2.000e+00         0.240
+          500     -2.430e+00      2.036e-04      1.170e-04      2.000e+00         0.244
+          525     -2.429e+00      1.349e-04      7.764e-05      2.000e+00         0.247
 
-SOLVED in  0.335s, 525 iterations
-Total time:  0.543s
+SOLVED in  0.247s, 525 iterations
+Total time:  0.422s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 Optimal value: -2.4289</code></pre><h2 id="GenericSolver-interface"><a class="docs-heading-anchor" href="#GenericSolver-interface">GenericSolver interface</a><a id="GenericSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#GenericSolver-interface" title="Permalink"></a></h2><p>The <code>GenericSolver</code> interface is more flexible and allows for some speedups via an alternative problem splitting. We will solve the equivalent problem</p><p class="math-container">\[\begin{array}{ll}
@@ -244,22 +244,22 @@ solver = GeNIOS.GenericSolver(
 )
 res = solve!(solver)
 println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.373s
+Setup in  0.330s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0            Inf            Inf            Inf      1.000e+00         0.000
-            1      0.000e+00      4.472e-02      2.292e+01      1.000e+00         0.254
-           25     -2.468e+00      2.665e-02      2.980e-03      1.000e+00         0.257
-           50     -2.454e+00      1.622e-02      1.613e-03      1.000e+00         0.260
-           75     -2.440e+00      7.082e-03      2.438e-03      2.000e+00         0.263
-          100     -2.433e+00      4.025e-03      9.519e-04      2.000e+00         0.266
-          125     -2.431e+00      2.782e-03      4.581e-04      2.000e+00         0.269
-          140     -2.429e+00      2.248e-03      3.124e-04      2.000e+00         0.271
+            1      0.000e+00      4.472e-02      2.292e+01      1.000e+00         0.212
+           25     -2.468e+00      2.665e-02      2.980e-03      1.000e+00         0.214
+           50     -2.454e+00      1.622e-02      1.613e-03      1.000e+00         0.217
+           75     -2.440e+00      7.082e-03      2.438e-03      2.000e+00         0.219
+          100     -2.433e+00      4.025e-03      9.519e-04      2.000e+00         0.221
+          125     -2.431e+00      2.782e-03      4.581e-04      2.000e+00         0.224
+          140     -2.429e+00      2.248e-03      3.124e-04      2.000e+00         0.225
 
-SOLVED in  0.271s, 140 iterations
-Total time:  0.644s
+SOLVED in  0.225s, 140 iterations
+Total time:  0.555s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Optimal value: -2.4295</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../lasso/">« Lasso, Three Ways</a><a class="docs-footer-nextpage" href="../signal/">Signal Decomposition »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Saturday 29 July 2023 21:35">Saturday 29 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Optimal value: -2.4295</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../lasso/">« Lasso, Three Ways</a><a class="docs-footer-nextpage" href="../signal/">Signal Decomposition »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Wednesday 16 August 2023 18:07">Wednesday 16 August 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
