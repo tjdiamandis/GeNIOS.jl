@@ -23,16 +23,16 @@ Setup in  0.000s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      0.000e+00            Inf            Inf      1.000e+00         0.000
             1      0.000e+00      0.000e+00      3.992e+01      1.000e+00         0.000
-           25     -1.407e+01      2.512e-01      2.210e-02      1.000e+00         0.095
-           50     -1.186e+01      1.023e-01      5.779e-03      1.000e+00         0.096
-           75     -1.069e+01      3.057e-02      4.897e-03      2.000e+00         0.097
-          100     -1.043e+01      1.194e-02      1.446e-03      2.000e+00         0.098
-          125     -1.035e+01      5.217e-03      5.192e-04      2.000e+00         0.099
-          150     -1.032e+01      2.162e-03      1.972e-04      2.000e+00         0.100
-          164     -1.031e+01      7.345e-04      2.664e-04      4.000e+00         0.101
+           25     -1.407e+01      2.512e-01      2.210e-02      1.000e+00         0.040
+           50     -1.186e+01      1.023e-01      5.779e-03      1.000e+00         0.041
+           75     -1.069e+01      3.057e-02      4.897e-03      2.000e+00         0.042
+          100     -1.043e+01      1.194e-02      1.446e-03      2.000e+00         0.044
+          125     -1.035e+01      5.217e-03      5.192e-04      2.000e+00         0.045
+          150     -1.032e+01      2.162e-03      1.972e-04      2.000e+00         0.046
+          164     -1.031e+01      7.345e-04      2.664e-04      4.000e+00         0.046
 
-SOLVED in  0.101s, 164 iterations
-Total time:  0.101s
+SOLVED in  0.046s, 164 iterations
+Total time:  0.047s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 Optimal value: 15.3832</code></pre><h2 id="QPSolver-interface"><a class="docs-heading-anchor" href="#QPSolver-interface">QPSolver interface</a><a id="QPSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#QPSolver-interface" title="Permalink"></a></h2><p>To make the formulations match, we will introdudce a new variable <span>$y = Ax - b$</span>. (GeNIOS does not support constants in the objective function.) The problem becomes</p><p class="math-container">\[\begin{array}{ll}
@@ -62,7 +62,7 @@ Status:      OPTIMAL
 Obj. val:   15.38
 num iters:  140
 setup time: 0.011s
-solve time: 0.277s
+solve time: 0.265s
 </code></pre><h2 id="Examining-the-solution"><a class="docs-heading-anchor" href="#Examining-the-solution">Examining the solution</a><a id="Examining-the-solution-1"></a><a class="docs-heading-anchor-permalink" href="#Examining-the-solution" title="Permalink"></a></h2><p>We can check the solution and its optimality</p><pre><code class="language-julia hljs">xstar = solver.zk[m+1:end]
 ls_residual =  1/√(m) * norm(Ad*xstar - b)
 feas = all(xstar .&gt;= 0) &amp;&amp; all(xstar .&lt;= 1)
@@ -72,6 +72,6 @@ println(&quot;Primal residual: $(round(solver.rp_norm, digits=8))&quot;)
 println(&quot;Dual residual: $(round(solver.rd_norm, digits=8))&quot;)
 println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Is feasible? true
 Least Squres RMSE = 0.71620903
-Primal residual: 0.00114968
-Dual residual: 0.00031191
-Optimal value: 15.3831</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../huber/">Huber Fitting »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Wednesday 16 August 2023 18:07">Wednesday 16 August 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Primal residual: 0.00114969
+Dual residual: 0.00031261
+Optimal value: 15.3831</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../huber/">Huber Fitting »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Friday 18 August 2023 17:35">Friday 18 August 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
