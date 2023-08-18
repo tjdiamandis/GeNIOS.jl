@@ -1,4 +1,4 @@
-# GeNIOS.jl ("Genie-OS")
+# GeNIOS.jl ("genie-o̅s")
 
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://tjdiamandis.github.io/GeNIOS.jl/dev/)
 [![Build Status](https://github.com/tjdiamandis/GeNIOS.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/tjdiamandis/GeNIOS.jl/actions/workflows/CI.yml?query=branch%3Amain)
