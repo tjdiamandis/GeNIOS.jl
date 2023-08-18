@@ -146,7 +146,7 @@ function run_trial(n)
 
     # compile
     solve!(GeNIOS.QPSolver(P, q, Aqp, l, u); options=GeNIOS.SolverOptions(max_iters=2, verbose=false))
-    solver_qp = GeNIOS.QPSolver(P, q, Aqp, l, u)
+    solver_qp = GeNIOS.QPSolver(P, q, Aqp, l, u; σ=0.0)
     options_qp = GeNIOS.SolverOptions(
         verbose=false,
         relax=true,

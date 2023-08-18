@@ -99,7 +99,7 @@ function build_genios_conic_model(A, b, λ1)
     c = zeros(size(M, 1))
     K = GeNIOS.ProductCone(vcat(K1, K2, K3, K4, K5, K6))
 
-    return GeNIOS.ConicSolver(P, q, K, M, c)
+    return GeNIOS.ConicSolver(P, q, K, M, c; σ=0.0)
 end
 
 

@@ -77,7 +77,7 @@ function run_trial(n::Int)
     # GeNIOS solve
     # With everything
     GC.gc()
-    solver = GeNIOS.QPSolver(P, q, A, l, u)
+    solver = GeNIOS.QPSolver(P, q, A, l, u; σ=0.0)
     options = GeNIOS.SolverOptions(
         verbose=false,
         precondition=true,
@@ -91,7 +91,7 @@ function run_trial(n::Int)
 
     # No preconditioner
     GC.gc()
-    solver_npc = GeNIOS.QPSolver(P, q, A, l, u)
+    solver_npc = GeNIOS.QPSolver(P, q, A, l, u; σ=0.0)
     options = GeNIOS.SolverOptions(
         verbose=false,
         precondition=false,

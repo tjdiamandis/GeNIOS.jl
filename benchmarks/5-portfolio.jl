@@ -170,7 +170,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
 
     if :qp ∈ solvers
         GC.gc()
-        solver = GeNIOS.QPSolver(P_eq, q_eq, M_eq, l_eq, u_eq)
+        solver = GeNIOS.QPSolver(P_eq, q_eq, M_eq, l_eq, u_eq; σ=0.0)
         result_qp = solve!(solver; options=options)
     else
         result_qp = nothing
@@ -183,7 +183,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         q = -μ
         l = vcat(zeros(n), ones(1))
         u = vcat(Inf*ones(n), ones(1))
-        solver = GeNIOS.QPSolver(P, q, M, l, u)
+        solver = GeNIOS.QPSolver(P, q, M, l, u; σ=0.0)
         result_qp_full = solve!(solver; options=options)
     else
         result_qp_full = nothing
@@ -200,7 +200,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         l = vcat(zeros(n), ones(1))
         u = vcat(Inf*ones(n), ones(1))
 
-        solver = GeNIOS.QPSolver(P, q, M, l, u; check_dims=false);
+        solver = GeNIOS.QPSolver(P, q, M, l, u; check_dims=false, σ=0.0);
         result_op = solve!(solver; options=options)
     else
         result_op = nothing
@@ -384,7 +384,6 @@ timing_plt = plot(
     yaxis=:log, 
     xaxis=:log,
     label=["GeNIOS (eq qp)" "GeNIOS (full qp)" "GeNIOS (cust ops)" "GeNIOS (GenericSolver)"  "COSMO (indirect)" "COSMO (direct)" "OSQP" "Mosek"], 
-    # label=["GeNIOS (eq qp)" "GeNIOS (full qp)" "GeNIOS (cust ops)" "GeNIOS (GenericSolver)"], 
     xlabel=L"Problem size $n$", 
     ylabel="Total solve time (s)", 
     legend=:bottomright,
