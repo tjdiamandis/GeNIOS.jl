@@ -214,7 +214,7 @@ function ConicSolver(P, q, K, M, c::Vector{T}; σ=nothing, check_dims=true) wher
     ρ = one(T)
     cache = init_cache(data)
 
-    σ = isnothing(σ) ? zero(T) : σ
+    σ = isnothing(σ) ? 1e-6 : σ
     
     return ConicSolver(
         data, 
