@@ -254,12 +254,14 @@ function update_x!(
         time_start = time_ns()
     end
     
-    # linsys_tol = max(
-    #     sqrt(eps()), min(
-    #         sqrt(solver.rp_norm * solver.rd_norm), options.linsys_max_tol)
-    # )
     geomean_resid = sqrt(solver.rp_norm * solver.rd_norm)
-    linsys_tol = max(sqrt(eps()), min(geomean_resid, one(T)) / t^options.linsys_exponent)
+    linsys_tol = max(
+        sqrt(eps()), 
+        min(
+            min(geomean_resid, one(T)) / t^options.linsys_exponent, 
+            options.linsys_max_tol
+        )
+    )
 
     # warm start if past first iteration
     !isinf(solver.rp_norm) && warm_start!(linsys_solver, solver.xk)

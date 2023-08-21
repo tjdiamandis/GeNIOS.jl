@@ -379,7 +379,7 @@ function LogisticSolver(
 end
 
 
-@kwdef mutable struct SolverOptions{T <: Real, S <: Real}
+@kwdef mutable struct SolverOptions{T <: AbstractFloat, S <: Real}
     ρ0::T = 1.0                                     # param : ADMM penalty
     α::T = 1.6                                      # param : relaxation
     relax::Bool = true
@@ -393,7 +393,7 @@ end
     rho_update_iter::Int = 50
     sketch_update_iter::Int = 20
     verbose::Bool = true
-    linsys_max_tol::T = 1e-1
+    linsys_max_tol::T = 1.0
     eps_abs::T = 1e-4
     eps_rel::T = 1e-4
     eps_inf::T = 1e-8
