@@ -60,31 +60,35 @@ b = A*xstar + 1e-3*randn(n)
         return nothing
     end
     
-    
-    function f(x, A, b, tmp)
+    params = (;A=A, b=b, tmp=zeros(n), γ=γ)
+    function f(x, p)
+        A, b, tmp = p.A, p.b, p.tmp
         mul!(tmp, A, x)
         @. tmp -= b
         return 0.5 * sum(w->w^2, tmp)
     end
-    f(x) = f(x, A, b, zeros(n))
-    function grad_f!(g, x, A, b, tmp)
+
+    function grad_f!(g, x, p)
+        A, b, tmp = p.A, p.b, p.tmp
         mul!(tmp, A, x)
         @. tmp -= b
         mul!(g, A', tmp)
         return nothing
     end
-    grad_f!(g, x) = grad_f!(g, x, A, b, zeros(n))
+
     Hf = HessianLasso(A, zeros(n))
-    g(z, γ) = γ*sum(x->abs(x), z)
-    g(z) = g(z, γ)
-    function prox_g!(v, z, ρ)
+    g(z, p) = p.γ*sum(x->abs(x), z)
+
+    function prox_g!(v, z, ρ, p)
+        γ = p.γ
         @inline soft_threshold(x::T, κ::T) where {T <: Real} = sign(x) * max(zero(T), abs(x) - κ)
         v .= soft_threshold.(z, γ/ρ)
     end
     solver = GeNIOS.GenericSolver(
         f, grad_f!, Hf,         # f(x)
         g, prox_g!,             # g(z)
-        I, zeros(p)             # A, c: Ax - z = c
+        I, zeros(p);            # A, c: Ax - z = c
+        params=params,          # parameters
     )
     res = solve!(solver; options=GeNIOS.SolverOptions(relax=false, verbose=false))
 
