@@ -144,18 +144,21 @@ which can be solved via a one-dimensional root-finding problem (see
 the appendix of [our paper]()).
 =#
 
+params = (; F=F, d=d, μ=μ, γ=γ, tmp=zeros(k))
+
 ## f(x) = γ/2 xᵀ(FFᵀ + D)x - μᵀx
-function f(x, F, d, μ, γ, tmp)
+function f(x, p)
+    F, d, μ, γ, tmp = p.F, p.d, p.μ, p.γ, p.tmp
     mul!(tmp, F', x)
-    qf = sum(w->w^2, tmp)
-    qf += sum(i->d[i]*x[i]^2, 1:n)
+    qf = sum(abs2, tmp)
+    qf += sum(i->d[i]*x[i]^2, 1:length(x))
 
     return γ/2 * qf - dot(μ, x)
 end
-f(x) = f(x, F, d, μ, γ, zeros(k))
 
 ##  ∇f(x) = γ(FFᵀ + D)x - μ
-function grad_f!(g, x, F, d, μ, γ, tmp)
+function grad_f!(g, x, p)
+    F, d, μ, γ, tmp = p.F, p.d, p.μ, p.γ, p.tmp
     mul!(tmp, F', x)
     mul!(g, F, tmp)
     @. g += d*x
@@ -163,7 +166,6 @@ function grad_f!(g, x, F, d, μ, γ, tmp)
     @. g -= μ
     return nothing
 end
-grad_f!(g, x) = grad_f!(g, x, F, d, μ, γ, zeros(k))
 
 ## ∇²f(x) = γ(FFᵀ + D)
 struct HessianMarkowitz{T, S <: AbstractMatrix{T}} <: HessianOperator
@@ -180,11 +182,11 @@ end
 Hf = HessianMarkowitz(F, d, zeros(k))
 
 ## g(z) = I(z)
-function g(z)
+function g(z, p)
     T = eltype(z)
-    return all(z .>= zero(T)) && abs(sum(z) - one(T)) < 1e-6 ? 0 : Inf
+    return all(z .>= zero(T)) && abs(sum(z) - one(T)) < 1e-6 ? zero(T) : Inf
 end
-function prox_g!(v, z, ρ)
+function prox_g!(v, z, ρ, p)
     z_max = maximum(w->abs(w), z)
     l = -z_max - 1
     u = z_max
@@ -206,7 +208,8 @@ end
 solver = GeNIOS.GenericSolver(
     f, grad_f!, Hf,         # f(x)
     g, prox_g!,             # g(z)
-    I, zeros(n)             # M, c: Mx - z = c
+    I, zeros(n);            # M, c: Mx - z = c
+    params=params
 )
 res = solve!(solver)
 println("Optimal value: $(round(solver.obj_val, digits=4))")

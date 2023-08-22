@@ -95,15 +95,15 @@ parallelized.
 
 First we define $f(x)$, which is just a quadratic.
 =#
-f(x, T) = sum(w->w^2, x[1:T] ) / T 
-f(x) = f(x, T)
+params = (; T=T)
 
-function grad_f!(g, x, T)
-    @. g[1:T] = 2/T * x[1:T]
-    g[T+1:end] .= zero(eltype(x))
+f(x, p) = sum(abs2, x[1:p.T] ) / p.T 
+
+function grad_f!(g, x, p)
+    @. g[1:p.T] = 2/p.T * x[1:p.T]
+    g[p.T+1:end] .= zero(eltype(x))
     return nothing
 end
-grad_f!(g, x) = grad_f!(g, x, T)
 
 #=
 The `HessianOperator` here is block diagonal, with a $T \times T$ identity block,
@@ -128,20 +128,19 @@ avoid for simplicity.
 
 We use `ProximalOperators.jl` to help construct the proximal operator.
 =#
-function g(z, T)
-    @views z1, z2, z3 = z[1:T], z[T+1:2T], z[2T+1:end]
+function g(z, p)
+    @views z1, z2, z3 = z[1:p.T], z[p.T+1:2p.T], z[2p.T+1:end]
     any(.!iszero.(z1)) && return Inf
 
-    gz2 = sum(t->(z2[t+1] - 2z[t] + z[t-1])^2, 2:T-1)
-    gz3 = sum(abs, diff(z3)) / (T-1)
+    gz2 = sum(t->(z2[t+1] - 2z[t] + z[t-1])^2, 2:p.T-1)
+    gz3 = sum(abs, diff(z3)) / (p.T-1)
     return gz2 + gz3
 end
-g(z) = g(z, T)
 
 ## the prox operator for g, using ProximalOperators.jl
-function prox_g!(v, z, ρ, T)
-    @views z1, z2, z3 = z[1:T], z[T+1:2T], z[2T+1:end]
-    @views v1, v2, v3 = v[1:T], v[T+1:2T], v[2T+1:end]
+function prox_g!(v, z, ρ, p)
+    @views z1, z2, z3 = z[1:p.T], z[p.T+1:2p.T], z[2p.T+1:end]
+    @views v1, v2, v3 = v[1:p.T], v[p.T+1:2p.T], v[2p.T+1:end]
 
     Threads.@threads for k in 1:3
         if k == 1
@@ -150,24 +149,23 @@ function prox_g!(v, z, ρ, T)
         elseif k == 2
             ## Prox for z2
             ## g²(z²) = γ₂/T * ||Az||²
-            du = vcat(zeros(1), ones(T-2))
-            d = vcat(zeros(1), -2*ones(T-2), zeros(1))
-            dl = vcat(ones(T-2), zeros(1))
+            du = vcat(zeros(1), ones(p.T-2))
+            d = vcat(zeros(1), -2*ones(p.T-2), zeros(1))
+            dl = vcat(ones(p.T-2), zeros(1))
 
             ## Use banded matrix for O(T) solve time
             A = BandedMatrix(-1 => dl, 0 => d, 1 => du)
-            F = cholesky(I + 1e3/(ρ * T) * A'*A)
+            F = cholesky(I + 1e3/(ρ * p.T) * A'*A)
             ldiv!(v2, F, z2)
         else
             ## Prox for z3
-            ϕ³ = TotalVariation1D(1/T)
+            ϕ³ = TotalVariation1D(1/p.T)
             prox!(v3, ϕ³, z3, 1/ρ)
         end
     end
 
     return nothing
 end
-prox_g!(v, z, ρ) = prox_g!(v, z, ρ, T)
 
 
 
@@ -190,7 +188,8 @@ c = vcat(y, zeros(T), zeros(T));
 solver = GeNIOS.GenericSolver(
     f, grad_f!, Hf,         # f(x)
     g, prox_g!,             # g(z)
-    M, c                    # M, c: Mx + z = c
+    M, c;                   # M, c: Mx + z = c
+    params=params
 )
 res = solve!(solver, options=GeNIOS.SolverOptions(eps_abs=1e-5, print_iter=100))
 

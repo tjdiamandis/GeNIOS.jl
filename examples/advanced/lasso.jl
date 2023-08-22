@@ -136,23 +136,27 @@ end
 #=
 Now, we define $f$, its gradient, $g$, and its proximal operator.
 =#
-function f(x, A, b, tmp)
+params = (; A=A, b=b, tmp=zeros(m), λ=λ)
+function f(x, p)
+    A, b, tmp = p.A, p.b, p.tmp
     mul!(tmp, A, x)
     @. tmp -= b
     return 0.5 * sum(w->w^2, tmp)
 end
-f(x) = f(x, A, b, zeros(m))
-function grad_f!(g, x, A, b, tmp)
+
+function grad_f!(g, x, p)
+    A, b, tmp = p.A, p.b, p.tmp
     mul!(tmp, A, x)
     @. tmp -= b
     mul!(g, A', tmp)
     return nothing
 end
-grad_f!(g, x) = grad_f!(g, x, A, b, zeros(m))
+
 Hf = HessianLasso(A, zeros(m))
-g(z, λ) = λ*sum(x->abs(x), z)
-g(z) = g(z, λ)
-function prox_g!(v, z, ρ)
+g(z, p) = p.λ*sum(x->abs(x), z)
+
+function prox_g!(v, z, ρ, p)
+    λ = p.λ
     @inline soft_threshold(x::T, κ::T) where {T <: Real} = sign(x) * max(zero(T), abs(x) - κ)
     v .= soft_threshold.(z, λ/ρ)
 end
@@ -163,7 +167,8 @@ Finally, we can solve the problem.
 solver = GeNIOS.GenericSolver(
     f, grad_f!, Hf,         # f(x)
     g, prox_g!,             # g(z)
-    I, zeros(n)             # M, c: Mx + z = c
+    I, zeros(n);            # M, c: Mx + z = c
+    params=params
 )
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, verbose=true))
 rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
@@ -178,13 +183,14 @@ for g:
 using ProximalOperators
 prox_func = NormL1(λ)
 gp(x) = prox_func(x)
-prox_gp!(v, z, ρ) = prox!(v, prox_func, z, ρ)
+prox_gp!(v, z, ρ, p) = prox!(v, prox_func, z, ρ)
 
 ## We see that this give the same result
 solver = GeNIOS.GenericSolver(
     f, grad_f!, Hf,         # f(x)
-    gp, prox_gp!,             # g(z)
-    I, zeros(n);           # M, c: Mx + z = c
+    gp, prox_gp!,           # g(z)
+    I, zeros(n);            # M, c: Mx + z = c
+    params=params
 )
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, verbose=true))
 rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
