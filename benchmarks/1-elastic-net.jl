@@ -43,6 +43,7 @@ function run_trial(; type, m=10_000, n=20_000)
         relax=true,
         α=1.6,
         use_dual_gap=true,
+        verbose=false,
         precondition=true,
         sketch_update_iter=1000,    # We know that the Hessian AᵀA does not change
         ρ0=10.0,
@@ -107,7 +108,7 @@ function run_trial(; type, m=10_000, n=20_000)
         eps_abs = 1e-10,
         eps_rel = 1e-10,
         dual_gap_tol = 10eps(),
-        verbose=true,
+        verbose=false,
         precondition=true,
         sketch_update_iter=1000,    # We know that the Hessian AᵀA does not change
         ρ0=10.0,
