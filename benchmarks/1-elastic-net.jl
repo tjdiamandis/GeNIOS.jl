@@ -5,8 +5,6 @@ using Plots, LaTeXStrings
 using OpenML, Tables, JLD2
 using CSV, DataFrames, Statistics, JLD2
 include(joinpath(@__DIR__, "utils.jl"))
-
-Pkg.activate(joinpath(@__DIR__, ".."))
 using GeNIOS
 
 const DATAPATH = joinpath(@__DIR__, "data")

@@ -1,7 +1,4 @@
 using Pkg
-Pkg.activate(joinpath(@__DIR__, ".."))
-using GeNIOS
-
 Pkg.activate(@__DIR__)
 using Random, LinearAlgebra, SparseArrays, Printf
 using Plots, LaTeXStrings
@@ -9,6 +6,7 @@ using OpenML, Tables, JLD2
 using IterativeSolvers, LinearMaps
 using Optim
 include(joinpath(@__DIR__, "utils.jl"))
+using GeNIOS
 
 
 const DATAPATH = joinpath(@__DIR__, "data")

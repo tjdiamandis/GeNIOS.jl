@@ -7,8 +7,6 @@ using IterativeSolvers, LinearMaps
 using COSMO, OSQP
 using MosekTools, JuMP
 include(joinpath(@__DIR__, "utils.jl"))
-
-Pkg.activate(joinpath(@__DIR__, ".."))
 using GeNIOS
 
 const SAVEPATH = joinpath(@__DIR__, "saved", "5-portfolio")
@@ -300,20 +298,40 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
     )
 
     GC.gc()
-    return nothing
+    name_logs = [
+        (:qp, result_qp),
+        (:qp_full, result_qp_full),
+        (:op, result_op),
+        (:custom, result_custom),
+        (:cosmo_indirect, result_cosmo_indirect),
+        (:cosmo_direct, result_cosmo_direct),
+        (:osqp, result_osqp),
+        (:mosek, result_mosek),
+    ]
+    to_remove = Set{Symbol}()
+    for (name, log) in name_logs
+        if !(
+            (name ∈ [:qp, :qp_full, :op, :custom] && !isnothing(log) && log.status == :OPTIMAL) || 
+            (name ∈ [:cosmo_indirect, :cosmo_direct] && !isnothing(log) && log.status == :Solved) ||
+            (name == :osqp && !isnothing(log) && log.info.status == :Solved) ||
+            (name == :mosek && !isnothing(log) && log.termination_status == OPTIMAL)
+        )
+            @info "\t$name timed out"
+            push!(to_remove, name)
+        end
+    end
+    return to_remove
 end
 
 ns = [250, 500, 1_000, 2_000, 4_000, 8_000, 16_000, 32_000, 64_000, 128_000, 256_000]
 if !RAN_TRIALS
     run_trial(100)
+    solvers = Set([:qp, :op, :custom, :cosmo_indirect, :cosmo_direct, :osqp, :qp_full, :mosek])
+
     @info "Starting trials..."
     for n in ns
-        if n <= 16_000
-            solvers = [:qp, :op, :custom, :cosmo_indirect, :cosmo_direct, :osqp, :qp_full, :mosek]
-        else
-            solvers = [:qp, :op, :custom, :cosmo_indirect, :cosmo_direct, :osqp, :mosek]
-        end
-        run_trial(n; solvers=solvers)
+        to_remove = run_trial(n; solvers=solvers)
+        setdiff!(solvers, to_remove)
         @info "Finished with n=$n"
     end
 end

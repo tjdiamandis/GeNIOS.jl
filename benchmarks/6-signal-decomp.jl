@@ -3,9 +3,7 @@ using Pkg
 Pkg.activate(@__DIR__)
 using Random, LinearAlgebra, SparseArrays, BandedMatrices
 using Plots, LaTeXStrings
-include("utils.jl")
-
-Pkg.activate(joinpath(@__DIR__, ".."))
+include(joinpath(@__DIR__, "utils.jl"))
 using GeNIOS
 
 FIGS_PATH = joinpath(@__DIR__, "figures")

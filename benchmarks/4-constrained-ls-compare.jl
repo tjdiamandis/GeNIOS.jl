@@ -7,8 +7,6 @@ using IterativeSolvers, LinearMaps
 using COSMO, OSQP
 using JuMP, MosekTools
 include(joinpath(@__DIR__, "utils.jl"))
-
-Pkg.activate(joinpath(@__DIR__, ".."))
 using GeNIOS
 
 const DATAPATH = joinpath(@__DIR__, "data")

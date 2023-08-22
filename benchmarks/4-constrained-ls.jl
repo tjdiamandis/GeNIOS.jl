@@ -4,8 +4,6 @@ using Random, LinearAlgebra, SparseArrays, Printf
 using Plots, LaTeXStrings
 using CSV, DataFrames, Statistics, JLD2
 include(joinpath(@__DIR__, "utils.jl"))
-
-Pkg.activate(joinpath(@__DIR__, ".."))
 using GeNIOS
 
 DATAPATH = joinpath(@__DIR__, "data")
@@ -24,8 +22,7 @@ run_genios_trial_qp(P, q, A, l, u, options=GeNIOS.SolverOptions(max_iters=2))
 # With everything
 options = GeNIOS.SolverOptions(
     precondition=true,
-    sketch_update_iter=10_000
-    num_threads=1,
+    sketch_update_iter=10_000,
     eps_abs=1e-5,
     eps_rel=1e-5,
 )
@@ -34,7 +31,6 @@ result = run_genios_trial_qp(P, q, A, l, u; options=options)
 # No preconditioner
 options_npc = GeNIOS.SolverOptions(
     precondition=false,
-    num_threads=1,
     eps_abs=1e-5,
     eps_rel=1e-5,
 )
@@ -43,8 +39,7 @@ result_npc = run_genios_trial_qp(P, q, A, l, u; options=options_npc)
 # Exact solve
 options_exact = GeNIOS.SolverOptions(
     precondition=true,
-    sketch_update_iter=10_000
-    num_threads=1,
+    sketch_update_iter=10_000,
     linsys_max_tol=1e-8,
     eps_abs=1e-5,
     eps_rel=1e-5,
@@ -54,7 +49,6 @@ result_exact = run_genios_trial_qp(P, q, A, l, u; options=options_exact)
 # Exact solve, no pc
 options_exact_npc = GeNIOS.SolverOptions(
     precondition=false,
-    num_threads=1,
     linsys_max_tol=1e-8,
     eps_abs=1e-5,
     eps_rel=1e-5,
@@ -65,8 +59,8 @@ result_exact_npc = run_genios_trial_qp(P, q, A, l, u; options=options_exact_npc)
 options_high_precision = GeNIOS.SolverOptions(
     eps_abs=1e-8,
     eps_rel=1e-8,
+    sketch_update_iter=10_000,
     precondition=true,
-    num_threads=Sys.CPU_THREADS,
 )
 result_high_precision = run_genios_trial_qp(P, q, A, l, u; options=options_high_precision)
 

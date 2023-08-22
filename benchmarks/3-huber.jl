@@ -4,8 +4,6 @@ using Random, LinearAlgebra, SparseArrays, Printf
 using Plots, LaTeXStrings
 using JLD2
 include(joinpath(@__DIR__, "utils.jl"))
-
-Pkg.activate(joinpath(@__DIR__, ".."))
 using GeNIOS
 
 const SAVEPATH = joinpath(@__DIR__, "saved", "3-huber")
