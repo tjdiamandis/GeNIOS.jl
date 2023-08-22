@@ -119,8 +119,9 @@ function converged(solver::MLSolver, options::SolverOptions)
     return converged(solver, options, true)
 end
 
-function obj_val!(solver::Solver, options::SolverOptions)
-    solver.obj_val = solver.data.f(solver.xk) + solver.data.g(solver.zk)
+function obj_val!(solver::GenericSolver, options::SolverOptions)
+    solver.obj_val = solver.data.f(solver.xk, solver.data.params) + 
+                     solver.data.g(solver.zk, solver.data.params)
 end
 
 # NOTE: uses zk for f
@@ -174,10 +175,11 @@ function convergence_criteria!(solver::MLSolver, options::SolverOptions)
     return nothing
 end
 
-function compute_rhs!(solver::Solver, options::SolverOptions)
+function compute_rhs!(solver::GenericSolver, options::SolverOptions)
     # RHS = ∇²f(xᵏ)xᵏ - ∇f(xᵏ) + ρAᵀ(zᵏ + c - uᵏ)
     mul!(solver.cache.vn, solver.data.Hf, solver.xk)
-    solver.data.grad_f!(solver.cache.vn2, solver.xk)
+    # TODO: can optimize by using the call from the dual residual
+    solver.data.grad_f!(solver.cache.vn2, solver.xk, solver.data.params)
     
     @. solver.cache.vm = solver.zk + solver.data.c - solver.uk
     mul!(solver.cache.rhs, solver.data.M', solver.cache.vm)
@@ -302,12 +304,12 @@ function update_Mx!(solver::Solver, options::SolverOptions)
     return nothing
 end
 
-function update_z!(solver::Solver, options::SolverOptions)
+function update_z!(solver::GenericSolver, options::SolverOptions)
     options.logging && (time_start = time_ns();)
     @. solver.cache.vm = solver.Mxk + solver.uk - solver.data.c
     
     # prox_{g/ρ}(v) = prox_{g/ρ}( Axᵏ⁺¹ - c + uᵏ)
-    solver.data.prox_g!(solver.zk, solver.cache.vm, solver.ρ)
+    solver.data.prox_g!(solver.zk, solver.cache.vm, solver.ρ, solver.data.params)
     return options.logging ? (time_ns() - time_start) / 1e9 : nothing
 end
 
@@ -344,8 +346,8 @@ function compute_primal_residual!(solver::Solver, options::SolverOptions)
     return nothing
 end
 
-function compute_dual_residual!(solver::Solver, options::SolverOptions)
-    solver.data.grad_f!(solver.cache.vn, solver.xk)
+function compute_dual_residual!(solver::GenericSolver, options::SolverOptions)
+    solver.data.grad_f!(solver.cache.vn, solver.xk, solver.data.params)
     mul!(solver.cache.vn2, solver.data.M', solver.uk)
     @. solver.rd = solver.cache.vn + solver.ρ * solver.cache.vn2
     

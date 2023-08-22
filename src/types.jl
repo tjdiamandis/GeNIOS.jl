@@ -19,7 +19,7 @@ end
 struct MLProblemData{
     T <: Real,
     V <: AbstractVector{T}, 
-    M <: AbstractMatrix{T}, 
+    M <: AbstractMatrix{T},
 } <: ProblemData
     M
     c
@@ -44,7 +44,7 @@ struct ConicProgramData{T} <: ProblemData
     K::Cone
 end
 
-struct GenericProblemData{T} <: ProblemData
+struct GenericProblemData{T, ParamType} <: ProblemData
     M
     c::AbstractVector{T}
     m::Int
@@ -54,6 +54,7 @@ struct GenericProblemData{T} <: ProblemData
     f::Function
     g::Function
     prox_g!::Function
+    params::ParamType
 end
 
 @kwdef struct GenericCache{T} <: OptimizerCache
@@ -132,9 +133,18 @@ mutable struct GenericSolver{
     ρ::T                        # param : ADMM penalty
     cache::GenericCache{T}      # cache : cache for intermediate results
 end
-function GenericSolver(f, grad_f!, Hf, g, prox_g!, M, c::Vector{T}) where {T}
+function GenericSolver(
+    f, 
+    grad_f!, 
+    Hf, 
+    g, 
+    prox_g!, 
+    M, 
+    c::Vector{T}; 
+    params=nothing
+) where {T}
     m, n = typeof(M) <: UniformScaling ? (length(c), length(c)) : size(M)
-    data = GenericProblemData(M, c, m, n, Hf, grad_f!, f, g, prox_g!)
+    data = GenericProblemData(M, c, m, n, Hf, grad_f!, f, g, prox_g!, params)
     xk = zeros(T, n)
     Mxk = zeros(T, m)
     zk = zeros(T, m)
@@ -196,7 +206,15 @@ mutable struct ConicSolver{
     ρ::T                        # param : ADMM penalty
     cache::ConicCache{T}        # cache : cache for intermediate results
 end
-function ConicSolver(P, q, K, M, c::Vector{T}; σ=nothing, check_dims=true) where {T}
+function ConicSolver(
+    P, 
+    q, 
+    K, 
+    M, 
+    c::Vector{T}; 
+    σ=nothing, 
+    check_dims=true
+) where {T}
     check_dims && check_data_dims(P, q, K, M, c) # errors if mismatch
     m, n = typeof(M) <: UniformScaling ? (length(c), length(c)) : size(M)
     data = ConicProgramData(M, c, m, n, P, q, K)
@@ -283,7 +301,7 @@ function MLSolver(f,
     λ2,
     Adata::M,
     bdata::V; 
-    fconj=x->error(ArgumentError("dual gap used but fconj not defined"))
+    fconj=()->error(ArgumentError("dual gap used but fconj not defined"))
 ) where {T, V <: AbstractVector{T}, M <: AbstractMatrix{T}}
     N, n = size(Adata)
     #TODO: may want to add offset?
