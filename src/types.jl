@@ -407,7 +407,7 @@ end
     relax_tol::T = 1e-3
     max_iters::Int = 4000
     max_time_sec::T = 1200.0
-    print_iter::Int = 25
+    print_iter::Int = 20
     rho_update_iter::Int = 50
     sketch_update_iter::Int = 20
     verbose::Bool = true
@@ -418,12 +418,21 @@ end
     norm_type::S = 2
     use_dual_gap::Bool = false
     update_preconditioner::Bool = true
-    infeas_check_iter::Int = 25
+    infeas_check_iter::Int = 50
+    conv_check_iter::Int = 1
     num_threads::Int = Sys.CPU_THREADS
     init_sketch_size::Int = 50                      # param : preconditioner rank
     use_adaptive_sketch::Bool = false
     adaptive_sketch_tol::Float64 = eps()
     linsys_exponent::T = 1.2
+end
+
+function check_options(options::SolverOptions)
+    options.print_iter % options.conv_check_iter != 0 && error("print_iter must be a multiple of conv_check_iter")
+    options.infeas_check_iter % options.conv_check_iter != 0 && error("infeas_check_iter must be a multiple of conv_check_iter")
+    options.rho_update_iter % options.conv_check_iter != 0 && error("rho_update_iter must be a multiple of conv_check_iter")
+    options.conv_check_iter > 1 && options.logging && error("logging not supported for conv_check_iter > 1")
+    return nothing
 end
 
 function Base.show(io::IO, options::SolverOptions)

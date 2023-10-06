@@ -442,6 +442,7 @@ function solve!(
     options::SolverOptions=SolverOptions(),
     use_lbfgs_ml=false
 )
+    check_options(options)
     setup_time_start = time_ns()
     options.verbose && @printf("Starting setup...")
 
@@ -513,9 +514,11 @@ function solve!(
         
         # --- Update objective & convergence criteria ---
         # NOTE: obj_val! also updates pred = Adata*zk - bdata for MLSolver 
-        obj_val!(solver, options)
-        compute_residuals!(solver, options)
-        convergence_criteria!(solver, options)
+        if t % options.conv_check_iter == 0
+            obj_val!(solver, options)
+            compute_residuals!(solver, options)
+            convergence_criteria!(solver, options)
+        end
 
         # --- Logging ---
         time_sec = (time_ns() - solve_time_start) / 1e9
@@ -532,7 +535,7 @@ function solve!(
         end
 
         # --- Check convergence & infeasibility ---
-        converged(solver, options) && break
+        t % options.conv_check_iter == 0 && converged(solver, options) && break
         t % options.infeas_check_iter == 0 && infeasible(solver, options) && break
 
         # --- Update ρ ---
