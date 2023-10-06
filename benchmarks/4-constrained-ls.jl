@@ -12,65 +12,70 @@ SAVEPATH = joinpath(@__DIR__, "saved")
 SAVEFILE = joinpath(SAVEPATH, "4-constrained-ls.jld2")
 FIGS_PATH = joinpath(@__DIR__, "figures")
 
+RAN_TRIALS = false
+
 n = 10_000
 m = 2n
-P, q, A, l, u = construct_problem_constrained_ls(get_augmented_data(m, n, DATAFILE)...)
 
-# compile
-run_genios_trial_qp(P, q, A, l, u, options=GeNIOS.SolverOptions(max_iters=2))
+if !RAN_TRIALS
+    P, q, A, l, u = construct_problem_constrained_ls(get_augmented_data(m, n, DATAFILE)...)
+    # compile
+    run_genios_trial_qp(P, q, A, l, u, options=GeNIOS.SolverOptions(max_iters=2))
 
-# With everything
-options = GeNIOS.SolverOptions(
-    precondition=true,
-    sketch_update_iter=10_000,
-    eps_abs=1e-5,
-    eps_rel=1e-5,
-)
-result = run_genios_trial_qp(P, q, A, l, u; options=options)
+    # With everything
+    options = GeNIOS.SolverOptions(
+        precondition=true,
+        sketch_update_iter=10_000,
+        eps_abs=1e-5,
+        eps_rel=1e-5,
+    )
+    result = run_genios_trial_qp(P, q, A, l, u; options=options)
 
-# No preconditioner
-options_npc = GeNIOS.SolverOptions(
-    precondition=false,
-    eps_abs=1e-5,
-    eps_rel=1e-5,
-)
-result_npc = run_genios_trial_qp(P, q, A, l, u; options=options_npc)
+    # No preconditioner
+    options_npc = GeNIOS.SolverOptions(
+        precondition=false,
+        eps_abs=1e-5,
+        eps_rel=1e-5,
+    )
+    result_npc = run_genios_trial_qp(P, q, A, l, u; options=options_npc)
 
-# Exact solve
-options_exact = GeNIOS.SolverOptions(
-    precondition=true,
-    sketch_update_iter=10_000,
-    linsys_max_tol=1e-8,
-    eps_abs=1e-5,
-    eps_rel=1e-5,
-)
-result_exact = run_genios_trial_qp(P, q, A, l, u; options=options_exact)
+    # Exact solve
+    options_exact = GeNIOS.SolverOptions(
+        precondition=true,
+        sketch_update_iter=10_000,
+        linsys_max_tol=1e-8,
+        eps_abs=1e-5,
+        eps_rel=1e-5,
+    )
+    result_exact = run_genios_trial_qp(P, q, A, l, u; options=options_exact)
 
-# Exact solve, no pc
-options_exact_npc = GeNIOS.SolverOptions(
-    precondition=false,
-    linsys_max_tol=1e-8,
-    eps_abs=1e-5,
-    eps_rel=1e-5,
-)
-result_exact_npc = run_genios_trial_qp(P, q, A, l, u; options=options_exact_npc)
+    # Exact solve, no pc
+    options_exact_npc = GeNIOS.SolverOptions(
+        precondition=false,
+        linsys_max_tol=1e-8,
+        eps_abs=1e-5,
+        eps_rel=1e-5,
+    )
+    result_exact_npc = run_genios_trial_qp(P, q, A, l, u; options=options_exact_npc)
 
-# High precision solve
-options_high_precision = GeNIOS.SolverOptions(
-    eps_abs=1e-8,
-    eps_rel=1e-8,
-    sketch_update_iter=10_000,
-    precondition=true,
-)
-result_high_precision = run_genios_trial_qp(P, q, A, l, u; options=options_high_precision)
+    # High precision solve
+    options_high_precision = GeNIOS.SolverOptions(
+        eps_abs=1e-8,
+        eps_rel=1e-8,
+        infeas_check_iter=10_000,
+        sketch_update_iter=10_000,
+        precondition=true,
+    )
+    result_high_precision = run_genios_trial_qp(P, q, A, l, u; options=options_high_precision)
 
-save(SAVEFILE, 
-    "result", result,
-    "result_npc", result_npc,
-    "result_exact", result_exact,
-    "result_exact_npc", result_exact_npc,
-    "result_high_precision", result_high_precision
-)
+    save(SAVEFILE, 
+        "result", result,
+        "result_npc", result_npc,
+        "result_exact", result_exact,
+        "result_exact_npc", result_exact_npc,
+        "result_high_precision", result_high_precision
+    )
+end
 
 
 ## Load data from save files
@@ -104,12 +109,13 @@ print_timing_table(names, logs)
 # Plot things
 rp_iter_plot = plot(; 
     dpi=300,
-    legendfontsize=10,
-    labelfontsize=14,
+    legendfontsize=18,
+    labelfontsize=18,
+    tickfontsize=12,
     yaxis=:log,
     ylabel=L"Primal Residual $\ell_2$ Norm",
     xlabel="Time (s)",
-    legend=:topright,
+    legend=false,
 )
 add_to_plot!(rp_iter_plot, log_pc.iter_time, log_pc.rp, "GeNIOS", :coral);
 add_to_plot!(rp_iter_plot, log_npc.iter_time, log_npc.rp, "No PC", :purple);
@@ -119,12 +125,13 @@ rp_iter_plot
 
 rd_iter_plot = plot(; 
     dpi=300,
-    legendfontsize=10,
-    labelfontsize=14,
+    legendfontsize=18,
+    labelfontsize=18,
+    tickfontsize=12,
     yaxis=:log,
     ylabel=L"Dual Residual $\ell_2$ Norm",
     xlabel="Time (s)",
-    legend=:topright,
+    legend=false,
 )
 add_to_plot!(rd_iter_plot, log_pc.iter_time, log_pc.rd, "GeNIOS", :coral);
 add_to_plot!(rd_iter_plot, log_npc.iter_time, log_npc.rd, "No PC", :purple);
@@ -136,8 +143,9 @@ rd_iter_plot
 pstar = log_high_precision.obj_val[end]
 obj_val_iter_plot = plot(; 
     dpi=300,
-    legendfontsize=10,
-    labelfontsize=14,
+    legendfontsize=18,
+    labelfontsize=18,
+    tickfontsize=12,
     yaxis=:log,
     ylabel=L"$(p-p^\star)/p^\star$",
     xlabel="Time (s)",

@@ -15,7 +15,7 @@ const FIGS_PATH = joinpath(@__DIR__, "figures")
 
 # Set this to false if you have not yet downloaded the real-sim dataset
 const HAVE_DATA_SPARSE = true
-const RAN_TRIALS = false
+const RAN_TRIALS = true
 
 
 function run_trial(; type, m=10_000, n=20_000)
@@ -186,7 +186,7 @@ for type in ["sparse", "dense"]
     yaxis=:log,
     ylabel=L"Primal Residual $\ell_2$ Norm",
     xlabel="Time (s)",
-    legend=:topright,
+    legend=false,
     )
     add_to_plot!(rp_iter_plot, log.iter_time, log.rp, "GeNIOS", :coral);
     add_to_plot!(rp_iter_plot, log_npc.iter_time, log_npc.rp, "No PC", :purple);
@@ -201,7 +201,7 @@ for type in ["sparse", "dense"]
     yaxis=:log,
     ylabel=L"Dual Residual $\ell_2$ Norm",
     xlabel="Time (s)",
-    legend=:topright,
+    legend=false,
     )
     add_to_plot!(rd_iter_plot, 1:length(log.iter_time), log.rd, "GeNIOS", :coral);
     add_to_plot!(rd_iter_plot, 1:length(log_npc.iter_time), log_npc.rd, "No PC", :purple);
@@ -223,7 +223,7 @@ for type in ["sparse", "dense"]
     yaxis=:log,
     ylabel=L"$(p-p^\star)/p^\star$",
     xlabel="Time (s)",
-    legend=:topright,
+    legend=false,
     )
     add_to_plot!(obj_val_iter_plot, log.iter_time, (log.obj_val .- pstar) ./ pstar, "GeNIOS", :coral);
     add_to_plot!(obj_val_iter_plot, log_npc.iter_time, (log_npc.obj_val .- pstar) ./ pstar, "No PC", :purple);
@@ -242,11 +242,12 @@ for type in ["sparse", "dense"]
         # title="Convergence (Lasso)",
         yaxis=:log,
         xlabel="Iteration",
-        legend=:topright,
+        legend=(type == "sparse" ? :topright : false),
         ylims=(1e-10, 1000),
-        legendfontsize=14,
-        labelfontsize=14,
-        titlefontsize=14
+        legendfontsize=18,
+        labelfontsize=18,
+        titlefontsize=18,
+        tickfontsize=12
     )
     add_to_plot!(high_precision_plt, log_high_precision.iter_time, log_high_precision.rp, "Primal Residual", :indigo)
     add_to_plot!(high_precision_plt, log_high_precision.iter_time, log_high_precision.rd, "Dual Residual", :red)
