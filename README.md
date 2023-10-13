@@ -117,5 +117,17 @@ The generic solver included with `GeNIOS` is somewhat more involved to use.
 Please check out the [corresponding section of the documentation](https://tjdiamandis.github.io/GeNIOS.jl/dev/examples/lasso/#Generic-interface)
 for the example above.
 
+## Citing
+```
+@misc{diamandis2023genios,
+      title={GeNIOS: an (almost) second-order operator-splitting solver for large-scale convex optimization}, 
+      author={Theo Diamandis and Zachary Frangella and Shipu Zhao and Bartolomeo Stellato and Madeleine Udell},
+      year={2023},
+      eprint={2310.08333},
+      archivePrefix={arXiv},
+      primaryClass={math.OC}
+}
+```
+
 ## References
 - Frangella, Z., Zhao, S., Diamandis, T., Stellato, B., & Udell, M. (2023). On the (linear) convergence of Generalized Newton Inexact ADMM. arXiv preprint arXiv:2302.03863.
