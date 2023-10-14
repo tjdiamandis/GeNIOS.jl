@@ -4,7 +4,6 @@
 [![Build Status](https://github.com/tjdiamandis/GeNIOS.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/tjdiamandis/GeNIOS.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![codecov](https://codecov.io/gh/tjdiamandis/GeNIOS.jl/branch/main/graph/badge.svg?token=1DKZD7FPW5)](https://codecov.io/gh/tjdiamandis/GeNIOS.jl)
 
-
 ## Overview
 
 The GEneralized Newton Inexact Operator Splitting (`GeNIOS`) package contains an
@@ -16,7 +15,7 @@ We provide interfaces for machine learning problems (`MLSolver`) and quadratic
 programs (`QPSolver`). In addition, convex optimization problems may be specified
 directly.
 
-For more information, check out the [documentation](https://tjdiamandis.github.io/GeNIOS.jl/dev/).
+_**For more information, check out the [documentation](https://tjdiamandis.github.io/GeNIOS.jl/dev/) and [our paper](https://arxiv.org/abs/2310.08333).**_
 
 ## Quick  start, 3 ways
 First, add the package locally.
