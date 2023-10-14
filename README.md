@@ -4,7 +4,6 @@
 [![Build Status](https://github.com/tjdiamandis/GeNIOS.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/tjdiamandis/GeNIOS.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![codecov](https://codecov.io/gh/tjdiamandis/GeNIOS.jl/branch/main/graph/badge.svg?token=1DKZD7FPW5)](https://codecov.io/gh/tjdiamandis/GeNIOS.jl)
 
-
 ## Overview
 
 The GEneralized Newton Inexact Operator Splitting (`GeNIOS`) package contains an
@@ -16,7 +15,7 @@ We provide interfaces for machine learning problems (`MLSolver`) and quadratic
 programs (`QPSolver`). In addition, convex optimization problems may be specified
 directly.
 
-For more information, check out the [documentation](https://tjdiamandis.github.io/GeNIOS.jl/dev/).
+_**For more information, check out the [documentation](https://tjdiamandis.github.io/GeNIOS.jl/dev/) and [our paper](https://arxiv.org/abs/2310.08333).**_
 
 ## Quick  start, 3 ways
 First, add the package locally.
@@ -116,6 +115,18 @@ println("Final RMSE: $(round(rmse, digits=8))")
 The generic solver included with `GeNIOS` is somewhat more involved to use.
 Please check out the [corresponding section of the documentation](https://tjdiamandis.github.io/GeNIOS.jl/dev/examples/lasso/#Generic-interface)
 for the example above.
+
+## Citing
+```
+@misc{diamandis2023genios,
+      title={GeNIOS: an (almost) second-order operator-splitting solver for large-scale convex optimization}, 
+      author={Theo Diamandis and Zachary Frangella and Shipu Zhao and Bartolomeo Stellato and Madeleine Udell},
+      year={2023},
+      eprint={2310.08333},
+      archivePrefix={arXiv},
+      primaryClass={math.OC}
+}
+```
 
 ## References
 - Frangella, Z., Zhao, S., Diamandis, T., Stellato, B., & Udell, M. (2023). On the (linear) convergence of Generalized Newton Inexact ADMM. arXiv preprint arXiv:2302.03863.
