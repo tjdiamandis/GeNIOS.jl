@@ -456,7 +456,7 @@ struct GeNIOSLog{T <: AbstractFloat, S <: AbstractVector{T}}
     solve_time::T
 end
 function GeNIOSLog(setup_time::T, precond_time::T, solve_time::T) where {T <: AbstractFloat}
-    return GeNIOSLog(
+    return GeNIOSLog{T, Vector{T}}(
         nothing, nothing, nothing, nothing, nothing, nothing, nothing,
         setup_time, precond_time, solve_time
     )
