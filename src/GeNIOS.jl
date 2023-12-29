@@ -10,6 +10,7 @@ using LogExpFunctions: log1pexp, logistic
 using ForwardDiff:derivative
 using Requires: @require
 # using LinearMaps
+using PrecompileTools
 
 const RP = RandomizedPreconditioners
 
@@ -28,6 +29,8 @@ end
 export Solver, MLSolver, QPSolver, GenericSolver
 export HessianOperator, SolverOptions
 export solve!
+
+include("precompile.jl")
 
 
 end
