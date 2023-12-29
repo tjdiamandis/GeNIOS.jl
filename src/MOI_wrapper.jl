@@ -141,11 +141,14 @@ MOI.get(optimizer::Optimizer, ::MOI.Silent) =
 # TimeLimitSec
 MOI.supports(::Optimizer, ::MOI.TimeLimitSec) = true
 function MOI.set(optimizer::Optimizer{T}, ::MOI.TimeLimitSec, value) where {T <: AbstractFloat}
+    value = isnothing(value) ? Inf : value
     MOI.set(optimizer, MOI.RawOptimizerAttribute("max_time_sec"), T(value))
     return nothing
 end
-MOI.get(optimizer::Optimizer, ::MOI.TimeLimitSec) = 
-    MOI.get(optimizer, MOI.RawOptimizerAttribute("max_time_sec"))
+function MOI.get(optimizer::Optimizer, ::MOI.TimeLimitSec)
+    val = MOI.get(optimizer, MOI.RawOptimizerAttribute("max_time_sec"))
+    return isinf(val) ? nothing : val
+end
 
 # AbsoluteGapTolerance
 MOI.supports(::Optimizer, ::MOI.AbsoluteGapTolerance) = true
