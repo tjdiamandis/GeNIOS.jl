@@ -18,7 +18,7 @@ example).
 
 ## Algorithm parameters
 The `GeNIOS` algorithm has the following tunable parameters, which are tunable
-either through the JuMP interface or via the [`SolverOptions`](@ref) object,
+either through the JuMP interface or via the `SolverOptions` object,
 passed to `solve!`:
 
 - `ρ0`
