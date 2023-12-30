@@ -182,7 +182,7 @@ for g:
 =#
 using ProximalOperators
 prox_func = NormL1(λ)
-gp(x) = prox_func(x)
+gp(x, p) = prox_func(x)
 prox_gp!(v, z, ρ, p) = prox!(v, prox_func, z, ρ)
 
 ## We see that this give the same result
