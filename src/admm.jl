@@ -99,14 +99,16 @@ end
 
 function converged(solver::Solver, options::SolverOptions, backup=true)
     mul!(solver.cache.vm, solver.data.M, solver.xk)
-    norm_Ax = norm(solver.cache.vm)
-    norm_z = norm(solver.zk)
-    norm_c = norm(solver.data.c)
-    eps_pri = sqrt(solver.data.m) * options.eps_abs + options.eps_rel * max(norm_Ax, norm_z, norm_c)
+    norm_Ax = norm(solver.cache.vm, options.norm_type)
+    norm_z = norm(solver.zk, options.norm_type)
+    norm_c = norm(solver.data.c, options.norm_type)
+    eps_abs_scaled = options.norm_type == 2 ? sqrt(solver.data.m) * options.eps_abs : options.eps_abs
+    eps_pri = eps_abs_scaled + options.eps_rel * max(norm_Ax, norm_z, norm_c)
 
     mul!(solver.cache.vn, solver.data.M', solver.uk)
-    norm_Aty = norm(solver.cache.vn)
-    eps_dual = sqrt(solver.data.n) * options.eps_abs + options.eps_rel * norm_Aty
+    norm_Aty = norm(solver.cache.vn, options.norm_type)
+    eps_abs_scaled = options.norm_type == 2 ? sqrt(solver.data.n) * options.eps_abs : options.eps_abs
+    eps_dual = eps_abs_scaled + options.eps_rel * norm_Aty
 
     return solver.rp_norm ≤ eps_pri && solver.rd_norm ≤ eps_dual
 end
