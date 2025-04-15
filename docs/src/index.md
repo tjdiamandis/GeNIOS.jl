@@ -121,26 +121,40 @@ via the iterative conjugate gradient method with a randomized preconditioner [^4
 GeNIOS also incorporates several other heuristics from the literature. Please
 see [our paper]() for additional details.
 
-## Getting Started
+## Quick Start
 The JuMP interface is the easiest way to use GeNIOS.
 A simple Markowitz portfolio example is below.
 ```julia
 using JuMP, GeNIOS
-# TODO:
+using Random, SparseArrays, LinearAlgebra
+Random.seed!(1)
+
+k, n = 5, 100
+# Σ = F*F' + diag(d)
+F = sprandn(n, k, 0.5)
+d = rand(n) * sqrt(k)
+Σ = F*F' + diagm(d)
+μ = randn(n)
+
+# max μᵀx - (γ/2)*xᵀΣx, s.t. x ≥ 0 and 1ᵀx = 1
+model = Model(GeNIOS.Optimizer)
+@variable(model, x[1:n] >= 0)
+@constraint(model, sum(x) == 1)
+@objective(model, Max, sum(μ .* x) - (1/2)*x'*Σ*x)
+optimize!(model)
+
+xv = value.(x)
+ret = dot(μ, xv) |> w->round(w, digits=3)
+risk = sqrt(xv'*Σ*xv) |> w->round(w, digits=3)
+println("Return:\t$ret\nRisk:\t$risk")
+
 ```
 
-However, the native interfaces can be called directly by specifying the problem data.
-Using the `QPSolver`, is it written as
-```julia
-# TODO:
-```
+However, the native interfaces can be called directly by specifying the problem
+data. Check out [Markowitz Portfolio Optimization, Three Ways](@ref) to see how
+to solve this problem significantly faster.
 
-And, finally, using the fully general interface, it is written as
-```julia
-# TODO:
-```
-
-Please see the [User Guide](@ref) for a full explanation of the solver parameter
+The [User Guide](@ref) contains a full explanation of the solver parameter
 options. Check out the examples as well.
 
 
