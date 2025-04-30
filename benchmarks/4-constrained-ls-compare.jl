@@ -14,13 +14,13 @@ const DATAFILE = joinpath(DATAPATH, "YearPredictionMSD.txt")
 const SAVEPATH = joinpath(@__DIR__, "saved", "4-constrained-ls-compare")
 const FIGS_PATH = joinpath(@__DIR__, "figures")
 
-const RAN_TRIALS = false
+const RAN_TRIALS = true
 
-function run_trial(n::Int)
+function run_trial(n::Int; solvers=Set([:qp, :cosmo_indirect, :cosmo_direct, :osqp, :nopc, :mosek]))
     GC.gc()
     BLAS.set_num_threads(Sys.CPU_THREADS)
 
-    filename = "compare-$n.jld2"
+    filename = "compare-$n-aug2024-2.jld2"
     savefile = joinpath(SAVEPATH, filename)
     m = 2n
 
@@ -28,89 +28,110 @@ function run_trial(n::Int)
     P, q, A, l, u = construct_problem_constrained_ls(Ad, b)
     GC.gc()
 
-    A_sp = spdiagm(ones(n))
-    P_sp = sparse(P)
-
+    
     # OSQP
-    GC.gc()
-    osqp_model = OSQP.Model()
-    OSQP.setup!(
-        osqp_model; P=P_sp, q=q, A=A_sp, l=l, u=u, 
-        eps_abs=1e-4, eps_rel=1e-4, verbose=false, time_limit=1000,
-    )
-    result_osqp = OSQP.solve!(osqp_model)
-    @info "Finished OSQP"
+    if :osqp ∈ solvers
+        A_sp = spdiagm(ones(n))
+        P_sp = sparse(P)
+        GC.gc()
+        osqp_model = OSQP.Model()
+        OSQP.setup!(
+            osqp_model; P=P_sp, q=q, A=A_sp, l=l, u=u, 
+            eps_abs=1e-4, eps_rel=1e-4, verbose=false, time_limit=1800,
+        )
+        result_osqp = OSQP.solve!(osqp_model)
+    else
+        result_osqp = nothing
+    end
 
     # COSMO
-    GC.gc()
-    model_cosmo_indirect = COSMO.Model()
-    cs1 = COSMO.Constraint(spdiagm(ones(n)), zeros(n), COSMO.Box(Vector(l), u))
-    settings = COSMO.Settings(
-        kkt_solver=CGIndirectKKTSolver, 
-        verbose=false,
-        verbose_timing=true,
-        eps_abs=1e-4,
-        eps_rel=1e-4,
-        time_limit=1000,
-    )
-    assemble!(model_cosmo_indirect, P, q, cs1, settings=settings)
-    result_cosmo_indirect = COSMO.optimize!(model_cosmo_indirect)
-    @info "Finished COSMO indirect"
+    if :cosmo_indirect ∈ solvers
+        GC.gc()
+        model_cosmo_indirect = COSMO.Model()
+        cs1 = COSMO.Constraint(spdiagm(ones(n)), zeros(n), COSMO.Box(Vector(l), u))
+        settings = COSMO.Settings(
+            kkt_solver=CGIndirectKKTSolver, 
+            verbose=false,
+            verbose_timing=true,
+            eps_abs=1e-4,
+            eps_rel=1e-4,
+            time_limit=1800,
+        )
+        assemble!(model_cosmo_indirect, P, q, cs1, settings=settings)
+        result_cosmo_indirect = COSMO.optimize!(model_cosmo_indirect)
+    else
+        result_cosmo_indirect = nothing
+    end
+
 
     # COSMO
-    GC.gc()
-    model_cosmo_direct = COSMO.Model()
-    settings = COSMO.Settings(
-        kkt_solver=CholmodKKTSolver,
-        verbose=false,
-        verbose_timing = true,
-        eps_abs=1e-4,
-        eps_rel=1e-4,
-        time_limit=1000,
-    )
-    assemble!(model_cosmo_direct, P, q, cs1, settings=settings)
-    result_cosmo_direct = COSMO.optimize!(model_cosmo_direct)
-    @info "Finished COSMO direct"
+    if :cosmo_direct ∈ solvers
+        GC.gc()
+        model_cosmo_direct = COSMO.Model()
+        settings = COSMO.Settings(
+            kkt_solver=CholmodKKTSolver,
+            verbose=false,
+            verbose_timing = true,
+            eps_abs=1e-4,
+            eps_rel=1e-4,
+            time_limit=1800,
+        )
+        assemble!(model_cosmo_direct, P, q, cs1, settings=settings)
+        result_cosmo_direct = COSMO.optimize!(model_cosmo_direct)
+    else
+        result_cosmo_direct = nothing
+    end
 
     # GeNIOS solve
     # With everything
-    GC.gc()
-    solver = GeNIOS.QPSolver(P, q, A, l, u; σ=0.0)
-    options = GeNIOS.SolverOptions(
-        verbose=false,
-        precondition=true,
-        num_threads=Sys.CPU_THREADS,
-        norm_type=Inf,
-        sketch_update_iter=5000,
-        max_time_sec=1000.
-    )
-    result = solve!(solver; options=options)
-    @info "Finished GeNIOS"
+    if :qp ∈ solvers
+        GC.gc()
+        solver = GeNIOS.QPSolver(P, q, A, l, u; σ=0.0)
+        options = GeNIOS.SolverOptions(
+            verbose=false,
+            precondition=true,
+            num_threads=Sys.CPU_THREADS,
+            norm_type=Inf,
+            sketch_update_iter=5000,
+            max_time_sec=1800.
+        )
+        result = solve!(solver; options=options)
+    else
+        result = nothing
+    end
 
     # No preconditioner
-    GC.gc()
-    solver_npc = GeNIOS.QPSolver(P, q, A, l, u; σ=0.0)
-    options = GeNIOS.SolverOptions(
-        verbose=false,
-        precondition=false,
-        num_threads=Sys.CPU_THREADS,
-        norm_type=Inf,
-        max_time_sec=1000.
-    )
-    result_npc = solve!(solver_npc; options=options)
-    @info "Finished GeNIOS (no pc)"
+    if :nopc ∈ solvers
+        GC.gc()
+        solver_npc = GeNIOS.QPSolver(P, q, A, l, u; σ=0.0)
+        options = GeNIOS.SolverOptions(
+            verbose=false,
+            precondition=false,
+            num_threads=Sys.CPU_THREADS,
+            norm_type=Inf,
+            max_time_sec=1800.
+        )
+        result_npc = solve!(solver_npc; options=options)
+    else
+        result_npc = nothing
+    end
 
     # Mosek solve
-    model = Model(Mosek.Optimizer)
-    @variable(model, x[1:n])
-    @objective(model, Min, 0.5*sum(P[i,j]*x[i]*x[j] for i in 1:n, j in 1:n) + sum(q[i]*x[i] for i in 1:n))
-    @constraint(model, 0.0 .≤ x)
-    @constraint(model, x .≤ 1.0)
-    set_silent(model)
-    set_time_limit_sec(model, 1000.0)
-    optimize!(model)
-    result_mosek = solution_summary(model)
-    @info "Finished Mosek"
+    if :mosek ∈ solvers
+        model = Model(Mosek.Optimizer)
+        @variable(model, x[1:n])
+        @objective(model, Min, 0.5*sum(P[i,j]*x[i]*x[j] for i in 1:n, j in 1:n) + sum(q[i]*x[i] for i in 1:n))
+        @constraint(model, 0.0 .≤ x)
+        @constraint(model, x .≤ 1.0)
+        set_silent(model)
+        set_optimizer_attribute(model, "MSK_DPAR_INTPNT_CO_TOL_PFEAS", 1e-4)
+        set_optimizer_attribute(model, "MSK_DPAR_INTPNT_CO_TOL_DFEAS", 1e-4)
+        set_time_limit_sec(model, 1800.0)
+        optimize!(model)
+        result_mosek = solution_summary(model)
+    else
+        result_mosek = nothing
+    end
 
     save(savefile, 
         "result", result,
@@ -122,23 +143,47 @@ function run_trial(n::Int)
     )
     
     GC.gc()
-    return nothing
+    name_logs = [
+        (:qp, result),
+        (:nopc, result_npc),
+        (:cosmo_indirect, result_cosmo_indirect),
+        (:cosmo_direct, result_cosmo_direct),
+        (:osqp, result_osqp),
+        (:mosek, result_mosek),
+    ]
+    to_remove = Set{Symbol}()
+    for (name, log) in name_logs
+        if !(
+            (name ∈ [:qp, :nopc] && !isnothing(log) && log.status == :OPTIMAL) || 
+            (name ∈ [:cosmo_indirect, :cosmo_direct] && !isnothing(log) && log.status == :Solved) ||
+            (name == :osqp && !isnothing(log) && log.info.status == :Solved) ||
+            (name == :mosek && !isnothing(log) && log.termination_status == OPTIMAL)
+        )
+            @info "\t$name timed out"
+            push!(to_remove, name)
+        end
+    end
+    return to_remove
 end
 
 # n = 100 is just for compilation
 ns = [250, 500, 1_000, 2_000, 4_000, 8_000, 16_000]
 if !RAN_TRIALS
     run_trial(100)
+    solvers = Set([:qp, :cosmo_indirect, :cosmo_direct, :osqp, :nopc, :mosek])
+
+    @info "Starting trials..."
     for n in ns
-        println()
-        @info "--- Starting n=$n ---"
-        run_trial(n)
+        @info "Starting n=$n"
+        @info "\t Solvers: $solvers"
+        to_remove = run_trial(n; solvers=solvers)
+        setdiff!(solvers, to_remove)
         @info "Finished with n=$n"
     end
 end
 
 function get_logs(n)
-    savefile = joinpath(SAVEPATH, "compare-$n.jld2")
+    savefile = joinpath(SAVEPATH, "compare-$n-aug2024-2.jld2")
     r, r_npc, rc_indirect, rc_direct, r_osqp, r_mosek = load(savefile,
         "result", "result_npc", "result_cosmo_indirect", "result_cosmo_direct", "result_osqp", "result_mosek"
     )
@@ -205,7 +250,7 @@ timing_plt = plot(
     yticks=[1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3],
     minorgrid=true,
 )
-savefig(timing_plt, joinpath(FIGS_PATH, "4-constrained-ls-compare-timing.pdf"))
+savefig(timing_plt, joinpath(FIGS_PATH, "4-constrained-ls-compare-timing-aug2024-2.pdf"))
 
 inds_n = [2, 5, 7]
 # inds_trial = [1, 3, 5, 6]
@@ -243,4 +288,8 @@ setup_solve_plt = plot(
     bottommargin=10Plots.mm,
     topmargin=3Plots.mm,
 )
-savefig(setup_solve_plt, joinpath(FIGS_PATH, "4-constrained-ls-compare-setup-solve.pdf"))
+savefig(setup_solve_plt, joinpath(FIGS_PATH, "4-constrained-ls-compare-setup-solve-aug2024-2.pdf"))
+
+for (i, n) in enumerate(ns)
+    println("$n & $(@sprintf("%.3f", timings[i,1])) & $(@sprintf("%.3f", timings[i,2])) & $(@sprintf("%.3f", timings[i,3])) & $(@sprintf("%.3f", timings[i,4])) & $(@sprintf("%.3f", timings[i,5])) & $(@sprintf("%.3f", timings[i,6])) \\\\")
+end

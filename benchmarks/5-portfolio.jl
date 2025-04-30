@@ -11,7 +11,7 @@ using GeNIOS
 
 const SAVEPATH = joinpath(@__DIR__, "saved", "5-portfolio")
 const FIGS_PATH = joinpath(@__DIR__, "figures")
-const RAN_TRIALS = false
+const RAN_TRIALS = true
 
 # FOR QP SOLVER (custom operators)
 # P = γ*(F*F' + Diagonal(d))
@@ -93,7 +93,7 @@ end
 function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_direct, :osqp])
     GC.gc()
     BLAS.set_num_threads(Sys.CPU_THREADS)
-    filename = "portfolio-$n.jld2"
+    filename = "portfolio-$n-2024.jld2"
     savefile = joinpath(SAVEPATH, filename)
 
     k = n ÷ 100
@@ -108,7 +108,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         osqp_model = OSQP.Model()
         OSQP.setup!(
             osqp_model; P=P_eq, q=q_eq, A=M_eq, l=l_eq, u=u_eq, 
-            eps_abs=1e-4, eps_rel=1e-4, verbose=false, time_limit=1000,
+            eps_abs=1e-4, eps_rel=1e-4, verbose=false, time_limit=1800,
         )
         result_osqp = OSQP.solve!(osqp_model)
     else
@@ -127,7 +127,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
             verbose_timing = true,
             eps_abs=1e-4,
             eps_rel=1e-4,
-            time_limit=1000,
+            time_limit=1800,
         )
         assemble!(model_cosmo_indirect, P_eq, q_eq, cs1, settings=settings)
         result_cosmo_indirect = COSMO.optimize!(model_cosmo_indirect)
@@ -147,7 +147,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
             verbose_timing = true,
             eps_abs=1e-4,
             eps_rel=1e-4,
-            time_limit=1000,
+            time_limit=1800,
         )
         assemble!(model_cosmo_direct, P_eq, q_eq, cs1, settings=settings)
         result_cosmo_direct = COSMO.optimize!(model_cosmo_direct)
@@ -163,7 +163,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         eps_rel=1e-4,
         norm_type=Inf,
         sketch_update_iter=10_000,
-        max_time_sec=1000.0,
+        max_time_sec=1800.0,
     )
 
     if :qp ∈ solvers
@@ -278,7 +278,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         @constraint(model, sum(x) == 1)
         @constraint(model, x .≥ 0)
         set_silent(model)
-        set_time_limit_sec(model, 1000.0)
+        set_time_limit_sec(model, 1800.0)
         optimize!(model)
         result_mosek = solution_summary(model)
     else
@@ -330,6 +330,8 @@ if !RAN_TRIALS
 
     @info "Starting trials..."
     for n in ns
+        @info "Starting n=$n"
+        @info "\t Solvers: $solvers"
         to_remove = run_trial(n; solvers=solvers)
         setdiff!(solvers, to_remove)
         @info "Finished with n=$n"
@@ -341,7 +343,7 @@ end
 
 ## Load data from save file
 function get_logs(n)
-    savefile = joinpath(SAVEPATH, "portfolio-$n.jld2")
+    savefile = joinpath(SAVEPATH, "portfolio-$n-2024.jld2")
     r_qp, r_qpf, r_op, r_custom, rc_indirect, rc_direct, r_osqp, r_mosek = 
         load(savefile, 
             "result_qp", "result_qp_full", "result_op", "result_custom",
@@ -415,4 +417,9 @@ timing_plt = plot(
     yticks=[1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3],
     minorgrid=true,
 )
-savefig(timing_plt, joinpath(FIGS_PATH, "5-portfolio-timing.pdf"))
+savefig(timing_plt, joinpath(FIGS_PATH, "5-portfolio-timing-2024.pdf"))
+
+# Table
+for (i, n) in enumerate(ns)
+    println("$n & $(@sprintf("%.3f", timings[i,1])) & $(@sprintf("%.3f", timings[i,2])) & $(@sprintf("%.3f", timings[i,3])) & $(@sprintf("%.3f", timings[i,4])) & $(@sprintf("%.3f", timings[i,5])) & $(@sprintf("%.3f", timings[i,6])) & $(@sprintf("%.3f", timings[i,7])) & $(@sprintf("%.3f", timings[i,8])) \\\\")
+end

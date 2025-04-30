@@ -113,7 +113,7 @@ println("Final RMSE: $(round(rmse, digits=8))")
 
 ### `GenericSolver` interface
 The generic solver included with `GeNIOS` is somewhat more involved to use.
-Please check out the [corresponding section of the documentation](https://tjdiamandis.github.io/GeNIOS.jl/dev/examples/lasso/#Generic-interface)
+Please check out the [corresponding section of the documentation](https://tjdiamandis.github.io/GeNIOS.jl/dev/advanced/lasso/#Generic-interface)
 for the example above.
 
 ## Citing
