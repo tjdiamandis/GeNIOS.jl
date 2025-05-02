@@ -41,7 +41,7 @@ plot!(sig_plt,
     label=&quot;true signal&quot;,
     lw=3,
     color=:royalblue
-)</code></pre><img src="5e528eeb.svg" alt="Example block output"/><h2 id="Defining-the-probelem"><a class="docs-heading-anchor" href="#Defining-the-probelem">Defining the probelem</a><a id="Defining-the-probelem-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-the-probelem" title="Permalink"></a></h2><p>We will separate the observed signal <span>$y$</span> into a sum of <span>$K=3$</span> signals <span>$x_k$</span>. The first is mean-squared small (noise). The second is second-order smooth (smooth derivative). The third is first-difference sparse (piecewise constant). This problem can be phrased as</p><p class="math-container">\[\begin{array}{ll}
+)</code></pre><img src="d217b1a6.svg" alt="Example block output"/><h2 id="Defining-the-probelem"><a class="docs-heading-anchor" href="#Defining-the-probelem">Defining the probelem</a><a id="Defining-the-probelem-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-the-probelem" title="Permalink"></a></h2><p>We will separate the observed signal <span>$y$</span> into a sum of <span>$K=3$</span> signals <span>$x_k$</span>. The first is mean-squared small (noise). The second is second-order smooth (smooth derivative). The third is first-difference sparse (piecewise constant). This problem can be phrased as</p><p class="math-container">\[\begin{array}{ll}
 \text{minimize}  &amp; (1/T)\|y - x^2 - x^3\|_2^2 + \gamma_2 \phi_2(x^2) + \gamma_3 \phi_1(x^3),
 \end{array}\]</p><p>where</p><p class="math-container">\[\phi_2(x) = \frac{1}{T-2}\sum_{i=2}^{T-1} (x_{t+1} - 2x_t + x_{t-1})^2\]</p><p>and</p><p class="math-container">\[\phi_3(x) = \frac{1}{T-1}\sum_{i=1}^{T-1} \lvert x_{t+1} - x_t \rvert\]</p><p>.</p><p>We will solve this problem using the genertic solver interface, with the first term as <span>$f(x)$</span> and the second and third terms as <span>$g(z)$</span>. Specifically, this problem can be rephrased as</p><p class="math-container">\[\begin{array}{ll}
 \text{minimize}  &amp; (1/T)\|x^1\|_2^2 + I_{\{0\}}(z^1) + \gamma_2 \phi_2(z^2) + \gamma_3 \phi_1(z^3) \\
@@ -118,22 +118,22 @@ res = solve!(solver, options=GeNIOS.SolverOptions(eps_abs=1e-5, print_iter=100))
 x1 = solver.xk[1:T]
 x2 = solver.xk[T+1:2T]
 x3 = solver.xk[2T+1:end];</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.287s
+Setup in  0.295s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      0.000e+00            Inf            Inf      1.000e+00         0.000
-            1      0.000e+00      2.146e+01      3.716e+01      1.000e+00         1.898
-          100      1.034e+02      5.062e-04      8.941e-03      5.000e-01         2.245
-          200      1.070e+02      4.418e-04      1.876e-03      1.250e-01         2.454
-          300      1.078e+02      3.830e-04      1.075e-03      1.250e-01         2.633
-          400      1.072e+02      1.604e-04      6.493e-04      1.250e-01         2.801
-          500      1.079e+02      1.081e-04      4.436e-04      1.250e-01         2.968
-          585      1.088e+02      8.961e-05      2.570e-04      1.250e-01         3.106
+            1      0.000e+00      2.146e+01      3.716e+01      1.000e+00         1.911
+          100      1.034e+02      5.062e-04      8.941e-03      5.000e-01         2.258
+          200      1.070e+02      4.418e-04      1.876e-03      1.250e-01         2.448
+          300      1.078e+02      3.830e-04      1.075e-03      1.250e-01         2.641
+          400      1.072e+02      1.604e-04      6.493e-04      1.250e-01         2.810
+          500      1.079e+02      1.081e-04      4.436e-04      1.250e-01         2.974
+          585      1.088e+02      8.961e-05      2.570e-04      1.250e-01         3.118
 
-SOLVED in  3.106s, 585 iterations
-Total time:  3.394s
+SOLVED in  3.118s, 585 iterations
+Total time:  3.413s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</code></pre><h2 id="Plotting-the-results"><a class="docs-heading-anchor" href="#Plotting-the-results">Plotting the results</a><a id="Plotting-the-results-1"></a><a class="docs-heading-anchor-permalink" href="#Plotting-the-results" title="Permalink"></a></h2><pre><code class="language-julia hljs">res_plt = plot(
     t,
     y,
@@ -159,7 +159,7 @@ plot!(res_plt,
     label=&quot;reconstructed signal&quot;,
     lw=3,
     color=:coral1
-)</code></pre><img src="4cdc1dcd.svg" alt="Example block output"/><h3 id="Visualizing-each-component"><a class="docs-heading-anchor" href="#Visualizing-each-component">Visualizing each component</a><a id="Visualizing-each-component-1"></a><a class="docs-heading-anchor-permalink" href="#Visualizing-each-component" title="Permalink"></a></h3><pre><code class="language-julia hljs">p1 = plot(
+)</code></pre><img src="216f7a0c.svg" alt="Example block output"/><h3 id="Visualizing-each-component"><a class="docs-heading-anchor" href="#Visualizing-each-component">Visualizing each component</a><a id="Visualizing-each-component-1"></a><a class="docs-heading-anchor-permalink" href="#Visualizing-each-component" title="Permalink"></a></h3><pre><code class="language-julia hljs">p1 = plot(
     t,
     X[:, 1],
     lw=1,
@@ -219,4 +219,4 @@ plot!(p3,
     lw=3,
     color=:coral1
 )
-decomp_plt = plot(p1, p2, p3, layout=(3,1))</code></pre><img src="a216cf64.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../portfolio/">« Markowitz Portfolio Optimization, Three Ways</a><a class="docs-footer-nextpage" href="../../guide/">User Guide »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.10.1 on <span class="colophon-date" title="Tuesday 15 April 2025 04:19">Tuesday 15 April 2025</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+decomp_plt = plot(p1, p2, p3, layout=(3,1))</code></pre><img src="bd9a04c5.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../portfolio/">« Markowitz Portfolio Optimization, Three Ways</a><a class="docs-footer-nextpage" href="../../guide/">User Guide »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.10.2 on <span class="colophon-date" title="Friday 2 May 2025 02:22">Friday 2 May 2025</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
