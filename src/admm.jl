@@ -157,8 +157,10 @@ function convergence_criteria!(solver::MLSolver, options::SolverOptions)
     @. solver.cache.vn += solver.λ2 * solver.zk
     
     # Applies normalization
-    normalization = solver.λ1 / norm(solver.cache.vn, Inf)
-    ν .*= normalization
+    if !iszero(solver.λ1)
+        normalization = solver.λ1 / norm(solver.cache.vn, Inf)
+        ν .*= normalization
+    end
 
     # g(ν) = -∑f*(νᵢ) - bᵀνᵢ
     dual_obj = -sum(solver.data.fconj, ν)
