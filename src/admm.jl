@@ -262,11 +262,11 @@ function update_x!(
     
     geomean_resid = sqrt(solver.rp_norm * solver.rd_norm)
     linsys_tol = max(
-        sqrt(eps()), 
-        min(
+        sqrt(eps(T)), 
+        T(min(
             min(geomean_resid, one(T)) / t^options.linsys_exponent, 
             options.linsys_max_tol
-        )
+        ))
     )
 
     # warm start if past first iteration
@@ -460,10 +460,10 @@ function solve!(
     solver.loss = Inf
     solver.rp_norm = Inf
     solver.rd_norm = Inf
-    solver.xk .= zeros(n)
-    solver.Mxk .= zeros(m)
-    solver.zk .= zeros(m)
-    solver.uk .= zeros(m)
+    fill!(solver.xk, 0)
+    fill!(solver.Mxk, 0)
+    fill!(solver.zk, 0)
+    fill!(solver.uk, 0)
     # Computed variables
     obj_val!(solver, options)
     convergence_criteria!(solver, options)
@@ -601,9 +601,9 @@ function solve!(
             tmp_log.prox_time[1:t-1],
             tmp_log.rp[1:t-1], 
             tmp_log.rd[1:t-1],
-            setup_time, 
-            precond_time, 
-            solve_time
+            convert(eltype(tmp_log.dual_gap), setup_time), 
+            convert(eltype(tmp_log.dual_gap), precond_time), 
+            convert(eltype(tmp_log.dual_gap), solve_time)
         )
     else
         log = GeNIOSLog(setup_time, precond_time, solve_time)
