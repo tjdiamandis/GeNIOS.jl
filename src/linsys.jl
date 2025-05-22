@@ -87,12 +87,12 @@ function update!(::HessianOperator, solver)
 end
 
 # TODO: maybe the preconditioner should go in here?
-struct LinearOperator{T}
-    M
+struct LinearOperator{T,V <: AbstractVector{T},MT}
+    M::MT
     ρ::MVector{1,T}
     Hf_xk::HessianOperator
     n::Int
-    vm::AbstractVector{T}
+    vm::V
 end
 function LinearOperator(M, ρ::T, H::HessianOperator, m, n) where {T}
     return LinearOperator(M, MVector{1,T}(ρ), H, n, zeros(T, m))

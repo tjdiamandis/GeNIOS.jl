@@ -44,33 +44,36 @@ struct ConicProgramData{T} <: ProblemData
     K::Cone
 end
 
-struct GenericProblemData{T, ParamType} <: ProblemData
-    M
-    c::AbstractVector{T}
+struct GenericProblemData{T, ParamType, V <: AbstractVector{T}, MT, F1, F2, F3, F4} <: ProblemData
+    M::MT
+    c::V
     m::Int
     n::Int
     Hf::HessianOperator
-    grad_f!::Function
-    f::Function
-    g::Function
-    prox_g!::Function
+    grad_f!::F1
+    f::F2
+    g::F3
+    prox_g!::F4
     params::ParamType
 end
 
-@kwdef struct GenericCache{T} <: OptimizerCache
-    vm::Vector{T}
-    vn::Vector{T}
-    vn2::Vector{T}
-    rhs::Vector{T}
+@kwdef struct GenericCache{T, V <: AbstractVector{T}} <: OptimizerCache
+    vm::V
+    vn::V
+    vn2::V
+    rhs::V
 end
 
-function init_cache(data::GenericProblemData{T}) where {T <: Real}
+# instantiate a zero vec/mat of type V
+_zerosgeneric(V::Type{<:AbstractArray}, n) = fill!(V(undef, n), zero(eltype(V)))
+
+function init_cache(data::GenericProblemData{T, P, V}) where {T <: Real, P, V}
     m, n = data.m, data.n
     return GenericCache(
-        vm=zeros(T, m),
-        vn=zeros(T, n),
-        vn2=zeros(T, n),
-        rhs=zeros(T, n),
+        vm=_zerosgeneric(V, m),
+        vn=_zerosgeneric(V, n),
+        vn2=_zerosgeneric(V, n),
+        rhs=_zerosgeneric(V, n),
     )
 end
 
@@ -140,26 +143,26 @@ function GenericSolver(
     g, 
     prox_g!, 
     M, 
-    c::Vector{T}; 
+    c::V;
     params=nothing
-) where {T}
+) where {T, V <: AbstractVector{T}}
     m, n = typeof(M) <: UniformScaling ? (length(c), length(c)) : size(M)
     data = GenericProblemData(M, c, m, n, Hf, grad_f!, f, g, prox_g!, params)
-    xk = zeros(T, n)
-    Mxk = zeros(T, m)
-    zk = zeros(T, m)
-    zk_old = zeros(T, m)
-    uk = zeros(T, m)
-    rp = zeros(T, m)
-    rd = zeros(T, n)
+    xk = _zerosgeneric(V, n)
+    Mxk = _zerosgeneric(V, m)
+    zk = _zerosgeneric(V, m)
+    zk_old = _zerosgeneric(V, m)
+    uk = _zerosgeneric(V, m)
+    rp = _zerosgeneric(V, m)
+    rd = _zerosgeneric(V, n)
     obj_val, loss, dual_gap = zero(T), zero(T), zero(T)
     rp_norm, rd_norm = zero(T), zero(T)
     ρ = one(T)
     cache = init_cache(data)
     
     return GenericSolver(
-        data, 
-        LinearOperator(M, one(T), Hf, m, n), 
+        data,
+        LinearOperator(M, MVector{1,T}(one(T)), Hf, n, _zerosgeneric(V, m)),  # construct
         I,
         xk, Mxk, zk, zk_old, uk, rp, rd, 
         rp_norm, rd_norm,
