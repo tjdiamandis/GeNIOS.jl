@@ -23,26 +23,26 @@ solver = GeNIOS.MLSolver(f, λ1, λ2, A, b)
 res = solve!(solver; options=GeNIOS.SolverOptions(use_dual_gap=false))
 rmse = sqrt(1/N*norm(A*solver.zk - b, 2)^2)
 println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.041s
+Setup in  0.042s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration      Objective           RMSE       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      5.505e+01      5.246e-01            Inf            Inf      1.000e+00         0.000
-            1      5.505e+01      5.246e-01      0.000e+00      9.994e+00      1.000e+00         0.265
-           20      3.755e+01      3.297e-01      5.352e-02      2.085e-01      1.000e+00         0.270
-           40      3.735e+01      3.162e-01      1.053e-02      6.937e-02      1.000e+00         0.274
-           60      3.730e+01      3.104e-01      7.514e-03      4.175e-02      1.000e+00         0.280
-           80      3.728e+01      3.075e-01      3.500e-03      2.238e-02      1.000e+00         0.285
-          100      3.728e+01      3.058e-01      2.184e-03      1.384e-02      1.000e+00         0.291
-          120      3.728e+01      3.047e-01      1.377e-03      9.316e-03      1.000e+00         0.297
-          140      3.728e+01      3.041e-01      8.090e-04      6.417e-03      1.000e+00         0.304
-          160      3.728e+01      3.036e-01      6.316e-04      4.580e-03      1.000e+00         0.311
-          180      3.728e+01      3.033e-01      4.291e-04      3.225e-03      1.000e+00         0.317
-          199      3.728e+01      3.031e-01      4.722e-04      2.222e-03      1.000e+00         0.323
+            1      5.505e+01      5.246e-01      0.000e+00      9.994e+00      1.000e+00         0.288
+           20      3.755e+01      3.297e-01      5.352e-02      2.085e-01      1.000e+00         0.292
+           40      3.735e+01      3.162e-01      1.053e-02      6.937e-02      1.000e+00         0.296
+           60      3.730e+01      3.104e-01      7.514e-03      4.175e-02      1.000e+00         0.301
+           80      3.728e+01      3.075e-01      3.500e-03      2.238e-02      1.000e+00         0.307
+          100      3.728e+01      3.058e-01      2.184e-03      1.384e-02      1.000e+00         0.312
+          120      3.728e+01      3.047e-01      1.377e-03      9.316e-03      1.000e+00         0.318
+          140      3.728e+01      3.041e-01      8.090e-04      6.417e-03      1.000e+00         0.324
+          160      3.728e+01      3.036e-01      6.316e-04      4.580e-03      1.000e+00         0.330
+          180      3.728e+01      3.033e-01      4.291e-04      3.225e-03      1.000e+00         0.337
+          199      3.728e+01      3.031e-01      4.722e-04      2.222e-03      1.000e+00         0.342
 
-SOLVED in  0.323s, 199 iterations
-Total time:  0.364s
+SOLVED in  0.342s, 199 iterations
+Total time:  0.384s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 Final RMSE: 0.62386089</code></pre><h2 id="Duality-gap"><a class="docs-heading-anchor" href="#Duality-gap">Duality gap</a><a id="Duality-gap-1"></a><a class="docs-heading-anchor-permalink" href="#Duality-gap" title="Permalink"></a></h2><p>However, we can supply the conjugate function if we want to use the duality gap.</p><pre><code class="language-julia hljs">fconj(y) = y &gt; 1 ? Inf : y^2/2.0
@@ -50,32 +50,32 @@ solver = GeNIOS.MLSolver(f, λ1, λ2, A, b; fconj=fconj)
 res = solve!(solver; options=GeNIOS.SolverOptions(use_dual_gap=true))
 rmse = sqrt(1/N*norm(A*solver.zk - b, 2)^2)
 println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.039s
+Setup in  0.038s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration      Objective           RMSE       Dual Gap       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      5.505e+01      5.246e-01      6.266e+00            Inf            Inf      1.000e+00         0.000
             1      5.505e+01      5.246e-01      6.266e+00      0.000e+00      9.994e+00      1.000e+00         0.000
-           20      3.755e+01      3.297e-01      1.529e-01      5.352e-02      2.085e-01      1.000e+00         0.030
-           40      3.735e+01      3.162e-01      6.772e-02      1.053e-02      6.937e-02      1.000e+00         0.035
-           60      3.730e+01      3.104e-01      3.585e-02      7.514e-03      4.175e-02      1.000e+00         0.040
-           80      3.728e+01      3.075e-01      1.983e-02      3.500e-03      2.238e-02      1.000e+00         0.046
-          100      3.728e+01      3.058e-01      1.283e-02      2.184e-03      1.384e-02      1.000e+00         0.052
-          120      3.728e+01      3.047e-01      9.128e-03      1.377e-03      9.316e-03      1.000e+00         0.058
-          140      3.728e+01      3.041e-01      6.302e-03      8.090e-04      6.417e-03      1.000e+00         0.064
-          160      3.728e+01      3.036e-01      4.532e-03      6.316e-04      4.580e-03      1.000e+00         0.071
-          180      3.728e+01      3.033e-01      3.218e-03      4.291e-04      3.225e-03      1.000e+00         0.077
-          200      3.728e+01      3.031e-01      2.172e-03      2.871e-04      2.185e-03      1.000e+00         0.084
-          220      3.728e+01      3.028e-01      1.272e-03      2.688e-04      1.277e-03      1.000e+00         0.090
-          240      3.728e+01      3.027e-01      7.490e-04      1.567e-04      7.492e-04      1.000e+00         0.097
-          260      3.728e+01      3.026e-01      4.418e-04      9.170e-05      4.402e-04      1.000e+00         0.103
-          280      3.728e+01      3.026e-01      2.607e-04      5.375e-05      2.590e-04      1.000e+00         0.109
-          300      3.728e+01      3.026e-01      1.538e-04      3.154e-05      1.525e-04      1.000e+00         0.115
-          317      3.728e+01      3.026e-01      9.821e-05      2.007e-05      9.730e-05      1.000e+00         0.119
+           20      3.755e+01      3.297e-01      1.529e-01      5.352e-02      2.085e-01      1.000e+00         0.004
+           40      3.735e+01      3.162e-01      6.772e-02      1.053e-02      6.937e-02      1.000e+00         0.009
+           60      3.730e+01      3.104e-01      3.585e-02      7.514e-03      4.175e-02      1.000e+00         0.014
+           80      3.728e+01      3.075e-01      1.983e-02      3.500e-03      2.238e-02      1.000e+00         0.020
+          100      3.728e+01      3.058e-01      1.283e-02      2.184e-03      1.384e-02      1.000e+00         0.026
+          120      3.728e+01      3.047e-01      9.128e-03      1.377e-03      9.316e-03      1.000e+00         0.032
+          140      3.728e+01      3.041e-01      6.302e-03      8.090e-04      6.417e-03      1.000e+00         0.039
+          160      3.728e+01      3.036e-01      4.532e-03      6.316e-04      4.580e-03      1.000e+00         0.045
+          180      3.728e+01      3.033e-01      3.218e-03      4.291e-04      3.225e-03      1.000e+00         0.052
+          200      3.728e+01      3.031e-01      2.172e-03      2.871e-04      2.185e-03      1.000e+00         0.058
+          220      3.728e+01      3.028e-01      1.272e-03      2.688e-04      1.277e-03      1.000e+00         0.065
+          240      3.728e+01      3.027e-01      7.490e-04      1.567e-04      7.492e-04      1.000e+00         0.071
+          260      3.728e+01      3.026e-01      4.418e-04      9.170e-05      4.402e-04      1.000e+00         0.077
+          280      3.728e+01      3.026e-01      2.607e-04      5.375e-05      2.590e-04      1.000e+00         0.083
+          300      3.728e+01      3.026e-01      1.538e-04      3.154e-05      1.525e-04      1.000e+00         0.089
+          317      3.728e+01      3.026e-01      9.821e-05      2.007e-05      9.730e-05      1.000e+00         0.094
 
-SOLVED in  0.119s, 317 iterations
-Total time:  0.158s
+SOLVED in  0.094s, 317 iterations
+Total time:  0.132s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Final RMSE: 0.62163896</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../constrained-ls/">« Constrained Least Squares</a><a class="docs-footer-nextpage" href="../lasso/">Lasso »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.10.2 on <span class="colophon-date" title="Friday 2 May 2025 02:22">Friday 2 May 2025</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Final RMSE: 0.62163896</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../constrained-ls/">« Constrained Least Squares</a><a class="docs-footer-nextpage" href="../lasso/">Lasso »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.11.4 on <span class="colophon-date" title="Thursday 22 May 2025 18:53">Thursday 22 May 2025</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
