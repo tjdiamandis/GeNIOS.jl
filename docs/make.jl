@@ -65,6 +65,7 @@ makedocs(;
         "Advanced Usage" => advanced_nav,
         "User Guide" => "guide.md",
         "Solution method" => "method.md",
+        "GPU Support" => "gpu.md",
         "API reference" => "api.md"
     ],
 )

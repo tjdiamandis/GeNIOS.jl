@@ -8,7 +8,7 @@ optimization problems.
 
 ### Documentation Contents:
 ```@contents
-Pages = ["index.md", "method.md", "guide.md", "api.md"]
+Pages = ["index.md", "method.md", "guide.md", "gpu.md", "api.md"]
 Depth = 1
 ```
 ##### Examples:

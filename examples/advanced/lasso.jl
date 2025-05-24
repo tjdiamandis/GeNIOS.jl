@@ -174,6 +174,11 @@ res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, verbose=true))
 rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
 println("Final RMSE: $(round(rmse, digits=8))")
 
+#=
+## GPU support
+Check out the page [GPU Support](@ref) for an example showing how to use GPUs with GeNIOS.
+=#
+
 
 #=
 ## ProximalOperators.jl
