@@ -6,6 +6,9 @@ function build_preconditioner!(solver::Solver, options::SolverOptions)
     return (time_ns() - precond_time_start) / 1e9
 end
 
+# obtain 2D type of an instance of a 1D vector type, i.e. Vector{T} -> Matrix{T}
+_promote_1D_vector_type(x::AbstractVector) = typeof(reshape(x, (length(x), 1)))
+
 # Conic solver currently defaults here
 # TODO: possibly want to include ρMᵀM in the preconditioner??
 # - would need to estimate the smallest eigenvalue for the regularization, I think
@@ -23,8 +26,9 @@ function _build_preconditioner!(solver::Solver, options::SolverOptions)
             options.init_sketch_size;
             tol=options.adaptive_sketch_tol*solver.data.n^2
         )
-    else    
-        ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.init_sketch_size; n=solver.lhs_op.n)
+    else
+        ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.init_sketch_size;
+            n=solver.lhs_op.n, S=_promote_1D_vector_type(solver.cache.vm))
     end
     solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ)
     return nothing
@@ -39,7 +43,8 @@ function _build_preconditioner!(solver::MLSolver, options::SolverOptions)
             tol=options.adaptive_sketch_tol*solver.data.n^2
         )
     else    
-        ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.init_sketch_size; n=solver.lhs_op.n)
+        ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.init_sketch_size; 
+            n=solver.lhs_op.n, S=_promote_1D_vector_type(solver.cache.vm))
     end
     
     # Adds the ℓ2 regularization term to the preconditioner
@@ -51,7 +56,8 @@ end
 function update_preconditioner!(solver::Solver, options::SolverOptions)
     !options.update_preconditioner && return nothing
     update!(solver.lhs_op.Hf_xk, solver)
-    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.init_sketch_size; n=solver.lhs_op.n)
+    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.init_sketch_size; 
+        n=solver.lhs_op.n, S=_promote_1D_vector_type(solver.cache.vm))
     solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ)
     return nothing
 end
