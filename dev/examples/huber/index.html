@@ -15,7 +15,7 @@ b = A*xstar + 1e-3*randn(N)
 
 # Add outliers
 b += 10*collect(sprand(N, 0.05))
-λ = 0.05*norm(A&#39;*b, Inf)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.18184410798147943</code></pre><h2 id="MLSolver-interface"><a class="docs-heading-anchor" href="#MLSolver-interface">MLSolver interface</a><a id="MLSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#MLSolver-interface" title="Permalink"></a></h2><p>We just need to specify <span>$f$</span> and the regularization parameters.</p><pre><code class="language-julia hljs"># Huber problem: min ∑ fʰᵘᵇ(aᵢᵀx - bᵢ) + λ||x||₁
+λ = 0.05*norm(A&#39;*b, Inf)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.15848896526224718</code></pre><h2 id="MLSolver-interface"><a class="docs-heading-anchor" href="#MLSolver-interface">MLSolver interface</a><a id="MLSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#MLSolver-interface" title="Permalink"></a></h2><p>We just need to specify <span>$f$</span> and the regularization parameters.</p><pre><code class="language-julia hljs"># Huber problem: min ∑ fʰᵘᵇ(aᵢᵀx - bᵢ) + λ||x||₁
 f(x) = abs(x) &lt;= 1 ? 0.5*x^2 : abs(x) - 0.5
 λ1 = λ
 λ2 = 0.0
@@ -23,59 +23,59 @@ solver = GeNIOS.MLSolver(f, λ1, λ2, A, b)
 res = solve!(solver; options=GeNIOS.SolverOptions(use_dual_gap=false))
 rmse = sqrt(1/N*norm(A*solver.zk - b, 2)^2)
 println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.043s
+Setup in  0.036s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration      Objective           RMSE       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-            0      5.505e+01      5.246e-01            Inf            Inf      1.000e+00         0.000
-            1      5.505e+01      5.246e-01      0.000e+00      9.994e+00      1.000e+00         0.288
-           20      3.755e+01      3.297e-01      5.352e-02      2.085e-01      1.000e+00         0.293
-           40      3.735e+01      3.162e-01      1.053e-02      6.937e-02      1.000e+00         0.299
-           60      3.730e+01      3.104e-01      7.514e-03      4.175e-02      1.000e+00         0.305
-           80      3.728e+01      3.075e-01      3.500e-03      2.238e-02      1.000e+00         0.311
-          100      3.728e+01      3.058e-01      2.184e-03      1.384e-02      1.000e+00         0.318
-          120      3.728e+01      3.047e-01      1.377e-03      9.316e-03      1.000e+00         0.325
-          140      3.728e+01      3.041e-01      8.090e-04      6.417e-03      1.000e+00         0.332
-          160      3.728e+01      3.036e-01      6.316e-04      4.580e-03      1.000e+00         0.339
-          180      3.728e+01      3.033e-01      4.291e-04      3.225e-03      1.000e+00         0.346
-          199      3.728e+01      3.031e-01      4.722e-04      2.222e-03      1.000e+00         0.353
+            0      4.864e+01      4.932e-01            Inf            Inf      1.000e+00         0.000
+            1      4.864e+01      4.932e-01      0.000e+00      1.083e+01      1.000e+00         0.465
+           20      2.892e+01      2.713e-01      4.607e-02      2.036e-01      1.000e+00         0.470
+           40      2.869e+01      2.516e-01      1.362e-02      7.071e-02      1.000e+00         0.476
+           60      2.864e+01      2.465e-01      5.991e-03      4.049e-02      1.000e+00         0.482
+           80      2.863e+01      2.439e-01      3.404e-03      2.073e-02      1.000e+00         0.488
+          100      2.862e+01      2.426e-01      2.089e-03      1.358e-02      1.000e+00         0.495
+          120      2.862e+01      2.419e-01      1.405e-03      8.822e-03      1.000e+00         0.502
+          140      2.862e+01      2.416e-01      8.922e-04      5.881e-03      1.000e+00         0.509
+          160      2.862e+01      2.413e-01      6.359e-04      3.967e-03      1.000e+00         0.517
+          180      2.862e+01      2.412e-01      4.102e-04      2.655e-03      1.000e+00         0.525
+          188      2.862e+01      2.411e-01      5.451e-04      2.200e-03      1.000e+00         0.528
 
-SOLVED in  0.353s, 199 iterations
-Total time:  0.396s
+SOLVED in  0.528s, 188 iterations
+Total time:  0.563s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Final RMSE: 0.62386089</code></pre><h2 id="Duality-gap"><a class="docs-heading-anchor" href="#Duality-gap">Duality gap</a><a id="Duality-gap-1"></a><a class="docs-heading-anchor-permalink" href="#Duality-gap" title="Permalink"></a></h2><p>However, we can supply the conjugate function if we want to use the duality gap.</p><pre><code class="language-julia hljs">fconj(y) = y &gt; 1 ? Inf : y^2/2.0
+Final RMSE: 0.4456551</code></pre><h2 id="Duality-gap"><a class="docs-heading-anchor" href="#Duality-gap">Duality gap</a><a id="Duality-gap-1"></a><a class="docs-heading-anchor-permalink" href="#Duality-gap" title="Permalink"></a></h2><p>However, we can supply the conjugate function if we want to use the duality gap.</p><pre><code class="language-julia hljs">fconj(y) = y &gt; 1 ? Inf : y^2/2.0
 solver = GeNIOS.MLSolver(f, λ1, λ2, A, b; fconj=fconj)
 res = solve!(solver; options=GeNIOS.SolverOptions(use_dual_gap=true))
 rmse = sqrt(1/N*norm(A*solver.zk - b, 2)^2)
 println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.044s
+Setup in  0.034s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration      Objective           RMSE       Dual Gap       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-            0      5.505e+01      5.246e-01      6.266e+00            Inf            Inf      1.000e+00         0.000
-            1      5.505e+01      5.246e-01      6.266e+00      0.000e+00      9.994e+00      1.000e+00         0.000
-           20      3.755e+01      3.297e-01      1.529e-01      5.352e-02      2.085e-01      1.000e+00         0.005
-           40      3.735e+01      3.162e-01      6.772e-02      1.053e-02      6.937e-02      1.000e+00         0.010
-           60      3.730e+01      3.104e-01      3.585e-02      7.514e-03      4.175e-02      1.000e+00         0.016
-           80      3.728e+01      3.075e-01      1.983e-02      3.500e-03      2.238e-02      1.000e+00         0.022
-          100      3.728e+01      3.058e-01      1.283e-02      2.184e-03      1.384e-02      1.000e+00         0.029
-          120      3.728e+01      3.047e-01      9.128e-03      1.377e-03      9.316e-03      1.000e+00         0.036
-          140      3.728e+01      3.041e-01      6.302e-03      8.090e-04      6.417e-03      1.000e+00         0.043
-          160      3.728e+01      3.036e-01      4.532e-03      6.316e-04      4.580e-03      1.000e+00         0.051
-          180      3.728e+01      3.033e-01      3.218e-03      4.291e-04      3.225e-03      1.000e+00         0.058
-          200      3.728e+01      3.031e-01      2.172e-03      2.871e-04      2.185e-03      1.000e+00         0.065
-          220      3.728e+01      3.028e-01      1.272e-03      2.688e-04      1.277e-03      1.000e+00         0.073
-          240      3.728e+01      3.027e-01      7.490e-04      1.567e-04      7.492e-04      1.000e+00         0.080
-          260      3.728e+01      3.026e-01      4.418e-04      9.170e-05      4.402e-04      1.000e+00         0.087
-          280      3.728e+01      3.026e-01      2.607e-04      5.375e-05      2.590e-04      1.000e+00         0.094
-          300      3.728e+01      3.026e-01      1.538e-04      3.154e-05      1.525e-04      1.000e+00         0.100
-          317      3.728e+01      3.026e-01      9.821e-05      2.007e-05      9.730e-05      1.000e+00         0.106
+            0      4.864e+01      4.932e-01      1.058e+01            Inf            Inf      1.000e+00         0.000
+            1      4.864e+01      4.932e-01      1.058e+01      0.000e+00      1.083e+01      1.000e+00         0.000
+           20      2.892e+01      2.713e-01      1.695e-01      4.607e-02      2.036e-01      1.000e+00         0.005
+           40      2.869e+01      2.516e-01      4.753e-02      1.362e-02      7.071e-02      1.000e+00         0.010
+           60      2.864e+01      2.465e-01      3.121e-02      5.991e-03      4.049e-02      1.000e+00         0.017
+           80      2.863e+01      2.439e-01      2.058e-02      3.404e-03      2.073e-02      1.000e+00         0.023
+          100      2.862e+01      2.426e-01      1.389e-02      2.089e-03      1.358e-02      1.000e+00         0.030
+          120      2.862e+01      2.419e-01      9.869e-03      1.405e-03      8.822e-03      1.000e+00         0.038
+          140      2.862e+01      2.416e-01      6.505e-03      8.922e-04      5.881e-03      1.000e+00         0.045
+          160      2.862e+01      2.413e-01      4.483e-03      6.359e-04      3.967e-03      1.000e+00         0.053
+          180      2.862e+01      2.412e-01      2.848e-03      4.102e-04      2.655e-03      1.000e+00         0.061
+          200      2.862e+01      2.411e-01      1.685e-03      3.832e-04      1.568e-03      1.000e+00         0.068
+          220      2.862e+01      2.410e-01      9.638e-04      2.093e-04      8.717e-04      1.000e+00         0.076
+          240      2.862e+01      2.409e-01      5.632e-04      1.162e-04      4.910e-04      1.000e+00         0.083
+          260      2.862e+01      2.409e-01      3.328e-04      6.536e-05      2.798e-04      1.000e+00         0.090
+          280      2.862e+01      2.409e-01      1.981e-04      3.716e-05      1.612e-04      1.000e+00         0.097
+          300      2.862e+01      2.409e-01      1.186e-04      2.135e-05      9.379e-05      1.000e+00         0.104
+          307      2.862e+01      2.409e-01      9.918e-05      1.763e-05      7.779e-05      1.000e+00         0.106
 
-SOLVED in  0.106s, 317 iterations
-Total time:  0.149s
+SOLVED in  0.106s, 307 iterations
+Total time:  0.139s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Final RMSE: 0.62163896</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../constrained-ls/">« Constrained Least Squares</a><a class="docs-footer-nextpage" href="../lasso/">Lasso »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.11.4 on <span class="colophon-date" title="Saturday 24 May 2025 00:16">Saturday 24 May 2025</span>. Using Julia version 1.10.9.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Final RMSE: 0.44488898</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../constrained-ls/">« Constrained Least Squares</a><a class="docs-footer-nextpage" href="../lasso/">Lasso »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.11.4 on <span class="colophon-date" title="Saturday 24 May 2025 00:47">Saturday 24 May 2025</span>. Using Julia version 1.11.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
