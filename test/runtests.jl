@@ -17,7 +17,7 @@ end
     include("infeas.jl")
 end
 
-@testset "Conic Intercace" begin
+@testset "Conic Interface" begin
     include("constraints.jl")
 end
 

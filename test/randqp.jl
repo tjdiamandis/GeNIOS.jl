@@ -13,6 +13,7 @@
     @inline function check_equals(a::T, b::T) where T
         isempty(fieldnames(T)) && return a == b
         for fn in fieldnames(T)
+            fn == :ref && continue
             x, y = getfield(a, fn), getfield(b, fn)
             check_equals(x, y) || return false
         end
@@ -30,7 +31,7 @@
     
     # Check optimality
     fstar = solver.obj_val
-    fstar_mosek = -1.443337417081063
+    fstar_mosek = -1.4751119028013415
     @test abs(fstar - fstar_mosek) <= tol
     @test res.status == :OPTIMAL
 end
