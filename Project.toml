@@ -30,7 +30,7 @@ RandomizedPreconditioners = "0.1"
 Requires = "1"
 SparseArrays = "1.9"
 StaticArrays = "1"
-julia = "1.10.9"
+julia = "1.11.5"
 
 [extras]
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
