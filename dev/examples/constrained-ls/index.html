@@ -22,19 +22,19 @@ Setup in  0.000s
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      0.000e+00            Inf            Inf      1.000e+00         0.000
-            1      0.000e+00      0.000e+00      3.992e+01      1.000e+00         0.198
-           20     -1.486e+01      3.163e-01      3.174e-02      1.000e+00         0.198
-           40     -1.248e+01      1.417e-01      9.042e-03      1.000e+00         0.198
-           60     -1.116e+01      6.001e-02      1.152e-02      2.000e+00         0.198
-           80     -1.061e+01      2.496e-02      3.778e-03      2.000e+00         0.199
-          100     -1.043e+01      1.194e-02      1.446e-03      2.000e+00         0.199
-          120     -1.036e+01      6.127e-03      6.277e-04      2.000e+00         0.199
-          140     -1.033e+01      3.248e-03      3.045e-04      2.000e+00         0.200
-          160     -1.031e+01      1.011e-03      3.681e-04      4.000e+00         0.200
-          164     -1.031e+01      7.345e-04      2.664e-04      4.000e+00         0.200
+            1      0.000e+00      0.000e+00      3.992e+01      1.000e+00         0.172
+           20     -1.486e+01      3.163e-01      3.174e-02      1.000e+00         0.172
+           40     -1.248e+01      1.417e-01      9.042e-03      1.000e+00         0.173
+           60     -1.116e+01      6.001e-02      1.152e-02      2.000e+00         0.173
+           80     -1.061e+01      2.496e-02      3.778e-03      2.000e+00         0.173
+          100     -1.043e+01      1.194e-02      1.446e-03      2.000e+00         0.173
+          120     -1.036e+01      6.127e-03      6.277e-04      2.000e+00         0.174
+          140     -1.033e+01      3.248e-03      3.045e-04      2.000e+00         0.174
+          160     -1.031e+01      1.011e-03      3.681e-04      4.000e+00         0.174
+          164     -1.031e+01      7.345e-04      2.664e-04      4.000e+00         0.174
 
-SOLVED in  0.200s, 164 iterations
-Total time:  0.200s
+SOLVED in  0.174s, 164 iterations
+Total time:  0.175s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 Optimal value: 15.3832</code></pre><h2 id="QPSolver-interface"><a class="docs-heading-anchor" href="#QPSolver-interface">QPSolver interface</a><a id="QPSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#QPSolver-interface" title="Permalink"></a></h2><p>To make the formulations match, we will introdudce a new variable <span>$y = Ax - b$</span>. (GeNIOS does not support constants in the objective function.) The problem becomes</p><p class="math-container">\[\begin{array}{ll}
@@ -63,8 +63,8 @@ res = solve!(solver)</code></pre><pre class="documenter-example-output"><code cl
 Status:     <span class="sgr32"> OPTIMAL</span>
 Obj. val:   15.38
 num iters:  140
-setup time: 0.017s
-solve time: 0.227s
+setup time: 0.018s
+solve time: 0.246s
 </code></pre><h2 id="Examining-the-solution"><a class="docs-heading-anchor" href="#Examining-the-solution">Examining the solution</a><a id="Examining-the-solution-1"></a><a class="docs-heading-anchor-permalink" href="#Examining-the-solution" title="Permalink"></a></h2><p>We can check the solution and its optimality</p><pre><code class="language-julia hljs">xstar = solver.zk[m+1:end]
 ls_residual =  1/√(m) * norm(Ad*xstar - b)
 feas = all(xstar .&gt;= 0) &amp;&amp; all(xstar .&lt;= 1)
@@ -76,4 +76,4 @@ println(&quot;Optimal value: $(round(solver.obj_val, digits=4))&quot;)</code></p
 Least Squres RMSE = 0.71620903
 Primal residual: 0.00114969
 Dual residual: 0.00031261
-Optimal value: 15.3831</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../huber/">Huber Fitting »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.11.4 on <span class="colophon-date" title="Saturday 24 May 2025 00:47">Saturday 24 May 2025</span>. Using Julia version 1.11.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Optimal value: 15.3831</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../huber/">Huber Fitting »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.11.4 on <span class="colophon-date" title="Sunday 25 May 2025 00:24">Sunday 25 May 2025</span>. Using Julia version 1.11.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

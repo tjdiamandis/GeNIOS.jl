@@ -17,18 +17,18 @@ solver = GeNIOS.MLSolver(f, λ1, λ2, A, b; fconj=fconj)
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, dual_gap_tol=1e-3, verbose=true))
 rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
 println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.152s
+Setup in  0.153s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration      Objective           RMSE       Dual Gap       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      1.995e+01      3.158e-01      9.256e+00            Inf            Inf      1.000e+00         0.000
-            1      1.995e+01      3.158e-01      9.256e+00      0.000e+00      1.058e+01      1.000e+00         0.172
-           20      4.260e+00      5.491e-02      5.403e-02      2.000e-02      6.603e-02      1.000e+00         0.177
-           36      4.260e+00      5.408e-02      8.625e-04      4.108e-04      1.712e-03      1.000e+00         0.183
+            1      1.995e+01      3.158e-01      9.256e+00      0.000e+00      1.058e+01      1.000e+00         0.195
+           20      4.260e+00      5.491e-02      5.403e-02      2.000e-02      6.603e-02      1.000e+00         0.200
+           36      4.260e+00      5.408e-02      8.625e-04      4.108e-04      1.712e-03      1.000e+00         0.206
 
-SOLVED in  0.183s, 36 iterations
-Total time:  0.335s
+SOLVED in  0.206s, 36 iterations
+Total time:  0.359s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 Final RMSE: 0.076475</code></pre><p>Note that the solver uses forward-mode automatic differentiation to compute the first and second derivatives of <span>$f$</span>. We can supply these arguments for additional speedup, if desired.</p><pre><code class="language-julia hljs">df(x) = x
@@ -37,18 +37,18 @@ solver = GeNIOS.MLSolver(f, df, d2f, λ1, λ2, A, b; fconj=fconj)
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, use_dual_gap=true, dual_gap_tol=1e-3, verbose=true))
 rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
 println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.037s
+Setup in  0.042s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration      Objective           RMSE       Dual Gap       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      1.995e+01      3.158e-01      9.256e+00            Inf            Inf      1.000e+00         0.000
-            1      1.995e+01      3.158e-01      9.256e+00      0.000e+00      1.058e+01      1.000e+00         0.075
-           20      4.260e+00      5.491e-02      5.403e-02      2.000e-02      6.603e-02      1.000e+00         0.080
-           36      4.260e+00      5.408e-02      8.625e-04      4.108e-04      1.712e-03      1.000e+00         0.085
+            1      1.995e+01      3.158e-01      9.256e+00      0.000e+00      1.058e+01      1.000e+00         0.079
+           20      4.260e+00      5.491e-02      5.403e-02      2.000e-02      6.603e-02      1.000e+00         0.084
+           36      4.260e+00      5.408e-02      8.625e-04      4.108e-04      1.712e-03      1.000e+00         0.090
 
-SOLVED in  0.085s, 36 iterations
-Total time:  0.123s
+SOLVED in  0.090s, 36 iterations
+Total time:  0.131s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 Final RMSE: 0.076475</code></pre><h2 id="QPSolver-interface"><a class="docs-heading-anchor" href="#QPSolver-interface">QPSolver interface</a><a id="QPSolver-interface-1"></a><a class="docs-heading-anchor-permalink" href="#QPSolver-interface" title="Permalink"></a></h2><p>The <code>QPSolver</code> interface requires us to specify the problem in the form</p><p class="math-container">\[\begin{array}{ll}
@@ -88,13 +88,13 @@ Setup in  0.000s
             1      0.000e+00      0.000e+00      1.095e+01      1.000e+00         0.000
            20     -1.530e+01      4.039e-02      2.905e-01      1.000e+00         0.025
            40     -1.565e+01      1.575e-02      9.517e-02      1.000e+00         0.044
-           60     -1.568e+01      5.419e-03      3.517e-02      1.000e+00         0.067
-           80     -1.569e+01      2.035e-03      1.340e-02      1.000e+00         0.091
-          100     -1.569e+01      7.494e-04      4.885e-03      1.000e+00         0.119
-          109     -1.569e+01      4.726e-04      3.031e-03      1.000e+00         0.131
+           60     -1.568e+01      5.419e-03      3.517e-02      1.000e+00         0.065
+           80     -1.569e+01      2.035e-03      1.340e-02      1.000e+00         0.088
+          100     -1.569e+01      7.494e-04      4.885e-03      1.000e+00         0.114
+          109     -1.569e+01      4.726e-04      3.031e-03      1.000e+00         0.125
 
-SOLVED in  0.131s, 109 iterations
-Total time:  0.131s
+SOLVED in  0.125s, 109 iterations
+Total time:  0.126s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 Final RMSE: 0.07684455</code></pre><h2 id="Generic-interface"><a class="docs-heading-anchor" href="#Generic-interface">Generic interface</a><a id="Generic-interface-1"></a><a class="docs-heading-anchor-permalink" href="#Generic-interface" title="Permalink"></a></h2><p>Finally, we use the generic interface, which provides a large amount of control but is more complicated to use than the specialized interfaces demonstrated above.</p><p>First, we define the custom <code>HessianOperator</code>, which is used to solve the linear system in the <span>$x$</span>-subproblem. Since the Hessian of the objective is simply <span>$A^TA$</span>, this operator is simple for the Lasso problem. However, note that, since this is a custom type, we can speed up the multiplication to be more efficient than if we were to use <span>$A^TA$</span> directly.</p><p>The <code>update!</code> function is called before the solution of the <span>$x$</span>-subproblem to update the Hessian, if necessary.</p><pre><code class="language-julia hljs">struct HessianLasso{T, S &lt;: AbstractMatrix{T}} &lt;: HessianOperator
@@ -141,18 +141,18 @@ end</code></pre><pre class="documenter-example-output"><code class="nohighlight 
 res = solve!(solver; options=GeNIOS.SolverOptions(relax=true, verbose=true))
 rmse = sqrt(1/m*norm(A*solver.zk - b, 2)^2)
 println(&quot;Final RMSE: $(round(rmse, digits=8))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting setup...
-Setup in  0.109s
+Setup in  0.114s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      1.995e+01            Inf            Inf      1.000e+00         0.000
-            1      1.995e+01      0.000e+00      1.058e+01      1.000e+00         0.107
-           20      4.268e+00      1.994e-02      2.279e-02      1.000e+00         0.112
-           30      4.260e+00      2.118e-03      8.626e-04      1.000e+00         0.116
+            1      1.995e+01      0.000e+00      1.058e+01      1.000e+00         0.110
+           20      4.268e+00      1.994e-02      2.279e-02      1.000e+00         0.117
+           30      4.260e+00      2.118e-03      8.626e-04      1.000e+00         0.120
 
-SOLVED in  0.116s, 30 iterations
-Total time:  0.225s
+SOLVED in  0.120s, 30 iterations
+Total time:  0.234s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 Final RMSE: 0.07648496</code></pre><h2 id="GPU-support"><a class="docs-heading-anchor" href="#GPU-support">GPU support</a><a id="GPU-support-1"></a><a class="docs-heading-anchor-permalink" href="#GPU-support" title="Permalink"></a></h2><p>Check out the page <a href="../../gpu/#GPU-Support">GPU Support</a> for an example showing how to use GPUs with GeNIOS.</p><h2 id="ProximalOperators.jl"><a class="docs-heading-anchor" href="#ProximalOperators.jl">ProximalOperators.jl</a><a id="ProximalOperators.jl-1"></a><a class="docs-heading-anchor-permalink" href="#ProximalOperators.jl" title="Permalink"></a></h2><p>We could alternatively use <code>ProximalOperators.jl</code> to define the proximal operator for g:</p><pre><code class="language-julia hljs">using ProximalOperators
@@ -176,12 +176,12 @@ Setup in  0.008s
     Iteration        Obj Val       r_primal         r_dual              ρ           Time
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
             0      1.995e+01            Inf            Inf      1.000e+00         0.000
-            1      1.995e+01      0.000e+00      1.058e+01      1.000e+00         0.028
-           20      4.268e+00      1.994e-02      2.279e-02      1.000e+00         0.034
-           30      4.260e+00      2.118e-03      8.626e-04      1.000e+00         0.037
+            1      1.995e+01      0.000e+00      1.058e+01      1.000e+00         0.029
+           20      4.268e+00      1.994e-02      2.279e-02      1.000e+00         0.035
+           30      4.260e+00      2.118e-03      8.626e-04      1.000e+00         0.039
 
-SOLVED in  0.037s, 30 iterations
-Total time:  0.045s
+SOLVED in  0.039s, 30 iterations
+Total time:  0.046s
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Final RMSE: 0.07648496</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../examples/portfolio/">« Markowitz Portfolio Optimization</a><a class="docs-footer-nextpage" href="../portfolio/">Markowitz Portfolio Optimization, Three Ways »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.11.4 on <span class="colophon-date" title="Saturday 24 May 2025 00:47">Saturday 24 May 2025</span>. Using Julia version 1.11.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Final RMSE: 0.07648496</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../examples/portfolio/">« Markowitz Portfolio Optimization</a><a class="docs-footer-nextpage" href="../portfolio/">Markowitz Portfolio Optimization, Three Ways »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.11.4 on <span class="colophon-date" title="Sunday 25 May 2025 00:24">Sunday 25 May 2025</span>. Using Julia version 1.11.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
