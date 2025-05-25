@@ -6,7 +6,6 @@ In this example, contributed by [Zack Li](https://gist.github.com/xzackli), we s
 using CUDA
 using GeNIOS
 using Random, LinearAlgebra, SparseArrays
-using ProximalOperators
 
 # the existing code in the generic interface tutorial
 Random.seed!(1)
