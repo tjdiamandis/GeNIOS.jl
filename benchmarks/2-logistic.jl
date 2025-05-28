@@ -13,11 +13,12 @@ const DATAPATH = joinpath(@__DIR__, "data")
 const DATAFILE_DENSE = joinpath(DATAPATH, "YearPredictionMSD.txt")
 const DATAFILE_SPARSE = joinpath(DATAPATH, "real-sim.jld2")
 const SAVEPATH = joinpath(@__DIR__, "saved", "2-logistic")
+const SAVEFILE = "2-logistic-genios-may2025.jld2"
 const FIGS_PATH = joinpath(@__DIR__, "figures")
 
 # Set this to false if you have not yet downloaded the real-sim dataset
-const HAVE_DATA_SPARSE = true
-const RAN_TRIALS = true
+const HAVE_DATA_SPARSE = false
+const RAN_TRIALS = false
 
 
 function build_genios_conic_model(A, b, λ1)
@@ -119,7 +120,7 @@ function run_trial()
 
     ## Solving the Problem
     # For compilation
-    solve!(GeNIOS.LogisticSolver(λ1, λ2, A, b); options=GeNIOS.SolverOptions(max_iters=2, use_dual_gap=true, verbose=false))
+    solve!(GeNIOS.LogisticSolver(λ1, λ2, A, b); options=GeNIOS.SolverOptions(max_iters=2, use_dual_gap=true, verbose=false, precondition=true))
 
     # With everything
     solver = GeNIOS.LogisticSolver(λ1, λ2, A, b)
@@ -137,6 +138,24 @@ function run_trial()
     )
     GC.gc()
     result = solve!(solver; options=options)
+
+    # Don't update preconditioner
+    solver = GeNIOS.LogisticSolver(λ1, λ2, A, b)
+    options = GeNIOS.SolverOptions(
+        relax=true,
+        α=1.6,
+        use_dual_gap=true,
+        dual_gap_tol=1e-4,
+        precondition=true,
+        sketch_update_iter=1000,
+        num_threads=Sys.CPU_THREADS,
+        ρ0=10.0,
+        rho_update_iter=1000,
+        max_iters=5000,
+        max_time_sec=20*60.
+    )
+    GC.gc()
+    result_no_pc_update = solve!(solver; options=options)
 
     # No preconditioner
     solver = GeNIOS.LogisticSolver(λ1, λ2, A, b)
@@ -252,9 +271,10 @@ function run_trial()
     result_conic = solve!(solver; options=options)
 
 
-    savefile = joinpath(SAVEPATH, "2-logistic-genios.jld2")
+    savefile = joinpath(SAVEPATH, SAVEFILE)
     save(savefile, 
         "result", result,
+        "result_no_pc_update", result_no_pc_update,
         "result_npc", result_npc,
         "result_exact", result_exact,
         "result_exact_npc", result_exact_npc,
@@ -268,13 +288,14 @@ end
 
 !RAN_TRIALS && run_trial()
 
-savefile = joinpath(SAVEPATH, "2-logistic-genios.jld2")
-result, result_npc, result_exact, result_exact_npc, result_high_precision, result_lbfgs, result_conic = 
+savefile = joinpath(SAVEPATH, SAVEFILE)
+result, result_no_pc_update, result_npc, result_exact, result_exact_npc, result_high_precision, result_lbfgs, result_conic = 
     load(savefile, 
-        "result", "result_npc", "result_exact", "result_exact_npc", "result_high_precision", "result_lbfgs", "result_conic",
+        "result", "result_no_pc_update", "result_npc", "result_exact", "result_exact_npc", "result_high_precision", "result_lbfgs", "result_conic",
     )
 any(!isnothing(x) && x.status != :OPTIMAL for x in (
     result,
+    result_no_pc_update,
     result_npc,
     result_exact,
     result_exact_npc,
@@ -282,6 +303,7 @@ any(!isnothing(x) && x.status != :OPTIMAL for x in (
 )) && @warn "Some problems not solved! for genios"
 
 log = result.log
+log_no_pc_update = result_no_pc_update.log
 log_npc = result_npc.log
 log_exact = result_exact.log
 log_exact_npc = result_exact_npc.log
@@ -290,8 +312,8 @@ pstar = log_high_precision.obj_val[end]
 log_lbfgs = result_lbfgs.log
 log_conic = result_conic.log
 
-names = ["GeNIOS", "GeNIOS (no pc)", "GeNIOS (exact)", "GeNIOS (no pc, exact)", "ADMM LBFGS", "Conic"]
-logs = [log, log_npc, log_exact, log_exact_npc, log_lbfgs, log_conic]
+names = ["GeNIOS", "GeNIOS (no update)", "GeNIOS (no pc)", "GeNIOS (exact)", "GeNIOS (no pc, exact)", "ADMM LBFGS", "Conic"]
+logs = [log, log_no_pc_update, log_npc, log_exact, log_exact_npc, log_lbfgs, log_conic]
 @info "\n\n ----- TIMING TABLE -----\n"
 print_timing_table(names, logs)
 
@@ -306,6 +328,7 @@ dual_gap_iter_plt = plot(;
     legend=:topright,
 )
 add_to_plot!(dual_gap_iter_plt, log.iter_time, log.dual_gap, "GeNIOS", :coral);
+add_to_plot!(dual_gap_iter_plt, log_no_pc_update.iter_time, log_no_pc_update.dual_gap, "No Update", :orange);
 add_to_plot!(dual_gap_iter_plt, log_npc.iter_time, log_npc.dual_gap, "No PC", :purple);
 add_to_plot!(dual_gap_iter_plt, log_exact.iter_time, log_exact.dual_gap, "ADMM (pc)", :red);
 add_to_plot!(dual_gap_iter_plt, log_exact_npc.iter_time, log_exact_npc.dual_gap, "ADMM (no pc)", :mediumblue);
@@ -322,6 +345,7 @@ rp_iter_plot = plot(;
     legend=false,
 )
 add_to_plot!(rp_iter_plot, log.iter_time, log.rp, "GeNIOS", :coral);
+add_to_plot!(rp_iter_plot, log_no_pc_update.iter_time, log_no_pc_update.rp, "No Update", :orange);
 add_to_plot!(rp_iter_plot, log_npc.iter_time, log_npc.rp, "No PC", :purple);
 add_to_plot!(rp_iter_plot, log_exact.iter_time, log_exact.rp, "ADMM (pc)", :red);
 add_to_plot!(rp_iter_plot, log_exact_npc.iter_time, log_exact_npc.rp, "ADMM (no pc)", :mediumblue);
@@ -338,6 +362,7 @@ rd_iter_plot = plot(;
     legend=false,
 )
 add_to_plot!(rd_iter_plot, log.iter_time, log.rd, "GeNIOS", :coral);
+add_to_plot!(rd_iter_plot, log_no_pc_update.iter_time, log_no_pc_update.rd, "No Update", :orange);
 add_to_plot!(rd_iter_plot, log_npc.iter_time, log_npc.rd, "No PC", :purple);
 add_to_plot!(rd_iter_plot, log_exact.iter_time, log_exact.rd, "ADMM (pc)", :red);
 add_to_plot!(rd_iter_plot, log_exact_npc.iter_time, log_exact_npc.rd, "ADMM (no pc)", :mediumblue);
@@ -361,6 +386,7 @@ obj_val_iter_plot = plot(;
     legend=false,
 )
 add_to_plot!(obj_val_iter_plot, log.iter_time, (log.obj_val .- pstar) ./ pstar, "GeNIOS", :coral);
+add_to_plot!(obj_val_iter_plot, log_no_pc_update.iter_time, (log_no_pc_update.obj_val .- pstar) ./ pstar, "No Update", :orange);
 add_to_plot!(obj_val_iter_plot, log_npc.iter_time, (log_npc.obj_val .- pstar) ./ pstar, "No PC", :purple);
 add_to_plot!(obj_val_iter_plot, log_exact.iter_time, (log_exact.obj_val .- pstar) ./ pstar, "ADMM (pc)", :red);
 add_to_plot!(obj_val_iter_plot, log_exact_npc.iter_time, (log_exact_npc.obj_val .- pstar) ./ pstar, "ADMM (no pc)", :mediumblue);
@@ -371,7 +397,7 @@ high_precision_plt = plot(;
 dpi=300,
 # title="Convergence (Lasso)",
 yaxis=:log,
-xlabel="Iteration",
+xlabel="Time (s)",
 legend=false,
 ylims=(1e-10, 1000),
 legendfontsize=18,
