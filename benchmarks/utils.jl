@@ -36,9 +36,11 @@ function get_augmented_data(m, n, datafile)
     return Ad, b
 end
 
-function load_sparse_data(; file, have_data)
+function load_sparse_data(; file, have_data, dataset_id=1578)
+    # news20: 1594
+    # real-sim: 1578
     if !have_data
-        real_sim = OpenML.load(1578)
+        real_sim = OpenML.load(dataset_id)
     
         b_full = real_sim.class
         A_full = sparse(Tables.matrix(real_sim)[:,1:end-1])
@@ -61,6 +63,24 @@ function construct_problem_constrained_ls(Ad, b)
     u = ones(n)
     return P, q, A, l, u
 end
+
+function construct_jump_model_elastic_net(A, b, γ, μ)
+    m, n = size(A)
+    model = Model()
+    @variable(model, x[1:n])
+    @variable(model, z[1:m])
+    @constraint(model, A*x - b .== z)
+    
+    # Add ℓ1 regularization
+    @variable(model, t[1:n])
+    @constraint(model, t .>= x)
+    @constraint(model, t .>= -x)
+    
+    # Define objective
+    @objective(model, Min, 0.5 * z'*z + 0.5 * μ * x'*x + γ * sum(t))
+    return model
+end
+
 
 # Trial running
 function run_genios_trial_qp(P, q, A, l, u; options)
