@@ -1,7 +1,7 @@
 name = "GeNIOS"
 uuid = "633953ab-b710-48ef-9c4e-3b2d1d3d8185"
 authors = ["Theo Diamandis"]
-version = "0.2.1"
+version = "0.2.2"
 
 [deps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
