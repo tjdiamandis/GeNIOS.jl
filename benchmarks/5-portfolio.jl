@@ -112,10 +112,10 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
             eps_abs=1e-4, eps_rel=1e-4, verbose=false, time_limit=1800,
         )
         result_osqp = OSQP.solve!(osqp_model)
+        @info "\tFinished OSQP, time: $(result_osqp.info.solve_time + result_osqp.info.setup_time)"
     else
         result_osqp = nothing
     end
-    @info "\tFinished OSQP, time: $(result_osqp.info.solve_time + result_osqp.info.setup_time)"
 
 
     # COSMO (indirect)
@@ -133,10 +133,10 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         )
         assemble!(model_cosmo_indirect, P_eq, q_eq, cs1, settings=settings)
         result_cosmo_indirect = COSMO.optimize!(model_cosmo_indirect)
+        @info "\tFinished COSMO (indirect), time: $(result_cosmo_indirect.times.iter_time + result_cosmo_indirect.times.factor_update_time)"
     else
         result_cosmo_indirect = nothing
     end
-    @info "\tFinished COSMO (indirect), time: $(result_cosmo_indirect.times.iter_time + result_cosmo_indirect.times.factor_update_time)"
 
 
     # COSMO
@@ -154,10 +154,10 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         )
         assemble!(model_cosmo_direct, P_eq, q_eq, cs1, settings=settings)
         result_cosmo_direct = COSMO.optimize!(model_cosmo_direct)
+        @info "\tFinished COSMO (direct), time: $(result_cosmo_direct.times.iter_time + result_cosmo_direct.times.factor_update_time)"
     else
         result_cosmo_direct = nothing
     end
-    @info "\tFinished COSMO (direct), time: $(result_cosmo_direct.times.iter_time + result_cosmo_direct.times.factor_update_time)"
 
     # GeNIOS
     options = GeNIOS.SolverOptions(
@@ -187,10 +187,10 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         u = vcat(Inf*ones(n), ones(1))
         solver = GeNIOS.QPSolver(P, q, M, l, u; σ=0.0)
         result_qp_full = solve!(solver; options=options)
+        @info "\tFinished GeNIOS (full qp), time: $(result_qp_full.log.setup_time + result_qp_full.log.solve_time)"
     else
         result_qp_full = nothing
     end
-    @info "\tFinished GeNIOS (full qp), time: $(result_qp_full.log.setup_time + result_qp_full.log.solve_time)"
     
     Fd = Matrix(F)
     # QP with custom operators
@@ -204,10 +204,10 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
 
         solver = GeNIOS.QPSolver(P, q, M, l, u; check_dims=false, σ=0.0);
         result_op = solve!(solver; options=options)
+        @info "\tFinished GeNIOS (custom ops), time: $(result_op.log.setup_time + result_op.log.solve_time)"
     else
         result_op = nothing
     end
-    @info "\tFinished GeNIOS (custom ops), time: $(result_op.log.setup_time + result_op.log.solve_time)"
 
     # Generic interface with custom f and g 
     if :custom ∈ solvers
@@ -267,10 +267,10 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
             params=params
         )
         result_custom = solve!(solver; options=options)
+        @info "\tFinished GeNIOS (generic solver), time: $(result_custom.log.setup_time + result_custom.log.solve_time)"
     else
         result_custom = nothing
     end
-    @info "\tFinished GeNIOS (generic solver), time: $(result_custom.log.setup_time + result_custom.log.solve_time)"
     
     # Mosek
     if :mosek ∈ solvers
@@ -286,10 +286,10 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         set_time_limit_sec(model, 1800.0)
         optimize!(model)
         result_mosek = solution_summary(model)
+        @info "\tFinished Mosek, time: $(result_mosek.solve_time)"
     else
         result_mosek = nothing
     end
-    @info "\tFinished Mosek, time: $(result_mosek.solve_time)"
     
     # save data 
     save(savefile,
@@ -339,6 +339,7 @@ if !RAN_TRIALS
         @info "Starting n=$n"
         @info "\t Solvers: $solvers"
         to_remove = run_trial(n; solvers=solvers)
+        n > 16_000 && push!(to_remove, :qp_full)
         setdiff!(solvers, to_remove)
         @info "Finished with n=$n"
     end
@@ -426,6 +427,10 @@ timing_plt = plot(
 savefig(timing_plt, joinpath(FIGS_PATH, "5-portfolio-timing-2024.pdf"))
 
 # Table
+println("\\begin{tabular}{@{}lrrrrrrrr@{}}")
+println("\\toprule")
+println("Size & GeNIOS (eq) & GeNIOS (full) & GeNIOS (cust) & GeNIOS (gen) & COSMO (ind) & COSMO (dir) & OSQP & Mosek \\\\")
+println("\\midrule")
 for (i, n) in enumerate(ns)
     println("$n & $(@sprintf("%.3f", timings[i,1])) & $(@sprintf("%.3f", timings[i,2])) & $(@sprintf("%.3f", timings[i,3])) & $(@sprintf("%.3f", timings[i,4])) & $(@sprintf("%.3f", timings[i,5])) & $(@sprintf("%.3f", timings[i,6])) & $(@sprintf("%.3f", timings[i,7])) & $(@sprintf("%.3f", timings[i,8])) \\\\")
 end
