@@ -109,12 +109,13 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         osqp_model = OSQP.Model()
         OSQP.setup!(
             osqp_model; P=P_eq, q=q_eq, A=M_eq, l=l_eq, u=u_eq, 
-            eps_abs=1e-4, eps_rel=1e-4, verbose=false, time_limit=2000,
+            eps_abs=1e-4, eps_rel=1e-4, verbose=false, time_limit=1800,
         )
         result_osqp = OSQP.solve!(osqp_model)
     else
         result_osqp = nothing
     end
+    @info "\tFinished OSQP, time: $(result_osqp.info.solve_time + result_osqp.info.setup_time)"
 
 
     # COSMO (indirect)
@@ -128,13 +129,14 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
             verbose_timing = true,
             eps_abs=1e-4,
             eps_rel=1e-4,
-            time_limit=2000,
+            time_limit=1800,
         )
         assemble!(model_cosmo_indirect, P_eq, q_eq, cs1, settings=settings)
         result_cosmo_indirect = COSMO.optimize!(model_cosmo_indirect)
     else
         result_cosmo_indirect = nothing
     end
+    @info "\tFinished COSMO (indirect), time: $(result_cosmo_indirect.times.iter_time + result_cosmo_indirect.times.factor_update_time)"
 
 
     # COSMO
@@ -148,14 +150,14 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
             verbose_timing = true,
             eps_abs=1e-4,
             eps_rel=1e-4,
-            time_limit=2000,
+            time_limit=1800,
         )
         assemble!(model_cosmo_direct, P_eq, q_eq, cs1, settings=settings)
         result_cosmo_direct = COSMO.optimize!(model_cosmo_direct)
     else
         result_cosmo_direct = nothing
     end
-
+    @info "\tFinished COSMO (direct), time: $(result_cosmo_direct.times.iter_time + result_cosmo_direct.times.factor_update_time)"
 
     # GeNIOS
     options = GeNIOS.SolverOptions(
@@ -164,7 +166,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         eps_rel=1e-4,
         norm_type=Inf,
         sketch_update_iter=10_000,
-        max_time_sec=2000.0,
+        max_time_sec=1800.0,
     )
 
     if :qp ∈ solvers
@@ -174,7 +176,8 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
     else
         result_qp = nothing
     end
-
+    @info "\tFinished GeNIOS (eq qp), time: $(result_qp.log.setup_time + result_qp.log.solve_time)"
+    
     if :qp_full ∈ solvers
         GC.gc()
         P = γ * (Diagonal(d) + F*F')
@@ -187,9 +190,9 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
     else
         result_qp_full = nothing
     end
-
+    @info "\tFinished GeNIOS (full qp), time: $(result_qp_full.log.setup_time + result_qp_full.log.solve_time)"
+    
     Fd = Matrix(F)
-
     # QP with custom operators
     if :op ∈ solvers
         GC.gc()
@@ -204,7 +207,7 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
     else
         result_op = nothing
     end
-
+    @info "\tFinished GeNIOS (custom ops), time: $(result_op.log.setup_time + result_op.log.solve_time)"
 
     # Generic interface with custom f and g 
     if :custom ∈ solvers
@@ -267,7 +270,8 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
     else
         result_custom = nothing
     end
-
+    @info "\tFinished GeNIOS (generic solver), time: $(result_custom.log.setup_time + result_custom.log.solve_time)"
+    
     # Mosek
     if :mosek ∈ solvers
         GC.gc()
@@ -279,13 +283,14 @@ function run_trial(n::Int; solvers=[:qp, :op, :custom, :cosmo_indirect, :cosmo_d
         @constraint(model, sum(x) == 1)
         @constraint(model, x .≥ 0)
         set_silent(model)
-        set_time_limit_sec(model, 2000.0)
+        set_time_limit_sec(model, 1800.0)
         optimize!(model)
         result_mosek = solution_summary(model)
     else
         result_mosek = nothing
     end
-
+    @info "\tFinished Mosek, time: $(result_mosek.solve_time)"
+    
     # save data 
     save(savefile,
         "result_qp", result_qp,
