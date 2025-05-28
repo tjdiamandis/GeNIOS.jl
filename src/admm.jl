@@ -65,7 +65,8 @@ end
 function update_preconditioner!(solver::MLSolver, options::SolverOptions)
     !options.update_preconditioner && return nothing
     update!(solver.lhs_op.Hf_xk, solver)
-    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.init_sketch_size; n=solver.lhs_op.n)
+    ∇²fx_nys = RP.NystromSketch(solver.lhs_op.Hf_xk, options.init_sketch_size;
+        n=solver.lhs_op.n, S=_promote_1D_vector_type(solver.cache.vm))
 
     # Adds the ℓ2 regularization term to the preconditioner
     solver.P = RP.NystromPreconditionerInverse(∇²fx_nys, solver.ρ + solver.λ2)

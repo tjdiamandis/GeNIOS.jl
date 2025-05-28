@@ -38,9 +38,10 @@ end
 
 # Quick fix: should not sketch the + λ₂I part of HessianOperator
 # TODO: find a better work around
-function RandomizedPreconditioners.NystromSketch(H::MLHessianOperator, r::Int; n=nothing, q=0, Ω=nothing)
+function RandomizedPreconditioners.NystromSketch(H::MLHessianOperator, r::Int; n=nothing, S=nothing)
     n = isnothing(n) ? size(H.Adata, 2) : n
-    Y = zeros(n, r)
+    Y = S(undef, n, r)
+    fill!(Y, 0.0)
 
     Ω = 1/sqrt(n) * randn(n, r)
     # TODO: maybe add a powering option here?
