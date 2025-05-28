@@ -81,6 +81,30 @@ function construct_jump_model_elastic_net(A, b, γ, μ)
     return model
 end
 
+function softplus(model, t, u)
+    z = @variable(model, [1:2], lower_bound = 0.0)
+    @constraint(model, sum(z) <= 1.0)
+    @constraint(model, [u - t, 1, z[1]] in MOI.ExponentialCone())
+    @constraint(model, [-t, 1, z[2]] in MOI.ExponentialCone())
+end
+
+function construct_jump_model_logistic(A, b, γ)
+    n, p = size(A)
+    model = Model()
+    @variable(model, x[1:p])
+    @variable(model, t[1:n])
+    for i in 1:n
+        u = (A[i, :]' * x) * b[i]
+        softplus(model, t[i], u)
+    end
+    # Add ℓ1 regularization
+    @variable(model, 0.0 <= reg)
+    @constraint(model, [reg; x] in MOI.NormOneCone(p + 1))
+    # Define objective
+    @objective(model, Min, sum(t) + γ * reg)
+    return model
+end
+
 
 # Trial running
 function run_genios_trial_qp(P, q, A, l, u; options)
