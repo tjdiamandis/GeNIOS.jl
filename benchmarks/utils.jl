@@ -40,10 +40,10 @@ function load_sparse_data(; file, have_data, dataset_id=1578)
     # news20: 1594
     # real-sim: 1578
     if !have_data
-        real_sim = OpenML.load(dataset_id)
+        dataset = OpenML.load(dataset_id)
     
-        b_full = real_sim.class
-        A_full = sparse(Tables.matrix(real_sim)[:,1:end-1])
+        b_full = dataset.class
+        A_full = sparse(Tables.matrix(dataset)[:,1:end-1])
         jldsave(file, A_full, b_full)
         return A_full, b_full
     else
