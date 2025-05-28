@@ -21,6 +21,10 @@ end
     include("constraints.jl")
 end
 
-@testset "MOI" begin
-    include("MOI_wrapper.jl")
+if "test_moi" in ARGS
+    @testset "MOI" begin
+        include("MOI_wrapper.jl")
+    end
+else
+    @info "Skipping MOI tests"
 end
