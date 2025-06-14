@@ -6,6 +6,7 @@ Manifest.toml
 dev/
 .vscode/
 /benchmarks/data/
+/benchmarks/old/
 /benchmarks/saved/
 /benchmarks/test*
 /benchmarks/figures/
